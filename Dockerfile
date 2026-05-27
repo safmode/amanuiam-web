@@ -30,11 +30,15 @@ WORKDIR /var/www/html
 # Copy existing application directory contents
 COPY . /var/www/html
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Install and build frontend
-RUN npm install && npm run build
+# Install Node.js dependencies (FIXED)
+# First check if package.json exists
+RUN if [ -f package.json ]; then npm install; else echo "No package.json found"; fi
+
+# Build frontend assets
+RUN if [ -f package.json ]; then npm run build; else echo "No build script found"; fi
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
