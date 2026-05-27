@@ -47,20 +47,19 @@ RUN mkdir -p /var/www/html/storage/framework/sessions \
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache \
-    && find /var/www/html -type d -exec chmod 755 {} \; \
-    && find /var/www/html -type f -exec chmod 644 {} \;
+    && chmod -R 755 /var/www/html/public
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# FIX: Properly set DocumentRoot to public directory
-RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf
-RUN sed -i 's#<Directory /var/www/html>#<Directory /var/www/html/public>#' /etc/apache2/sites-available/000-default.conf
+# COPY CUSTOM APACHE CONFIG (FIX FOR 403)
+COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
 
 # Override Apache port to use Render's expected port
+RUN sed -i "s/\${PORT}/10000/g" /etc/apache2/sites-available/000-default.conf
 RUN sed -i "s/Listen 80/Listen 10000/g" /etc/apache2/ports.conf
 
-# Set ServerName to suppress warnings
+# Set ServerName
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 EXPOSE 10000
