@@ -1,9 +1,9 @@
 <IfModule mod_headers.c>
-    # Force no-cache for HTML files
+    # Force no-cache for HTML files (temporary)
     <FilesMatch "\.(html|htm|php)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
-        Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+        Header set Expires "0"
     </FilesMatch>
 
     # Upgrade insecure requests to HTTPS
@@ -16,10 +16,6 @@
     </IfModule>
 
     RewriteEngine On
-
-    # Force HTTPS
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
