@@ -52,8 +52,8 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://amanuiam-web.onrender.com'),
-    'asset_url' => env('ASSET_URL', 'https://amanuiam-web.onrender.com'),
+    'url' => env('APP_URL', 'https://amanuiam.onrender.com'),
+    'asset_url' => env('ASSET_URL', 'https://amanuiam.onrender.com'),
 
     /*
     |--------------------------------------------------------------------------
