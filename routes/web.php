@@ -18,6 +18,16 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
 use App\Models\Emergencies;
 
+Route::get('/test-db', function() {
+    try {
+        $test = DB::connection('mongodb')->command(['ping' => 1]);
+        return 'MongoDB connected successfully!';
+    } catch (\Exception $e) {
+        return 'MongoDB error: ' . $e->getMessage();
+    }
+});
+
+
 // ============================================
 // SELF-PING
 // ============================================
