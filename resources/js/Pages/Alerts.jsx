@@ -14,7 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Simple Dropdown Component
+// Simple Dropdown Component - FIXED: Single scroll at dropdown level
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -38,7 +38,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-h-[400px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
           {children}
         </div>
       )}
@@ -957,7 +957,7 @@ const Alerts = () => {
               />
             </div>
 
-            {/* FILTER DROPDOWN - FIXED NESTED SCROLL ISSUE */}
+            {/* FILTER DROPDOWN - FIXED: NO NESTED SCROLLING */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
@@ -979,7 +979,7 @@ const Alerts = () => {
                 </Button>
               }
             >
-              {/* REMOVED overflow-y-auto from here - let content determine height */}
+              {/* Inner content - NO overflow classes, parent handles scrolling */}
               <div className="bg-white p-4 dark:bg-slate-800 rounded-xl min-w-[280px]">
                 <div className="space-y-4">
                   {/* Status Section */}
@@ -1009,7 +1009,7 @@ const Alerts = () => {
 
                   <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                  {/* Locations Section - REMOVED max-h-48 overflow-y-auto to fix nested scroll */}
+                  {/* Locations Section - NO max-h or overflow-y-auto */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
@@ -1020,17 +1020,17 @@ const Alerts = () => {
                       )}
                     </div>
                     <div className="space-y-2">
-                        {locations.map((loc) => (
-                            <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                            <input
-                                type="checkbox"
-                                checked={filters.locations.includes(loc)}
-                                onChange={() => toggleFilter('locations', loc)}
-                                className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                            />
-                            <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
-                            </label>
-                        ))}
+                      {locations.map((loc) => (
+                        <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={filters.locations.includes(loc)}
+                            onChange={() => toggleFilter('locations', loc)}
+                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                          />
+                          <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>
