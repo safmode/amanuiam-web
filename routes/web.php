@@ -18,6 +18,10 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
 use App\Models\Emergencies;
 
+// ============================================
+// TEST ROUTES
+// ============================================
+
 Route::get('/test-db', function() {
     try {
         DB::connection('mongodb')->command(['ping' => 1]);
@@ -32,7 +36,6 @@ Route::get('/test-session', function() {
     return 'Session test: ' . session('test');
 });
 
-
 // ============================================
 // SELF-PING
 // ============================================
@@ -44,7 +47,6 @@ Route::get('/health', function () {
         'app' => 'Emergency Alert System'
     ]);
 })->name('health.check');
-
 
 // ============================================
 // WEBHOOK ROUTES
@@ -82,13 +84,10 @@ Route::get('/webhook/new-report', function (Request $request) {
             Log::warning("NotificationController returned null for report: {$reportId}");
         }
 
+        return response()->json(['success' => true]);
     } catch (\Exception $e) {
         Log::error('❌ Failed to process report webhook: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
@@ -152,19 +151,13 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
         // Create web dashboard notification
         $notification = App\Http\Controllers\NotificationController::createEmergencyAlert($emergency, $student);
 
-        // IMPORTANT: Only send Telegram to assigned officer when dispatched
-        // Not sending to all officers here - they will get notified when assigned
-
         Log::info("✅ Emergency created and waiting for dispatch: {$emergencyIdentifier}");
 
+        return response()->json(['success' => true, 'emergency_id' => $emergencyIdentifier]);
     } catch (\Exception $e) {
         Log::error('❌ Failed to process emergency webhook: ' . $e->getMessage());
         Log::error('Stack trace: ' . $e->getTraceAsString());
-
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
@@ -222,7 +215,6 @@ Route::get('/telegram/bot-status', function () {
 Route::get('/telegram/webhook-info', function () {
     $token = env('TELEGRAM_BOT_TOKEN');
     $response = Http::get("https://api.telegram.org/bot{$token}/getWebhookInfo");
-
     return response()->json($response->json());
 });
 
@@ -230,11 +222,9 @@ Route::get('/telegram/webhook-info', function () {
 Route::get('/telegram/set-webhook', function () {
     $token = env('TELEGRAM_BOT_TOKEN');
     $webhookUrl = url('/telegram/webhook');
-
     $response = Http::post("https://api.telegram.org/bot{$token}/setWebhook", [
         'url' => $webhookUrl
     ]);
-
     return response()->json([
         'success' => $response->successful(),
         'response' => $response->json(),
@@ -373,7 +363,6 @@ Route::post('/telegram/webhook', function (Request $request) {
                 $statusIcon = $report->status === 'resolved' ? '✅' : ($report->status === 'pending' ? '⏳' : '🔄');
                 $urgencyIcon = $report->urgency === 'urgent' ? '🚨 ' : '';
 
-                // Get category label
                 $categoryLabels = [
                     'theft' => 'Theft/Robbery',
                     'harassment' => 'Harassment',
@@ -541,7 +530,6 @@ Route::post('/telegram/webhook', function (Request $request) {
             $messageText .= "*Updated at:* " . now()->format('d/m/Y H:i:s');
 
             sendTelegramMessage($chatId, $messageText);
-
             return response()->json(['status' => 'ok']);
         }
 
@@ -560,8 +548,7 @@ Route::post('/telegram/webhook', function (Request $request) {
                 'officer_id' => $existingOfficer->officerId,
                 'officer_name' => $existingOfficer->officerName,
                 'chat_id' => $chatId,
-                'emergency_id_provided' => $emergencyIdentifier,
-                'original_command' => $originalText
+                'emergency_id_provided' => $emergencyIdentifier
             ]);
 
             $query = App\Models\Emergencies::where(function($q) use ($existingOfficer) {
@@ -577,11 +564,6 @@ Route::post('/telegram/webhook', function (Request $request) {
                       ->orWhere('reportId', $emergencyIdentifier);
                 });
                 $emergency = $query->first();
-
-                Log::info('🔍 Looking for specific emergency', [
-                    'found' => $emergency ? 'YES' : 'NO',
-                    'emergency_id' => $emergencyIdentifier
-                ]);
             } else {
                 $emergency = App\Models\Emergencies::where('assigned_officer_id', $existingOfficer->officerId)
                     ->whereIn('status', ['active', 'responding'])
@@ -592,10 +574,6 @@ Route::post('/telegram/webhook', function (Request $request) {
                     $emergency = App\Models\Emergencies::whereIn('status', ['active', 'responding'])
                         ->orderBy('triggeredAt', 'desc')
                         ->first();
-
-                    Log::info('🔍 Looking for any active emergency', [
-                        'found' => $emergency ? 'YES' : 'NO'
-                    ]);
                 }
             }
 
@@ -631,12 +609,10 @@ Route::post('/telegram/webhook', function (Request $request) {
                 $student = App\Models\Student::find($emergency->student_id);
             }
 
-            $wasUnassigned = false;
             if (is_null($emergency->assigned_officer_id)) {
                 $emergency->assigned_officer_id = $existingOfficer->officerId;
                 $emergency->assigned_officer_name = $existingOfficer->officerName;
                 $emergency->assigned_at = now();
-                $wasUnassigned = true;
                 Log::info('Auto-assigned emergency to resolving officer', [
                     'emergency_id' => $emergency->_id,
                     'officer_id' => $existingOfficer->officerId
@@ -658,12 +634,6 @@ Route::post('/telegram/webhook', function (Request $request) {
             $successMessage .= "*Resolved at:* " . now()->format('d/m/Y H:i:s');
 
             sendTelegramMessage($chatId, $successMessage);
-
-            // NOTIFY ONLY THE DISPATCHER/DASHBOARD - NOT OTHER OFFICERS
-            Log::info('Emergency resolved', [
-                'emergency_id' => $emergency->_id,
-                'officer' => $existingOfficer->officerName
-            ]);
 
             try {
                 Http::put(url("/api/emergencies/{$emergency->_id}/resolve"));
@@ -767,29 +737,47 @@ Route::post('/telegram/webhook', function (Request $request) {
 });
 
 // ============================================
-// REST OF YOUR ROUTES (Reports, Officers, etc.)
+// API ROUTES
 // ============================================
 
-// ── AI Routes ─────────────────────────────────────────────
 Route::post('/api/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
+Route::get('/api/students/search', function (Request $request) {
+    $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
+    if ($student) {
+        return response()->json([
+            'student' => [
+                '_id' => (string)$student->_id,
+                'name' => $student->name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'matrixNumber' => $student->matrixNumber,
+            ]
+        ]);
+    }
+    return response()->json(['student' => null]);
+});
 
-// ── Public Routes ─────────────────────────────────────────
+// ============================================
+// PUBLIC ROUTES
+// ============================================
+
 Route::get('/',          [AdminAuthController::class, 'showLogin'])->name('login');
 Route::get('/register',  [AdminAuthController::class, 'showRegister'])->name('register');
 Route::post('/login',    [AdminAuthController::class, 'login']);
 Route::post('/register', [AdminAuthController::class, 'register']);
 Route::post('/logout',   [AdminAuthController::class, 'logout'])->name('logout');
 
-// ── Protected Routes ──────────────────────────────────────
+// ============================================
+// PROTECTED ROUTES (Auth Required)
+// ============================================
+
 Route::middleware('auth')->group(function () {
     Route::get('/Dashboard',  fn() => Inertia::render('Dashboard'))->name('dashboard');
     Route::get('/Alerts',     fn() => Inertia::render('Alerts'))->name('alerts');
     Route::get('/Settings',   fn() => Inertia::render('Settings'))->name('settings');
 
-    //Dashboard
     Route::get('/dashboard/recent-data', [DashboardController::class, 'getRecentReports'])->name('dashboard.recent');
 
-    // Reports
     Route::get('/Reports',    [ReportController::class, 'index'])->name('reports');
     Route::get('/Reports/recent', [ReportController::class, 'getRecent'])->name('reports.recent');
     Route::post('/Reports',   [ReportController::class, 'store'])->name('reports.store');
@@ -799,37 +787,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/upload-attachments', [ReportController::class, 'uploadAttachments'])->name('reports.upload.attachments');
     Route::post('/reports/upload-for-new', [ReportController::class, 'uploadForNewReport'])->name('reports.upload-for-new');
     Route::delete('/reports/delete-attachment', [ReportController::class, 'deleteAttachment'])->name('reports.delete.attachment');
-    Route::get('/api/students/search', function (Request $request) {
-        $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
-        if ($student) {
-            return response()->json([
-                'student' => [
-                    '_id' => (string)$student->_id,
-                    'name' => $student->name,
-                    'email' => $student->email,
-                    'phone' => $student->phone,
-                    'matrixNumber' => $student->matrixNumber,
-                ]
-            ]);
-        }
-        return response()->json(['student' => null]);
-    });
 
-    // Officers
     Route::get('/Officers', [OfficerController::class, 'index'])->name('officers');
     Route::post('/Officers', [OfficerController::class, 'store'])->name('officers.store');
     Route::put('/Officers/{officerId}', [OfficerController::class, 'update'])->name('officers.update');
     Route::delete('/Officers/{officerId}', [OfficerController::class, 'destroy'])->name('officers.destroy');
     Route::get('/api/officers/list', [OfficerController::class, 'getOfficersList'])->name('api.officers.list');
 
-    // Map / Heatmap
     Route::get('/Heatmap', [MapController::class, 'index'])->name('heatmap');
     Route::get('/heatmap-data', [MapController::class, 'getHeatmapData'])->name('heatmap.data');
 
-    // Statistics
     Route::get('/Statistics', [StatisticsController::class, 'index'])->name('statistics');
 
-    // Settings routes
     Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::put('/settings/password', [SettingsController::class, 'changePassword'])->name('settings.password');
     Route::post('/settings/two-factor', [SettingsController::class, 'toggleTwoFactor'])->name('settings.two-factor');
@@ -840,7 +809,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/dark-mode', [SettingsController::class, 'updateDarkMode']);
     Route::get('/settings/dark-mode', [SettingsController::class, 'getDarkMode']);
 
-    // ── Admin Approval Routes ──────────────────────────────────────
     Route::get('/api/pending-admins', function () {
         return App\Models\Admins::where('status', 'pending')
             ->orderBy('created_at', 'desc')
@@ -854,13 +822,11 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Approvals', ['allAdmins' => $allAdmins]);
     })->name('approvals');
 
-    // Notifications (admin only)
     Route::get('/api/notifications', [NotificationController::class, 'index']);
     Route::get('/api/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
     Route::put('/api/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/api/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
-    // Emergencies (admin only - for dashboard)
     Route::get('/api/emergencies', [EmergencyController::class, 'index']);
     Route::get('/api/emergencies/counts', [EmergencyController::class, 'getActiveCount']);
     Route::put('/api/emergencies/{id}/dispatch', [EmergencyController::class, 'dispatch']);
@@ -872,15 +838,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/emergencies/{id}/live-location', [EmergencyController::class, 'getLiveLocation']);
     Route::post('/api/emergencies/{id}/start-tracking', [EmergencyController::class, 'startLiveTracking']);
 
-    // SAFETY TIPS ROUTES (Admin only)
     Route::prefix('api/safety-tips')->group(function () {
         Route::post('/send', [App\Http\Controllers\SafetyTipsController::class, 'send']);
         Route::get('/history', [App\Http\Controllers\SafetyTipsController::class, 'history']);
         Route::get('/{id}', [App\Http\Controllers\SafetyTipsController::class, 'show']);
     });
 
-    // Password
     Route::post('/password/send-code', [PasswordChangeController::class, 'sendCode']);
     Route::post('/password/verify-change', [PasswordChangeController::class, 'verifyAndChange']);
     Route::post('/password/resend-code', [PasswordChangeController::class, 'resendCode']);
+});
+
+// ============================================
+// FALLBACK ROUTE
+// ============================================
+
+Route::fallback(function () {
+    return Inertia::render('NotFound');
 });
