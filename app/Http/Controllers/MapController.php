@@ -48,15 +48,6 @@ class MapController extends Controller
         // Group reports by proximity to main locations
         $groupedByLocation = $this->groupReportsByProximity($filteredReports);
 
-        // DEBUG: Log what was grouped
-        \Log::info('Groups created: ' . json_encode(array_keys($groupedByLocation->toArray())));
-        foreach ($groupedByLocation as $locationName => $reports) {
-            \Log::info("{$locationName}: " . $reports->count() . " reports");
-            foreach ($reports as $report) {
-                \Log::debug("  - {$report->reportId}: {$report->incidentCategory}");
-            }
-        }
-
         $hotspots = [];
         $maxIncidents = $groupedByLocation->max(function ($group) {
             return $group->count();
@@ -65,7 +56,7 @@ class MapController extends Controller
         foreach ($groupedByLocation as $locationName => $reportsInLocation) {
             if (empty($locationName) || $locationName === 'Unknown') continue;
 
-            // Get coordinates for this main location (from pre-saved config)
+            // Get coordinates for this main location
             $coordinates = $this->mainLocationCoordinates[$locationName] ?? null;
 
             if (!$coordinates) {
@@ -103,8 +94,6 @@ class MapController extends Controller
             return $b['incidents'] - $a['incidents'];
         });
 
-        \Log::info('Generated ' . count($hotspots) . ' hotspots');
-
         return Inertia::render('Heatmap', [
             'hotspots' => array_values($hotspots),
             'currentDateFilter' => $dateFilter,
@@ -114,7 +103,6 @@ class MapController extends Controller
 
     /**
      * Group reports by proximity to main locations
-     * Uses 3 methods: Keyword matching, Coordinate proximity, and LocationArea fallback
      */
     private function groupReportsByProximity($reports)
     {
@@ -124,7 +112,7 @@ class MapController extends Controller
         foreach ($reports as $report) {
             $assigned = false;
 
-            // METHOD 1: Try keyword matching using locationArea (BEST for reports without coordinates)
+            // METHOD 1: Try keyword matching using locationArea
             $locationArea = $this->getLocationAreaFromReport($report);
             if (!empty($locationArea)) {
                 $matchedLocation = $this->matchLocationToMainLocation($locationArea);
@@ -133,88 +121,51 @@ class MapController extends Controller
                         $grouped[$matchedLocation] = collect();
                     }
                     $grouped[$matchedLocation]->push($report);
-                    \Log::debug("Assigned report {$report->reportId} to {$matchedLocation} by keyword matching (locationArea: {$locationArea})");
                     $assigned = true;
                 }
             }
 
-            // METHOD 2: Try proximity matching using actual coordinates (most accurate)
+            // METHOD 2: Try proximity matching using actual coordinates
             if (!$assigned) {
                 $reportCoords = $this->getReportCoordinates($report);
                 if ($reportCoords && !empty($this->mainLocationCoordinates)) {
-                    $assigned = $this->assignByProximity($report, $reportCoords, $grouped);
-                }
-            }
+                    $bestMatch = null;
+                    $bestDistance = PHP_FLOAT_MAX;
 
-            // METHOD 3: Try matching by description/address for reports without locationArea
-            if (!$assigned) {
-                $description = $report->description ?? '';
-                $address = $this->getAddressFromReport($report);
-                $searchText = strtolower($description . ' ' . $address);
+                    foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+                        $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
 
-                foreach ($this->mainLocations as $locationName => $config) {
-                    foreach ($config['keywords'] as $keyword) {
-                        if (strpos($searchText, strtolower($keyword)) !== false) {
-                            if (!isset($grouped[$locationName])) {
-                                $grouped[$locationName] = collect();
-                            }
-                            $grouped[$locationName]->push($report);
-                            \Log::info("Assigned report {$report->reportId} to {$locationName} by description/address matching");
-                            $assigned = true;
-                            break 2;
+                        $distance = $this->calculateDistance(
+                            $reportCoords['lat'], $reportCoords['lng'],
+                            $locationCoords['lat'], $locationCoords['lng']
+                        );
+
+                        if ($distance <= $radius && $distance < $bestDistance) {
+                            $bestDistance = $distance;
+                            $bestMatch = $locationName;
                         }
+                    }
+
+                    if ($bestMatch) {
+                        if (!isset($grouped[$bestMatch])) {
+                            $grouped[$bestMatch] = collect();
+                        }
+                        $grouped[$bestMatch]->push($report);
+                        $assigned = true;
                     }
                 }
             }
 
-            // If still not assigned, add to unassigned
             if (!$assigned) {
                 $unassigned[] = $report;
-                \Log::warning("Report {$report->reportId} could not be assigned to any location. LocationArea: " . ($locationArea ?? 'null'));
             }
         }
 
-        // Handle unassigned reports (Unknown location)
         if (!empty($unassigned)) {
             $grouped['Unknown'] = collect($unassigned);
-            \Log::info('Unassigned reports count: ' . count($unassigned));
         }
 
         return $grouped;
-    }
-
-    /**
-     * Assign report by proximity to nearest main location
-     */
-    private function assignByProximity($report, $reportCoords, &$grouped)
-    {
-        $bestMatch = null;
-        $bestDistance = PHP_FLOAT_MAX;
-
-        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
-            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
-
-            $distance = $this->calculateDistance(
-                $reportCoords['lat'], $reportCoords['lng'],
-                $locationCoords['lat'], $locationCoords['lng']
-            );
-
-            if ($distance <= $radius && $distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch = $locationName;
-            }
-        }
-
-        if ($bestMatch) {
-            if (!isset($grouped[$bestMatch])) {
-                $grouped[$bestMatch] = collect();
-            }
-            $grouped[$bestMatch]->push($report);
-            \Log::info("Assigned report {$report->reportId} to {$bestMatch} by proximity (distance: {$bestDistance}m, coords: {$reportCoords['lat']}, {$reportCoords['lng']})");
-            return true;
-        }
-
-        return false;
     }
 
     private function calculateRiskLevel($incidentCount, $maxIncidents)
@@ -245,9 +196,6 @@ class MapController extends Controller
         return $labels[$category] ?? ucfirst(str_replace('_', ' ', $category));
     }
 
-    /**
-     * Get heatmap data as JSON
-     */
     public function getHeatmapData(Request $request)
     {
         $dateFrom = $request->get('dateFrom');

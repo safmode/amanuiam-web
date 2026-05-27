@@ -63,7 +63,7 @@ class ReportController extends Controller
     }
 
     // ============================================
-    // AI METHODS (KEEP YOUR EXISTING IMPLEMENTATIONS)
+    // AI METHODS
     // ============================================
 
     private function aiCategorizeReport($description)
@@ -233,7 +233,7 @@ class ReportController extends Controller
     }
 
     // ============================================
-    // INDEX METHOD
+    // INDEX METHOD WITH LOCATION FILTERING
     // ============================================
 
     public function index(Request $request)
@@ -242,13 +242,11 @@ class ReportController extends Controller
 
         // SIMPLE SEARCH - search through relationship
         if ($search = $request->get('search')) {
-            // First, find students that match the search
             $matchingStudents = Student::where('name', 'like', "%$search%")
                 ->orWhere('email', 'like', "%$search%")
                 ->orWhere('matrixNumber', 'like', "%$search%")
                 ->get();
 
-            // Convert to ObjectId for MongoDB query
             $studentObjectIds = [];
             $studentStringIds = [];
 
@@ -257,14 +255,11 @@ class ReportController extends Controller
                 $studentStringIds[] = (string)$student->_id;
             }
 
-            // Get matric numbers
             $matricNumbers = Student::where('matrixNumber', 'like', "%$search%")
                 ->pluck('matrixNumber')
                 ->toArray();
 
-            // Search reports
             $query->where(function ($q) use ($search, $studentObjectIds, $studentStringIds, $matricNumbers) {
-                // Search report fields
                 $q->where('reportId', 'like', "%$search%")
                 ->orWhere('description', 'like', "%$search%")
                 ->orWhere('mahallah', 'like', "%$search%")
@@ -272,22 +267,15 @@ class ReportController extends Controller
                 ->orWhere('location.building', 'like', "%$search%")
                 ->orWhere('location.address', 'like', "%$search%");
 
-                // Search by studentId as ObjectId (for reports with ObjectId)
                 if (!empty($studentObjectIds)) {
                     $q->orWhereIn('studentId', $studentObjectIds);
                 }
-
-                // Search by studentId as string (for reports with string IDs)
                 if (!empty($studentStringIds)) {
                     $q->orWhereIn('studentId', $studentStringIds);
                 }
-
-                // Search by studentId as matric number
                 if (!empty($matricNumbers)) {
                     $q->orWhereIn('studentId', $matricNumbers);
                 }
-
-                // Direct string search on studentId
                 $q->orWhere('studentId', 'like', "%$search%");
             });
         }
@@ -313,10 +301,11 @@ class ReportController extends Controller
             // Filter reports by determining their actual location using proximity
             $filteredReportIds = [];
             foreach ($allReports as $report) {
-                $determinedLocation = $this->determineReportLocation($report);
-                if ($determinedLocation && in_array($determinedLocation, $locationArray)) {
+                // Get the location key (e.g., 'KOED' instead of 'KOED (Education)')
+                $determinedLocationKey = $this->determineReportLocation($report, true);
+
+                if ($determinedLocationKey && in_array($determinedLocationKey, $locationArray)) {
                     $filteredReportIds[] = $report->_id;
-                    \Log::debug("Report {$report->reportId} matched location filter: {$determinedLocation}");
                 } else {
                     // Also check original location fields as fallback
                     $mahallah = $report->mahallah ?? '';
@@ -330,7 +319,6 @@ class ReportController extends Controller
                     foreach ($locationArray as $locationFilter) {
                         if (strpos($searchText, strtolower($locationFilter)) !== false) {
                             $filteredReportIds[] = $report->_id;
-                            \Log::debug("Report {$report->reportId} matched location filter by keyword: {$locationFilter}");
                             break;
                         }
                     }
@@ -341,7 +329,6 @@ class ReportController extends Controller
             if (!empty($filteredReportIds)) {
                 $query->whereIn('_id', array_unique($filteredReportIds));
             } else {
-                // No matches, force empty result
                 $query->whereIn('_id', []);
             }
         }
@@ -357,15 +344,11 @@ class ReportController extends Controller
         $isExport = $request->boolean('export');
 
         if ($isExport) {
-            // Return all records without pagination for export
             $reports = $query->orderBy('reportedAt', 'desc')->get();
 
-            // Transform reports with student and officer data for export
             $reports->transform(function ($report) {
-                // Add determined location
-                $report->determinedLocation = $this->determineReportLocation($report);
+                $report->determinedLocation = $this->determineReportLocation($report, true);
 
-                // Add student info
                 if ($report->studentId) {
                     $student = Student::find($report->studentId);
                     if ($student) {
@@ -374,7 +357,6 @@ class ReportController extends Controller
                         $report->studentPhone = $student->phone;
                         $report->studentMatrix = $student->matrixNumber;
                     } else {
-                        // Try by matric number
                         $student = Student::where('matrixNumber', $report->studentId)->first();
                         if ($student) {
                             $report->studentName = $student->name;
@@ -395,7 +377,6 @@ class ReportController extends Controller
                     $report->studentMatrix = null;
                 }
 
-                // Add officer info
                 if ($report->assignedOfficer) {
                     $officer = Officer::where('officerId', $report->assignedOfficer)->first();
                     $report->officerName = $officer->officerName ?? 'Not Assigned';
@@ -415,23 +396,19 @@ class ReportController extends Controller
         // Original paginated response for normal view
         $reports = $query->orderBy('reportedAt', 'desc')->paginate(10)->withQueryString();
 
-        // Get all student IDs from reports
         $studentIds = [];
         foreach ($reports as $report) {
             if ($report->studentId) {
-                // Convert ObjectId to string if needed
                 $studentIds[] = (string)$report->studentId;
             }
         }
 
-        // Fetch students
         $students = collect();
         if (!empty($studentIds)) {
             $students = Student::whereIn('_id', $studentIds)->get()->keyBy(function($item) {
                 return (string)$item->_id;
             });
 
-            // Also try by matric for string IDs
             $stringIds = array_filter($studentIds, function($id) {
                 return !preg_match('/^[a-f0-9]{24}$/i', $id);
             });
@@ -443,14 +420,12 @@ class ReportController extends Controller
 
         $officers = Officer::all()->keyBy('officerId');
 
-        // Add student names, officer names, and determined location to reports
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
-            // Add determined location from proximity matching
-            $report->determinedLocation = $this->determineReportLocation($report);
+            // Add determined location from proximity matching (using key for frontend)
+            $report->determinedLocation = $this->determineReportLocation($report, true);
 
-            // Get student info
             if (isset($students[$studentId])) {
                 $student = $students[$studentId];
                 $report->studentName = $student->name;
@@ -464,7 +439,6 @@ class ReportController extends Controller
                 $report->studentMatrix = null;
             }
 
-            // Get officer info
             if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
                 $report->officerName = $officers[$report->assignedOfficer]->officerName;
             } else {
@@ -545,7 +519,6 @@ class ReportController extends Controller
             'location'         => 'nullable|array',
         ]);
 
-        // Handle location object from AddReport
         if ($request->has('location') && is_array($request->location)) {
             $locationData = $request->location;
             $validated['location'] = $locationData;
@@ -565,41 +538,32 @@ class ReportController extends Controller
             $validated['mahallah'] = 'Unknown Location';
         }
 
-        // === AI Auto-categorize ===
         if (empty($validated['incidentCategory'])) {
             $aiCategory = $this->aiCategorizeReport($validated['description']);
 
             if (!$aiCategory || $aiCategory === 'other') {
                 $aiCategory = $this->keywordCategorizeReport($validated['description']);
-                \Log::info('Using keyword fallback for category: ' . $aiCategory);
             }
 
             if ($aiCategory && $aiCategory !== 'other') {
                 $validated['incidentCategory'] = $aiCategory;
-                \Log::info('AI categorized report as: ' . $aiCategory);
             } else {
                 $validated['incidentCategory'] = 'other';
             }
         }
 
-        // === AI Auto-detect urgency ===
         if (empty($validated['urgency'])) {
             $validated['urgency'] = $this->aiDetectUrgency(
                 $validated['description'],
                 $validated['incidentCategory']
             );
-            \Log::info('AI set urgency to: ' . $validated['urgency']);
         }
 
         $validated['mahallah'] = $this->capitalizeMahallah($validated['mahallah']);
-
-        // Generate sequential Report ID
         $validated['reportId'] = Report::generateReportId();
-
         $validated['status'] = 'pending';
         $validated['reportedAt'] = now();
 
-        // Check if this is a registered student
         $registeredStudent = null;
 
         if ($request->filled('studentMatric')) {
@@ -664,10 +628,6 @@ class ReportController extends Controller
         if ($request->has('attachmentUrls') && !empty($request->attachmentUrls)) {
             $validated['attachmentUrls'] = $request->attachmentUrls;
             $validated['attachmentPublicIds'] = $request->attachmentPublicIds ?? [];
-            \Log::info('Using attachments from request', [
-                'urls' => count($request->attachmentUrls),
-                'public_ids' => count($request->attachmentPublicIds ?? [])
-            ]);
         }
 
         $report = Report::create($validated);
@@ -683,12 +643,9 @@ class ReportController extends Controller
 
     public function getRecent(Request $request)
     {
-        $recentReports = Report::orderBy('reportedAt', 'desc')
-            ->limit(10)
-            ->get();
+        $recentReports = Report::orderBy('reportedAt', 'desc')->limit(10)->get();
 
         $recentReports->transform(function ($report) {
-            // Initialize default values
             $report->studentName = 'Unknown';
             $report->studentEmail = null;
             $report->studentPhone = null;
@@ -711,7 +668,6 @@ class ReportController extends Controller
                     $report->studentMatrix = $unregistered->matric_number;
                 }
             } elseif ($report->studentId) {
-                // Fallback for legacy reports
                 $student = Student::find($report->studentId);
                 if ($student) {
                     $report->studentName = $student->name;
@@ -721,7 +677,6 @@ class ReportController extends Controller
                 }
             }
 
-            // Also try to find by matric number if studentId is a string
             if ((!$report->studentName || $report->studentName === 'Unknown') && $report->studentId && !preg_match('/^[a-f0-9]{24}$/i', $report->studentId)) {
                 $student = Student::where('matrixNumber', $report->studentId)->first();
                 if ($student) {
@@ -758,7 +713,6 @@ class ReportController extends Controller
                 if ($publicId) {
                     try {
                         $this->cloudinary->deleteImage($publicId);
-                        \Log::info('Deleted attachment from Cloudinary', ['public_id' => $publicId]);
                     } catch (\Exception $e) {
                         \Log::error('Failed to delete from Cloudinary: ' . $e->getMessage());
                     }
@@ -774,11 +728,6 @@ class ReportController extends Controller
     public function update(Request $request, $reportId)
     {
         try {
-            \Log::info('Update request received', [
-                'reportId' => $reportId,
-                'data' => $request->all()
-            ]);
-
             $report = Report::where('reportId', $reportId)->firstOrFail();
             $oldStatus = $report->status;
             $oldAssignedOfficer = $report->assignedOfficer;
@@ -810,7 +759,6 @@ class ReportController extends Controller
                 $validated['mahallah'] = $this->capitalizeMahallah($validated['mahallah']);
             }
 
-            // Handle location properly - combine locationArea (mahallah) and building
             if ($request->has('location') && is_array($request->location)) {
                 $locationData = $request->location;
                 $validated['location'] = $locationData;
@@ -878,7 +826,6 @@ class ReportController extends Controller
 
             $report->update($validated);
 
-            // Telegram notifications (keep your existing code)
             $newAssignedOfficer = $report->assignedOfficer;
             $wasAssignedNow = ($oldAssignedOfficer !== $newAssignedOfficer) && !empty($newAssignedOfficer);
 
@@ -886,7 +833,6 @@ class ReportController extends Controller
                 try {
                     $assignedOfficer = Officer::where('officerId', $newAssignedOfficer)->first();
                     if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                        // Get reporter info
                         $reporterName = 'Unknown';
                         $reporterContact = '';
                         $reporterMatric = '';
@@ -932,7 +878,6 @@ class ReportController extends Controller
                 }
             }
 
-            // Status change notification
             if ($oldStatus !== $report->status) {
                 try {
                     $statusLabels = ['pending' => 'Pending', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'nfa' => 'No Further Action'];

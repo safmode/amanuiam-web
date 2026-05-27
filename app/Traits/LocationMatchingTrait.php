@@ -9,44 +9,44 @@ trait LocationMatchingTrait
     // Define main locations with their keywords and radius
     private $mainLocations = [
         // Mahallahs
-        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200],
-        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200],
-        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200],
-        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200],
-        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200],
-        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200],
-        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200],
-        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200],
-        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200],
-        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200],
-        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200],
-        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200],
-        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200],
-        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200],
-        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200],
-        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200],
-        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200],
+        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200, 'key' => 'Asiah'],
+        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200, 'key' => 'Aminah'],
+        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200, 'key' => 'Safiyyah'],
+        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200, 'key' => 'Maryam'],
+        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200, 'key' => 'Ruqayyah'],
+        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200, 'key' => 'Ali'],
+        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200, 'key' => 'Faruq'],
+        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200, 'key' => 'Bilal'],
+        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200, 'key' => 'Asma'],
+        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200, 'key' => 'Hafsah'],
+        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200, 'key' => 'Halimah'],
+        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200, 'key' => 'Siddiq'],
+        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200, 'key' => 'Salahuddin'],
+        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200, 'key' => 'Uthman'],
+        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200, 'key' => 'Nusaibah'],
+        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200, 'key' => 'Zubair Al-Awwam'],
+        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200, 'key' => 'Sumayyah'],
 
         // Kulliyyahs
-        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'ahmad ibrahim', 'human sciences', 'kulliyyah of islamic revealed knowledge'], 'radius' => 150],
-        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'computer science', 'kulliyyah of information and communication technology', 'iibf', 'islamic banking', 'islamic banking & finance', 'iiibf'], 'radius' => 200],
-        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering', 'engineer', 'kulliyyah of engineering', 'kuliyah engineering'], 'radius' => 150],
-        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture', 'design', 'architect', 'kulliyyah of architecture'], 'radius' => 150],
-        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics', 'management', 'business', 'kulliyyah of economics'], 'radius' => 150],
-        'AIKOL (Law)' => ['keywords' => ['aikol', 'law', 'legal', 'kulliyyah of law'], 'radius' => 150],
-        'KOED (Education)' => ['keywords' => ['koed', 'education', 'teaching', 'kulliyyah of education'], 'radius' => 150],
+        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'ahmad ibrahim', 'human sciences'], 'radius' => 150, 'key' => 'KIRKHS'],
+        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'computer science', 'kulliyyah of information', 'iibf', 'islamic banking'], 'radius' => 200, 'key' => 'KICT'],
+        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering', 'engineer', 'kulliyyah of engineering'], 'radius' => 150, 'key' => 'KOE'],
+        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture', 'design'], 'radius' => 150, 'key' => 'KAED'],
+        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics', 'management', 'business'], 'radius' => 150, 'key' => 'KENMS'],
+        'AIKOL (Law)' => ['keywords' => ['aikol', 'law', 'legal'], 'radius' => 150, 'key' => 'AIKOL'],
+        'KOED (Education)' => ['keywords' => ['koed', 'education', 'teaching'], 'radius' => 150, 'key' => 'KOED'],
 
         // Facilities
-        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah', 'perpustakaan'], 'radius' => 100],
-        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym', 'women sports'], 'radius' => 150],
-        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah', 'field'], 'radius' => 200],
-        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100],
-        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120],
-        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150],
-        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150],
-        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150],
-        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100],
-        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'], 'radius' => 150],
+        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah', 'perpustakaan'], 'radius' => 100, 'key' => 'Dar al-Hikmah Library'],
+        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym', 'women sports'], 'radius' => 150, 'key' => 'Female Sports Complex'],
+        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah', 'field'], 'radius' => 200, 'key' => 'Saidina Hamzah Stadium'],
+        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100, 'key' => 'IIUM Archery Range'],
+        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120, 'key' => 'UIA Football Turf'],
+        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150, 'key' => 'IIUM Cricket Ground'],
+        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150, 'key' => 'IIUM Rugby Field'],
+        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150, 'key' => 'Padang Kawad UIAM'],
+        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100, 'key' => 'IIUM Educare'],
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'], 'radius' => 150, 'key' => 'Sultan Haji Ahmad Shah Mosque'],
     ];
 
     // Pre-loaded coordinates from config
@@ -198,16 +198,31 @@ trait LocationMatchingTrait
     }
 
     /**
+     * Get the short key for a location (for frontend filtering)
+     */
+    protected function getLocationKey($locationName)
+    {
+        foreach ($this->mainLocations as $fullName => $config) {
+            if ($fullName === $locationName) {
+                return $config['key'];
+            }
+        }
+
+        // If not found, return the original
+        return $locationName;
+    }
+
+    /**
      * Determine report location using keyword matching first, then proximity
      */
-    protected function determineReportLocation($report)
+    protected function determineReportLocation($report, $returnKey = true)
     {
         // METHOD 1: Try keyword matching using locationArea
         $locationArea = $this->getLocationAreaFromReport($report);
         if (!empty($locationArea)) {
             $matchedLocation = $this->matchLocationToMainLocation($locationArea);
             if ($matchedLocation) {
-                return $matchedLocation;
+                return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
             }
         }
 
@@ -216,7 +231,7 @@ trait LocationMatchingTrait
         if ($reportCoords) {
             $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
             if ($matchedLocation) {
-                return $matchedLocation;
+                return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
             }
         }
 
@@ -228,12 +243,12 @@ trait LocationMatchingTrait
         foreach ($this->mainLocations as $locationName => $config) {
             foreach ($config['keywords'] as $keyword) {
                 if (strpos($searchText, strtolower($keyword)) !== false) {
-                    return $locationName;
+                    return $returnKey ? $this->getLocationKey($locationName) : $locationName;
                 }
             }
         }
 
         // Fallback: return the original locationArea
-        return !empty($locationArea) ? $locationArea : null;
+        return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
     }
 }
