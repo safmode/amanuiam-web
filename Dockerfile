@@ -41,7 +41,7 @@ RUN composer install --no-dev --optimize-autoloader
 # Clear config cache
 RUN php artisan config:clear
 
-# Create session directories (ADD THIS)
+# Create session directories
 RUN mkdir -p /var/www/html/storage/framework/sessions \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/views
@@ -57,6 +57,9 @@ RUN a2enmod rewrite
 # Configure Apache to serve from public directory
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
-EXPOSE 80
+# 🔧 FIX FOR RENDER: Change Apache port from 80 to 10000
+RUN sed -i "s/Listen 80/Listen 10000/g" /etc/apache2/ports.conf
+
+EXPOSE 10000
 
 CMD ["apache2-foreground"]
