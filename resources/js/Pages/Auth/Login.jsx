@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
+import axios from 'axios';  // ADD THIS FOR CSRF REFRESH
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,6 @@ const getPendingOfficers = () => {
   const stored = sessionStorage.getItem('pending_officers');
   return stored ? JSON.parse(stored) : [];
 };
-
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -30,22 +30,28 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-        await router.post('/login', {
+      // FIX: Refresh CSRF token before login to prevent 419 error
+      await axios.get('/sanctum/csrf-cookie');
+
+      await router.post('/login', {
         email,
         password,
-        }, {
+      }, {
         onError: (errors) => {
-            setError(errors.email || 'Invalid email or password');
+          setError(errors.email || 'Invalid email or password');
+        },
+        onFinish: () => {
+          setIsLoading(false);
         }
-        });
+      });
 
-        // If login success, Laravel should redirect automatically
+      // If login success, Laravel should redirect automatically
     } catch (err) {
-        setError('Something went wrong. Please try again.');
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again.');
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    };
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4">
