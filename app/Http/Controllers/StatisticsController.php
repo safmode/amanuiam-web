@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
 class StatisticsController extends Controller
 {
+    use LocationMatchingTrait;
+
+    public function __construct()
+    {
+        // Initialize location matching trait
+        $this->initLocationMatching();
+    }
+
     public function index(Request $request)
     {
         // Get date filters from request
@@ -33,23 +42,23 @@ class StatisticsController extends Controller
         // Calculate statistics from filtered reports
         $statistics = $this->calculateStatistics($filteredReports);
 
-        // Calculate filtered charts data
+        // Calculate filtered charts data using proximity matching
         $filteredCategories = $this->calculateCategoryDistribution($filteredReports);
-        $filteredLocationData = $this->calculateLocationData($filteredReports); // Now uses locationArea
+        $filteredLocationData = $this->calculateLocationDataWithProximity($filteredReports);
 
         // Trends (always show all data - unchanged by filters)
         $weeklyData = $this->calculateWeeklyData($allReports);
         $monthlyData = $this->calculateMonthlyData($allReports);
-        $locationData = $this->calculateLocationData($allReports); // Now uses locationArea
+        $locationData = $this->calculateLocationDataWithProximity($allReports); // Now uses proximity matching
         $averageResponseRateByMonth = $this->calculateAverageResponseRateByMonth($allReports);
 
         return Inertia::render('Statistics', [
             'statistics' => $statistics,
             'weeklyData' => $weeklyData,
             'monthlyData' => $monthlyData,
-            'mahallahData' => $locationData, // Keep prop name for compatibility
+            'mahallahData' => $locationData,
             'filteredCategories' => $filteredCategories,
-            'filteredMahallahData' => $filteredLocationData, // Keep prop name for compatibility
+            'filteredMahallahData' => $filteredLocationData,
             'averageResponseRateByMonth' => $averageResponseRateByMonth,
         ]);
     }
@@ -64,11 +73,6 @@ class StatisticsController extends Controller
 
         $resolutionRate = $totalIncidents > 0 ? round(($resolvedIncidents / $totalIncidents) * 100) : 0;
 
-        // Group by category
-        $categories = $reports->groupBy('incidentCategory')->map(function ($group) {
-            return $group->count();
-        })->toArray();
-
         // Calculate average response time
         $avgResponseTime = $totalIncidents > 0 ? rand(8, 20) . ' min' : 'N/A';
 
@@ -80,7 +84,7 @@ class StatisticsController extends Controller
             'nfaIncidents' => $nfaIncidents,
             'resolutionRate' => $resolutionRate,
             'avgResponseTime' => $avgResponseTime,
-            'categories' => $categories,
+            'categories' => [],
         ];
     }
 
@@ -107,7 +111,7 @@ class StatisticsController extends Controller
             'facilityIssue' => 'Facility Issue',
             'wildAnimal' => 'Wild Animal',
             'trespassing' => 'Trespassing',
-            'emergencyAlert' => 'Emergency Alert',
+            'emergency_alert' => 'Emergency Alert',
             'other' => 'Other',
         ];
 
@@ -118,8 +122,8 @@ class StatisticsController extends Controller
             'vandalism' => '#8B5CF6',
             'suspiciousActivity' => '#3B9B8C',
             'suspicious_activity' => '#3B9B8C',
-            'fire_hazard' => '#F59E0B',
-            'facility_issue' => '#5B8DEE',
+            'fireHazard' => '#F59E0B',
+            'facilityIssue' => '#5B8DEE',
             'wildAnimal' => '#10B981',
             'trespassing' => '#EC4899',
             'emergency_alert' => '#DC2626',
@@ -190,12 +194,36 @@ class StatisticsController extends Controller
     }
 
     /**
-     * Calculate location data using locationArea (includes Mahallahs, Kulliyyahs, Facilities)
+     * Calculate location data using PROXIMITY MATCHING (same as heatmap and reports)
      */
-    private function calculateLocationData($reports)
+    private function calculateLocationDataWithProximity($reports)
     {
         if ($reports->isEmpty()) {
             return [];
+        }
+
+        // Group reports by determined location (using proximity matching)
+        $grouped = [];
+
+        foreach ($reports as $report) {
+            // Use the trait's determineReportLocation method
+            $determinedLocation = $this->determineReportLocation($report, false); // Get full name
+            $determinedLocationKey = $this->determineReportLocation($report, true); // Get key for frontend
+
+            if ($determinedLocation && $determinedLocation !== 'Unknown') {
+                $groupKey = $determinedLocation;
+
+                if (!isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [
+                        'name' => $determinedLocation,
+                        'key' => $determinedLocationKey,
+                        'count' => 0,
+                        'reports' => []
+                    ];
+                }
+                $grouped[$groupKey]['count']++;
+                $grouped[$groupKey]['reports'][] = $report;
+            }
         }
 
         // Complete colors for all locations
@@ -238,30 +266,27 @@ class StatisticsController extends Controller
             'IIUM Rugby Field' => '#D946EF',
             'Padang Kawad UIAM' => '#6B7280',
             'IIUM Educare' => '#F97316',
+            'Sultan Haji Ahmad Shah Mosque' => '#A855F7',
         ];
 
-        // Group reports by locationArea (using getLocationArea method)
-        $grouped = $reports->groupBy(function($report) {
-            $locationArea = $report->getLocationArea();
-            if (empty($locationArea)) {
-                return 'Unknown';
-            }
-            // Normalize the location name
-            return $this->normalizeLocationName($locationArea);
-        });
-
         $result = [];
-        foreach ($grouped as $location => $reportsInLocation) {
-            if (empty($location) || $location === 'Unknown') continue;
+        foreach ($grouped as $location => $data) {
+            // Get the key (short name) for frontend matching
+            $key = $data['key'];
 
-            // Get location type
-            $type = $this->getLocationTypeFromName($location);
+            // Try to find matching color
+            $color = $locationColors[$location] ?? null;
+
+            // If not found, try to find by key
+            if (!$color && isset($locationColors[$key])) {
+                $color = $locationColors[$key];
+            }
 
             $result[] = [
                 'name' => $location,
-                'count' => $reportsInLocation->count(),
-                'color' => $locationColors[$location] ?? '#D4A853',
-                'type' => $type,
+                'count' => $data['count'],
+                'color' => $color ?? '#D4A853',
+                'type' => $this->getLocationTypeFromName($location),
             ];
         }
 
@@ -271,95 +296,6 @@ class StatisticsController extends Controller
         });
 
         return $result;
-    }
-
-    /**
-     * Normalize location names to standard format
-     */
-    private function normalizeLocationName($locationName)
-    {
-        $normalizations = [
-            // Mahallahs
-            'asiah' => 'Mahallah Asiah',
-            'mahallah asiah' => 'Mahallah Asiah',
-            'aminah' => 'Mahallah Aminah',
-            'mahallah aminah' => 'Mahallah Aminah',
-            'safiyyah' => 'Mahallah Safiyyah',
-            'mahallah safiyyah' => 'Mahallah Safiyyah',
-            'maryam' => 'Mahallah Maryam',
-            'mahallah maryam' => 'Mahallah Maryam',
-            'ruqayyah' => 'Mahallah Ruqayyah',
-            'mahallah ruqayyah' => 'Mahallah Ruqayyah',
-            'ali' => 'Mahallah Ali',
-            'mahallah ali' => 'Mahallah Ali',
-            'faruq' => 'Mahallah Faruq',
-            'mahallah faruq' => 'Mahallah Faruq',
-            'bilal' => 'Mahallah Bilal',
-            'mahallah bilal' => 'Mahallah Bilal',
-            'asma' => 'Mahallah Asma',
-            'mahallah asma' => 'Mahallah Asma',
-            'hafsah' => 'Mahallah Hafsah',
-            'mahallah hafsah' => 'Mahallah Hafsah',
-            'halimah' => 'Mahallah Halimah',
-            'mahallah halimah' => 'Mahallah Halimah',
-            'siddiq' => 'Mahallah Siddiq',
-            'mahallah siddiq' => 'Mahallah Siddiq',
-            'salahuddin' => 'Mahallah Salahuddin',
-            'mahallah salahuddin' => 'Mahallah Salahuddin',
-            'uthman' => 'Mahallah Uthman',
-            'mahallah uthman' => 'Mahallah Uthman',
-            'nusaibah' => 'Mahallah Nusaibah',
-            'mahallah nusaibah' => 'Mahallah Nusaibah',
-            'zubair' => 'Mahallah Zubair Al-Awwam',
-            'zubair al-awwam' => 'Mahallah Zubair Al-Awwam',
-            'mahallah zubair' => 'Mahallah Zubair Al-Awwam',
-            'sumayyah' => 'Mahallah Sumayyah',
-            'mahallah sumayyah' => 'Mahallah Sumayyah',
-
-            // Kulliyyahs
-            'kirkhs' => 'KIRKHS (AHAS KIRKHS)',
-            'abdulhamid abusulayman kulliyyah' => 'KIRKHS (AHAS KIRKHS)',
-            'kict' => 'KICT (ICT)',
-            'kulliyyah of information and communication technology' => 'KICT (ICT)',
-            'koe' => 'KOE (Engineering)',
-            'kulliyyah of engineering' => 'KOE (Engineering)',
-            'kaed' => 'KAED (Architecture)',
-            'kulliyyah of architecture and environmental design' => 'KAED (Architecture)',
-            'kenms' => 'KENMS (Economics)',
-            'kulliyyah of economics and management sciences' => 'KENMS (Economics)',
-            'aikol' => 'AIKOL (Law)',
-            'ahmad ibrahim kulliyyah of law' => 'AIKOL (Law)',
-            'koed' => 'KOED (Education)',
-            'kulliyyah of education' => 'KOED (Education)',
-
-            // Facilities
-            'library' => 'Dar al-Hikmah Library',
-            'dar al-hikmah library' => 'Dar al-Hikmah Library',
-            'female sports complex' => 'Female Sports Complex',
-            'stadium' => 'Saidina Hamzah Stadium',
-            'saidina hamzah stadium' => 'Saidina Hamzah Stadium',
-            'archery range' => 'IIUM Archery Range',
-            'iium archery range' => 'IIUM Archery Range',
-            'football turf' => 'UIA Football Turf',
-            'uia football turf' => 'UIA Football Turf',
-            'cricket ground' => 'IIUM Cricket Ground',
-            'iium cricket ground' => 'IIUM Cricket Ground',
-            'rugby field' => 'IIUM Rugby Field',
-            'iium rugby field' => 'IIUM Rugby Field',
-            'padang kawad' => 'Padang Kawad UIAM',
-            'padang kawad uiam' => 'Padang Kawad UIAM',
-            'educare' => 'IIUM Educare',
-            'iium educare' => 'IIUM Educare',
-        ];
-
-        $lowercase = strtolower(trim($locationName));
-
-        if (isset($normalizations[$lowercase])) {
-            return $normalizations[$lowercase];
-        }
-
-        // Capitalize first letter of each word for other names
-        return ucwords(strtolower($locationName));
     }
 
     /**
@@ -378,7 +314,7 @@ class StatisticsController extends Controller
             }
         }
 
-        $facilityNames = ['Library', 'Sports Complex', 'Stadium', 'Archery', 'Football', 'Cricket', 'Rugby', 'Padang', 'Educare'];
+        $facilityNames = ['Library', 'Sports Complex', 'Stadium', 'Archery', 'Football', 'Cricket', 'Rugby', 'Padang', 'Educare', 'Mosque'];
         foreach ($facilityNames as $facility) {
             if (strpos($locationName, $facility) !== false) {
                 return 'Facility';
@@ -401,7 +337,6 @@ class StatisticsController extends Controller
         foreach ($months as $index => $month) {
             $monthNumber = $index + 1;
 
-            // Get reports for this month
             $monthReports = $reports->filter(function ($report) use ($monthNumber, $currentYear) {
                 if (!$report->incidentDateTime) return false;
                 $reportMonth = Carbon::parse($report->incidentDateTime)->month;
@@ -411,8 +346,6 @@ class StatisticsController extends Controller
 
             $totalCases = $monthReports->count();
             $resolvedCases = $monthReports->where('status', 'resolved')->count();
-
-            // Calculate response rate (percentage of resolved cases)
             $responseRate = $totalCases > 0 ? round(($resolvedCases / $totalCases) * 100) : 0;
 
             $result[] = [
@@ -442,7 +375,7 @@ class StatisticsController extends Controller
         }
 
         $reports = $query->get();
-        $locationData = $this->calculateLocationData($reports);
+        $locationData = $this->calculateLocationDataWithProximity($reports);
 
         return response()->json([
             'locations' => $locationData,
