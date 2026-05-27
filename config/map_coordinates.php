@@ -166,4 +166,9 @@ return array (
     'lat' => 3.2562124,
     'lng' => 101.7403135,
   ),
+  'Sultan Haji Ahmad Shah Mosque IIUM' => 
+  array (
+    'lat' => 3.2512358,
+    'lng' => 101.7350865,
+  ),
 );

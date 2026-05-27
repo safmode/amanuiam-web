@@ -50,7 +50,8 @@ class MapController extends Controller
         'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150],
         'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150],
         'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100],
-    ];
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'],'radius' => 150],
+        ];
 
     // Pre-loaded coordinates from config (NO API CALLS!)
     private $mainLocationCoordinates = [];

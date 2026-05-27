@@ -29,7 +29,7 @@ class SeedMapCoordinates extends Command
             'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)', 'Dar al-Hikmah Library',
             'Female Sports Complex', 'Saidina Hamzah Stadium', 'IIUM Archery Range',
             'UIA Football Turf', 'IIUM Cricket Ground', 'IIUM Rugby Field',
-            'Padang Kawad UIAM', 'IIUM Educare'
+            'Padang Kawad UIAM', 'IIUM Educare', 'Sultan Haji Ahmad Shah Mosque IIUM'
         ];
 
         $coordinates = [];
