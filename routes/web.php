@@ -20,11 +20,16 @@ use App\Models\Emergencies;
 
 Route::get('/test-db', function() {
     try {
-        $test = DB::connection('mongodb')->command(['ping' => 1]);
-        return 'MongoDB connected successfully!';
+        DB::connection('mongodb')->command(['ping' => 1]);
+        return 'MongoDB connection: SUCCESS ✅';
     } catch (\Exception $e) {
         return 'MongoDB error: ' . $e->getMessage();
     }
+});
+
+Route::get('/test-session', function() {
+    session(['test' => 'working']);
+    return 'Session test: ' . session('test');
 });
 
 
