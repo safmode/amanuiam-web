@@ -87,6 +87,7 @@ export const locationLabels = {
     'IIUM Rugby Field': 'IIUM Rugby Field',
     'Padang Kawad UIAM': 'Padang Kawad UIAM',
     'IIUM Educare': 'IIUM Educare',
+    'Sultan Haji Ahmad Shah Mosque': 'Sultan Haji Ahmad Shah Mosque',
   },
 };
 
@@ -250,23 +251,28 @@ const Reports = () => {
     console.log('Raw report location:', r.location);
 
     // Get the incident location using the improved function
-    const incidentLocation = getIncidentLocation(r);
+    let incidentLocation = getIncidentLocation(r);
+
+    // Also try to determine location based on proximity (if available from server)
+    // You can add a field 'determinedLocation' from the server
+    const determinedLocation = r.determinedLocation || null;
 
     console.log('Extracted incident location:', incidentLocation);
+    console.log('Determined location from proximity:', determinedLocation);
 
     return {
         id: r.reportId ?? r._id,
         reportId: r.reportId,
         reporterName: r.studentName || '—',
-        reporterContact: r.studentPhone || '',  // Make sure this is included
+        reporterContact: r.studentPhone || '',
         reporterEmail: r.studentEmail || '',
-        reporterMatricNo: r.studentMatrix || '',  // Make sure this is included
+        reporterMatricNo: r.studentMatrix || '',
         reporterFullName: r.studentName,
         category: r.incidentCategory,
         categoryDisplay: categoryLabels[r.incidentCategory] || r.incidentCategory,
         mahallah: r.mahallah,
         locationArea: r.locationArea,
-        location: incidentLocation,
+        location: determinedLocation || incidentLocation, // Use determined location if available
         address: r.address,
         building: r.building,
         locationRaw: r.location,
@@ -285,14 +291,13 @@ const Reports = () => {
         attachmentPublicIds: r.attachmentPublicIds || [],
         reportedAt: r.reportedAt,
         updatedAt: r.updatedAt,
-        // ADD THESE FIELDS - they're missing!
         studentName: r.studentName,
         studentEmail: r.studentEmail,
         studentPhone: r.studentPhone,
         studentMatrix: r.studentMatrix,
         _raw: r,
     };
-    };
+  };
 
   const getAllLocationKeys = () => {
     const keys = [];
@@ -580,7 +585,7 @@ const Reports = () => {
         } finally {
             setIsLoading(false);
         }
-    
+
   };
 
   const openReportDetails = (rawReport) => {

@@ -16,6 +16,10 @@ class ReportController extends Controller
 {
     protected $cloudinary;
 
+    // Properties for proximity matching
+    private $mainLocationCoordinates = [];
+    private $mainLocations = [];
+
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -54,6 +58,55 @@ class ReportController extends Controller
     public function __construct(CloudinaryService $cloudinary)
     {
         $this->cloudinary = $cloudinary;
+
+        // Load coordinates from config file for proximity matching
+        if (file_exists(config_path('map_coordinates.php'))) {
+            $this->mainLocationCoordinates = include(config_path('map_coordinates.php'));
+            \Log::info('Loaded ' . count($this->mainLocationCoordinates) . ' coordinates for proximity matching');
+        }
+
+        // Define main locations with keywords and radius (same as MapController)
+        $this->mainLocations = [
+            // Mahallahs
+            'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200],
+            'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200],
+            'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200],
+            'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200],
+            'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200],
+            'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200],
+            'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200],
+            'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200],
+            'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200],
+            'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200],
+            'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200],
+            'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200],
+            'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200],
+            'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200],
+            'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200],
+            'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200],
+            'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200],
+
+            // Kulliyyahs
+            'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'ahmad ibrahim', 'human sciences'], 'radius' => 150],
+            'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'computer science', 'kulliyyah of information', 'iibf', 'islamic banking', 'islamic banking & finance', 'iiibf'], 'radius' => 200],
+            'KOE (Engineering)' => ['keywords' => ['koe', 'engineering', 'engineer', 'kulliyyah of engineering', 'kuliyah engineering'], 'radius' => 150],
+            'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture', 'design', 'architect', 'kulliyyah of architecture'], 'radius' => 150],
+            'KENMS (Economics)' => ['keywords' => ['kenms', 'economics', 'management', 'business', 'kulliyyah of economics'], 'radius' => 150],
+            'AIKOL (Law)' => ['keywords' => ['aikol', 'law', 'legal', 'kulliyyah of law'], 'radius' => 150],
+            'KOED (Education)' => ['keywords' => ['koed', 'education', 'teaching', 'kulliyyah of education'], 'radius' => 150],
+
+            // Facilities
+            'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah', 'perpustakaan'], 'radius' => 100],
+            'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym', 'women sports'], 'radius' => 150],
+            'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah', 'field'], 'radius' => 200],
+            'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100],
+            'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120],
+            'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150],
+            'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150],
+            'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150],
+            'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100],
+            'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'], 'radius' => 150],
+        ];
     }
 
     // === NEW AI FEATURE: Hugging Face categorization ===
@@ -345,6 +398,107 @@ class ReportController extends Controller
         return 'general';
     }
 
+    // ============================================
+    // PROXIMITY MATCHING METHODS (same as MapController)
+    // ============================================
+
+    /**
+     * Calculate distance between two points in meters (Haversine formula)
+     */
+    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371000; // meters
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Get coordinates from report
+     */
+    private function getReportCoordinates($report)
+    {
+        $location = $report->location;
+
+        if (is_array($location)) {
+            if (isset($location['latitude']) && isset($location['longitude'])
+                && is_numeric($location['latitude']) && is_numeric($location['longitude'])
+                && $location['latitude'] != 0 && $location['longitude'] != 0) {
+                return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
+            }
+
+            if (isset($location['lat']) && isset($location['lng'])
+                && is_numeric($location['lat']) && is_numeric($location['lng'])
+                && $location['lat'] != 0 && $location['lng'] != 0) {
+                return ['lat' => (float)$location['lat'], 'lng' => (float)$location['lng']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine report location based on proximity to main locations
+     */
+    private function determineReportLocation($report)
+    {
+        // First, try to get locationArea from report
+        $location = $report->location;
+        $locationArea = '';
+
+        if (is_array($location)) {
+            $locationArea = $location['locationArea'] ?? '';
+        } elseif (is_object($location) && isset($location->locationArea)) {
+            $locationArea = $location->locationArea;
+        } elseif (isset($report->locationArea)) {
+            $locationArea = $report->locationArea;
+        }
+
+        // If locationArea exists, try keyword matching first
+        if (!empty($locationArea)) {
+            $locationAreaLower = strtolower($locationArea);
+            foreach ($this->mainLocations as $mainLocationName => $config) {
+                foreach ($config['keywords'] as $keyword) {
+                    if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                        return $mainLocationName;
+                    }
+                }
+            }
+        }
+
+        // If no locationArea or no keyword match, try proximity matching using coordinates
+        $reportCoords = $this->getReportCoordinates($report);
+        if ($reportCoords && !empty($this->mainLocationCoordinates)) {
+            $bestMatch = null;
+            $bestDistance = PHP_FLOAT_MAX;
+
+            foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+                $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+                $distance = $this->calculateDistance(
+                    $reportCoords['lat'], $reportCoords['lng'],
+                    $locationCoords['lat'], $locationCoords['lng']
+                );
+
+                if ($distance <= $radius && $distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch = $locationName;
+                }
+            }
+
+            if ($bestMatch) {
+                return $bestMatch;
+            }
+        }
+
+        // Fallback: return the original locationArea or null
+        return !empty($locationArea) ? $locationArea : null;
+    }
+
     public function analyzeWithAI(Request $request)
     {
         $description = $request->input('description');
@@ -471,16 +625,50 @@ class ReportController extends Controller
         if ($categories = $request->get('category')) {
             $query->whereIn('incidentCategory', explode(',', $categories));
         }
+
+        // ENHANCED LOCATION FILTERING with proximity matching
         if ($locations = $request->get('locations')) {
             $locationArray = explode(',', $locations);
-            $query->where(function ($q) use ($locationArray) {
-                foreach ($locationArray as $location) {
-                    $q->orWhere('mahallah', 'like', "%$location%")
-                    ->orWhere('location.building', 'like', "%$location%")
-                    ->orWhere('location.address', 'like', "%$location%");
+
+            // First, get all reports (limit to a reasonable number for performance)
+            $allReports = $query->get();
+
+            // Filter reports by determining their actual location using proximity
+            $filteredReportIds = [];
+            foreach ($allReports as $report) {
+                $determinedLocation = $this->determineReportLocation($report);
+                if ($determinedLocation && in_array($determinedLocation, $locationArray)) {
+                    $filteredReportIds[] = $report->_id;
+                    \Log::debug("Report {$report->reportId} matched location filter: {$determinedLocation}");
+                } else {
+                    // Also check original location fields as fallback
+                    $mahallah = $report->mahallah ?? '';
+                    $locationArea = '';
+                    $location = $report->location;
+                    if (is_array($location)) {
+                        $locationArea = $location['locationArea'] ?? '';
+                    }
+
+                    $searchText = strtolower($mahallah . ' ' . $locationArea);
+                    foreach ($locationArray as $locationFilter) {
+                        if (strpos($searchText, strtolower($locationFilter)) !== false) {
+                            $filteredReportIds[] = $report->_id;
+                            \Log::debug("Report {$report->reportId} matched location filter by keyword: {$locationFilter}");
+                            break;
+                        }
+                    }
                 }
-            });
+            }
+
+            // Apply the filter to the query
+            if (!empty($filteredReportIds)) {
+                $query->whereIn('_id', array_unique($filteredReportIds));
+            } else {
+                // No matches, force empty result
+                $query->whereIn('_id', []);
+            }
         }
+
         if ($dateFrom = $request->get('dateFrom')) {
             $query->whereDate('incidentDateTime', '>=', $dateFrom);
         }
@@ -497,6 +685,9 @@ class ReportController extends Controller
 
             // Transform reports with student and officer data for export
             $reports->transform(function ($report) {
+                // Add determined location
+                $report->determinedLocation = $this->determineReportLocation($report);
+
                 // Add student info
                 if ($report->studentId) {
                     $student = Student::find($report->studentId);
@@ -575,9 +766,12 @@ class ReportController extends Controller
 
         $officers = Officer::all()->keyBy('officerId');
 
-        // Add student names and officer names to reports
+        // Add student names, officer names, and determined location to reports
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
+
+            // Add determined location from proximity matching
+            $report->determinedLocation = $this->determineReportLocation($report);
 
             // Get student info
             if (isset($students[$studentId])) {
