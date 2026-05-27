@@ -6,12 +6,20 @@ use App\Models\Emergencies;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Http\Controllers\NotificationController;
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
+    use LocationMatchingTrait;
+
+    public function __construct()
+    {
+        $this->initLocationMatching();
+    }
+
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -139,25 +147,40 @@ class EmergencyController extends Controller
                 $query->whereIn('status', $statuses);
             }
 
-            // Apply location filter - filter by address contains the location name
+            // Apply location filter using the same logic as Reports
             if ($locations) {
                 $locationArray = explode(',', $locations);
 
-                // Map location keys to search terms (same as Reports)
-                $searchTerms = [];
-                foreach ($locationArray as $locationKey) {
-                    $term = $this->getLocationSearchTerm($locationKey);
-                    if ($term) {
-                        $searchTerms[] = $term;
+                // First, get all emergencies
+                $allEmergencies = $query->get();
+
+                // Filter emergencies by determining their actual location using proximity
+                $filteredIds = [];
+                foreach ($allEmergencies as $emergency) {
+                    // Create a fake report object to use the trait's method
+                    $fakeReport = new \stdClass();
+                    $fakeReport->location = [
+                        'latitude' => $emergency->latitude,
+                        'longitude' => $emergency->longitude,
+                        'address' => $emergency->address,
+                        'locationArea' => $emergency->address
+                    ];
+                    $fakeReport->description = '';
+                    $fakeReport->address = $emergency->address;
+
+                    $determinedLocationKey = $this->determineReportLocation($fakeReport, true);
+
+                    if ($determinedLocationKey && in_array($determinedLocationKey, $locationArray)) {
+                        $filteredIds[] = $emergency->_id;
+                        Log::debug("Emergency {$emergency->_id} matched location: {$determinedLocationKey}");
                     }
                 }
 
-                if (!empty($searchTerms)) {
-                    $query->where(function ($q) use ($searchTerms) {
-                        foreach ($searchTerms as $term) {
-                            $q->orWhere('address', 'like', '%' . $term . '%');
-                        }
-                    });
+                // Apply the filter to the query
+                if (!empty($filteredIds)) {
+                    $query->whereIn('_id', array_unique($filteredIds));
+                } else {
+                    $query->whereIn('_id', []);
                 }
             }
 
@@ -236,54 +259,6 @@ class EmergencyController extends Controller
             Log::error('Failed to fetch emergencies: ' . $e->getMessage());
             return response()->json(['success' => false, 'error' => 'Failed to fetch emergencies'], 500);
         }
-    }
-
-    /**
-     * Map location key to search term (same as Reports)
-     */
-    private function getLocationSearchTerm($locationKey)
-    {
-        $locationMap = [
-            // Mahallahs
-            'Asiah' => 'Mahallah Asiah',
-            'Aminah' => 'Mahallah Aminah',
-            'Safiyyah' => 'Mahallah Safiyyah',
-            'Maryam' => 'Mahallah Maryam',
-            'Ruqayyah' => 'Mahallah Ruqayyah',
-            'Ali' => 'Mahallah Ali',
-            'Faruq' => 'Mahallah Faruq',
-            'Bilal' => 'Mahallah Bilal',
-            'Asma' => 'Mahallah Asma',
-            'Hafsah' => 'Mahallah Hafsah',
-            'Halimah' => 'Mahallah Halimah',
-            'Siddiq' => 'Mahallah Siddiq',
-            'Salahuddin' => 'Mahallah Salahuddin',
-            'Uthman' => 'Mahallah Uthman',
-            'Nusaibah' => 'Mahallah Nusaibah',
-            'Zubair Al-Awwam' => 'Mahallah Zubair Al-Awwam',
-            'Sumayyah' => 'Mahallah Sumayyah',
-            // Kulliyyahs
-            'KIRKHS' => 'KIRKHS',
-            'KICT' => 'KICT',
-            'KOE' => 'KOE',
-            'KAED' => 'KAED',
-            'KENMS' => 'KENMS',
-            'AIKOL' => 'AIKOL',
-            'KOED' => 'KOED',
-            // Facilities
-            'Dar al-Hikmah Library' => 'Library',
-            'Female Sports Complex' => 'Sports Complex',
-            'Saidina Hamzah Stadium' => 'Stadium',
-            'IIUM Archery Range' => 'Archery',
-            'UIA Football Turf' => 'Football',
-            'IIUM Cricket Ground' => 'Cricket',
-            'IIUM Rugby Field' => 'Rugby',
-            'Padang Kawad UIAM' => 'Padang',
-            'IIUM Educare' => 'Educare',
-            'Sultan Haji Ahmad Shah Mosque' => 'Mosque',
-        ];
-
-        return $locationMap[$locationKey] ?? $locationKey;
     }
 
     /**
