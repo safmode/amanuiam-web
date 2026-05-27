@@ -566,16 +566,22 @@ const Alerts = () => {
   };
 
   const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
+    // Parse the UTC timestamp correctly
+    const utcDate = new Date(dateString);
+
+    // Get current time in UTC
+    const nowUTC = new Date();
+
+    // Calculate difference in milliseconds (both are now in same timezone - UTC)
+    const diffMs = nowUTC - utcDate;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${Math.floor(diffHours / 24)} days ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   };
 
   const getFilterCount = () => filters.status.length + filters.locations.length;
