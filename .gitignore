@@ -92,7 +92,7 @@ coverage.xml
 # ============================================
 # DEPLOYMENT & BUILD
 # ============================================
-/public/build/
+# /public/build/
 /public/css/
 /public/js/
 /mix-manifest.json
