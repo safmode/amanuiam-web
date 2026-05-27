@@ -1,24 +1,156 @@
-*.log
-.DS_Store
+# ============================================
+# LARAVEL SPECIFIC
+# ============================================
+/vendor/
 .env
 .env.backup
 .env.production
-.phpactor.json
+.env.local
 .phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
 Homestead.json
 Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+.DS_Store
 Thumbs.db
+*.log
+
+# Laravel specific files
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*.log
+/public/storage
+/public/hot
+/public/hot/
+
+# Laravel Octane
+/.laravel-Octane
+
+# ============================================
+# NODE & NPM DEPENDENCIES
+# ============================================
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# ============================================
+# COMPOSER
+# ============================================
+composer.phar
+
+# ============================================
+# IDE / EDITOR FILES
+# ============================================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============================================
+# OS GENERATED FILES
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+*.bak
+*.cache
+
+# ============================================
+# LARAVEL CACHE & SESSIONS (Local)
+# ============================================
+/bootstrap/cache/*.php
+/storage/clockwork/*
+/session
+
+# ============================================
+# TESTING & COVERAGE
+# ============================================
+coverage
+coverage.xml
+.php_cs.cache
+.phpunit.result.cache
+/testbench.yaml
+
+# ============================================
+# DEPLOYMENT & BUILD
+# ============================================
+/public/build/
+/public/css/
+/public/js/
+/mix-manifest.json
+/vite-manifest.json
+
+# ============================================
+# ENCRYPTED FILES
+# ============================================
+*.encrypted
+
+# ============================================
+# TEMP UPLOADS (Your Cloudinary uploads are in DB, not files)
+# ============================================
+/temp
+/tmp
+/uploads
+
+# ============================================
+# DATABASE (Local SQLite - if any)
+# ============================================
+*.sqlite
+*.sqlite-journal
+/database/*.sqlite
+
+# ============================================
+# DEBUG & PROFILING
+# ============================================
+.xdebug*
+*.prof
+*.gcno
+*.gcda
+
+# ============================================
+# YOUR SPECIFIC PROJECT FILES
+# ============================================
+# Session backups (if any)
+*.session
+
+# Local mail testing
+/storage/email
+
+# Laravel Telescope (if you have it)
+/telescope
+
+# ============================================
+# SECURITY (Never commit these!)
+# ============================================
+.env.*
+!.env.example
+.idea/workspace.xml
+.idea/dataSources.local.xml
+.idea/dataSources/
+.idea/sqldialects.xml
+
+# ============================================
+# PACKAGE LOCK FILES (Optional - team preference)
+# ============================================
+# Uncomment if you want to ignore lock files:
+# package-lock.json
+# yarn.lock
+# composer.lock
