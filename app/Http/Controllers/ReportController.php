@@ -16,9 +16,8 @@ class ReportController extends Controller
 {
     protected $cloudinary;
 
-    // Properties for proximity matching
-    private $mainLocationCoordinates = [];
-    private $mainLocations = [];
+    // Reference to MapController for proximity matching
+    private $mapController;
 
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
@@ -59,54 +58,8 @@ class ReportController extends Controller
     {
         $this->cloudinary = $cloudinary;
 
-        // Load coordinates from config file for proximity matching
-        if (file_exists(config_path('map_coordinates.php'))) {
-            $this->mainLocationCoordinates = include(config_path('map_coordinates.php'));
-            \Log::info('Loaded ' . count($this->mainLocationCoordinates) . ' coordinates for proximity matching');
-        }
-
-        // Define main locations with keywords and radius (same as MapController)
-        $this->mainLocations = [
-            // Mahallahs
-            'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200],
-            'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200],
-            'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200],
-            'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200],
-            'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200],
-            'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200],
-            'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200],
-            'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200],
-            'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200],
-            'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200],
-            'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200],
-            'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200],
-            'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200],
-            'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200],
-            'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200],
-            'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200],
-            'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200],
-
-            // Kulliyyahs
-            'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'ahmad ibrahim', 'human sciences'], 'radius' => 150],
-            'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'computer science', 'kulliyyah of information', 'iibf', 'islamic banking', 'islamic banking & finance', 'iiibf'], 'radius' => 200],
-            'KOE (Engineering)' => ['keywords' => ['koe', 'engineering', 'engineer', 'kulliyyah of engineering', 'kuliyah engineering'], 'radius' => 150],
-            'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture', 'design', 'architect', 'kulliyyah of architecture'], 'radius' => 150],
-            'KENMS (Economics)' => ['keywords' => ['kenms', 'economics', 'management', 'business', 'kulliyyah of economics'], 'radius' => 150],
-            'AIKOL (Law)' => ['keywords' => ['aikol', 'law', 'legal', 'kulliyyah of law'], 'radius' => 150],
-            'KOED (Education)' => ['keywords' => ['koed', 'education', 'teaching', 'kulliyyah of education'], 'radius' => 150],
-
-            // Facilities
-            'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah', 'perpustakaan'], 'radius' => 100],
-            'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym', 'women sports'], 'radius' => 150],
-            'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah', 'field'], 'radius' => 200],
-            'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100],
-            'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120],
-            'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150],
-            'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150],
-            'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150],
-            'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100],
-            'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'], 'radius' => 150],
-        ];
+        // Initialize MapController to reuse its proximity matching methods
+        $this->mapController = new MapController();
     }
 
     // === NEW AI FEATURE: Hugging Face categorization ===
@@ -399,26 +352,63 @@ class ReportController extends Controller
     }
 
     // ============================================
-    // PROXIMITY MATCHING METHODS (same as MapController)
+    // PROXIMITY MATCHING - REUSES MapController methods
     // ============================================
 
     /**
-     * Calculate distance between two points in meters (Haversine formula)
+     * Determine report location using MapController's proximity matching
      */
-    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    private function determineReportLocation($report)
     {
-        $earthRadius = 6371000; // meters
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lngDelta = deg2rad($lng2 - $lng1);
-        $a = sin($latDelta / 2) * sin($latDelta / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($lngDelta / 2) * sin($lngDelta / 2);
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        return $earthRadius * $c;
+        // Use MapController's groupReportsByProximity logic
+        // Since we just need the location for a single report, we'll use the same matching logic
+
+        // METHOD 1: Try keyword matching using locationArea
+        $locationArea = $this->getLocationAreaFromReport($report);
+        if (!empty($locationArea)) {
+            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
+            if ($matchedLocation) {
+                return $matchedLocation;
+            }
+        }
+
+        // METHOD 2: Try proximity matching using actual coordinates
+        $reportCoords = $this->getReportCoordinates($report);
+        if ($reportCoords) {
+            $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
+            if ($matchedLocation) {
+                return $matchedLocation;
+            }
+        }
+
+        // Fallback: return the original locationArea
+        return !empty($locationArea) ? $locationArea : null;
     }
 
     /**
-     * Get coordinates from report
+     * Get locationArea from report (same as MapController)
+     */
+    private function getLocationAreaFromReport($report)
+    {
+        $location = $report->location;
+
+        if (is_array($location)) {
+            return $location['locationArea'] ?? '';
+        }
+
+        if (is_object($location) && isset($location->locationArea)) {
+            return $location->locationArea;
+        }
+
+        if (isset($report->locationArea)) {
+            return $report->locationArea;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get coordinates from report (same as MapController)
      */
     private function getReportCoordinates($report)
     {
@@ -442,61 +432,21 @@ class ReportController extends Controller
     }
 
     /**
-     * Determine report location based on proximity to main locations
+     * Match locationArea to main location using keywords (reusing MapController's logic)
      */
-    private function determineReportLocation($report)
+    private function matchLocationToMainLocation($locationArea)
     {
-        // First, try to get locationArea from report
-        $location = $report->location;
-        $locationArea = '';
+        // Access MapController's mainLocations via reflection or make it public
+        // For simplicity, we'll duplicate the keywords here or make MapController's method public
+        return $this->mapController->matchLocationToMainLocation($locationArea);
+    }
 
-        if (is_array($location)) {
-            $locationArea = $location['locationArea'] ?? '';
-        } elseif (is_object($location) && isset($location->locationArea)) {
-            $locationArea = $location->locationArea;
-        } elseif (isset($report->locationArea)) {
-            $locationArea = $report->locationArea;
-        }
-
-        // If locationArea exists, try keyword matching first
-        if (!empty($locationArea)) {
-            $locationAreaLower = strtolower($locationArea);
-            foreach ($this->mainLocations as $mainLocationName => $config) {
-                foreach ($config['keywords'] as $keyword) {
-                    if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
-                        return $mainLocationName;
-                    }
-                }
-            }
-        }
-
-        // If no locationArea or no keyword match, try proximity matching using coordinates
-        $reportCoords = $this->getReportCoordinates($report);
-        if ($reportCoords && !empty($this->mainLocationCoordinates)) {
-            $bestMatch = null;
-            $bestDistance = PHP_FLOAT_MAX;
-
-            foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
-                $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
-
-                $distance = $this->calculateDistance(
-                    $reportCoords['lat'], $reportCoords['lng'],
-                    $locationCoords['lat'], $locationCoords['lng']
-                );
-
-                if ($distance <= $radius && $distance < $bestDistance) {
-                    $bestDistance = $distance;
-                    $bestMatch = $locationName;
-                }
-            }
-
-            if ($bestMatch) {
-                return $bestMatch;
-            }
-        }
-
-        // Fallback: return the original locationArea or null
-        return !empty($locationArea) ? $locationArea : null;
+    /**
+     * Find closest location by proximity (reusing MapController's logic)
+     */
+    private function findClosestLocationByProximity($reportCoords)
+    {
+        return $this->mapController->findClosestLocation($reportCoords);
     }
 
     public function analyzeWithAI(Request $request)
@@ -626,7 +576,7 @@ class ReportController extends Controller
             $query->whereIn('incidentCategory', explode(',', $categories));
         }
 
-        // ENHANCED LOCATION FILTERING with proximity matching
+        // ENHANCED LOCATION FILTERING using MapController's proximity matching
         if ($locations = $request->get('locations')) {
             $locationArray = explode(',', $locations);
 
@@ -770,7 +720,7 @@ class ReportController extends Controller
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
-            // Add determined location from proximity matching
+            // Add determined location from proximity matching (using MapController)
             $report->determinedLocation = $this->determineReportLocation($report);
 
             // Get student info
@@ -837,6 +787,9 @@ class ReportController extends Controller
             ]),
         ]);
     }
+
+    // Add the missing methods that MapController needs to be public
+    // Add these methods to MapController.php as public methods:
 
     public function store(Request $request)
     {

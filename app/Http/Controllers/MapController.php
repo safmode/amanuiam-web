@@ -307,7 +307,7 @@ class MapController extends Controller
     /**
      * Match locationArea to main location using keywords
      */
-    private function matchLocationToMainLocation($locationArea)
+    public function matchLocationToMainLocation($locationArea)
     {
         if (empty($locationArea)) return null;
 
@@ -322,6 +322,35 @@ class MapController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Make this method public so ReportController can use it
+     */
+    public function findClosestLocation($reportCoords)
+    {
+        if (!$reportCoords || empty($this->mainLocationCoordinates)) {
+            return null;
+        }
+
+        $bestMatch = null;
+        $bestDistance = PHP_FLOAT_MAX;
+
+        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+            $distance = $this->calculateDistance(
+                $reportCoords['lat'], $reportCoords['lng'],
+                $locationCoords['lat'], $locationCoords['lng']
+            );
+
+            if ($distance <= $radius && $distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestMatch = $locationName;
+            }
+        }
+
+        return $bestMatch;
     }
 
     /**
