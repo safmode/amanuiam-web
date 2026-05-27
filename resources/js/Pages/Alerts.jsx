@@ -14,7 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Simple Dropdown Component - FIXED: No overflow on outer container
+// Simple Dropdown Component - FIXED (same as Reports)
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -38,9 +38,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div
-          className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-w-[400px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}
-        >
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
           {children}
         </div>
       )}
@@ -1012,7 +1010,7 @@ const Alerts = () => {
                         <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
                       )}
                     </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                       {locations.map((loc) => (
                         <label key={loc} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
                           <input
