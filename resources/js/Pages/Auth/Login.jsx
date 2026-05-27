@@ -1,19 +1,11 @@
-//login page for officers, with form submission to Laravel backend and error handling
-
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from 'axios';  // ADD THIS FOR CSRF REFRESH
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
-
-// Helper function to get pending officers from sessionStorage
-const getPendingOfficers = () => {
-  const stored = sessionStorage.getItem('pending_officers');
-  return stored ? JSON.parse(stored) : [];
-};
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -26,26 +18,27 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setIsPendingApproval(false);
     setIsLoading(true);
 
     try {
-        // Alternative: Fetch a fresh page to get new CSRF token
-        await axios.get('/');
+      // JUST ONE LINE - refreshes CSRF token (no Sanctum needed!)
+      await axios.get('/');
 
-        await router.post('/login', {
+      await router.post('/login', {
         email,
         password,
-        }, {
+      }, {
         onError: (errors) => {
-            setError(errors.email || 'Invalid email or password');
+          setError(errors.email || 'Invalid email or password');
         },
         onFinish: () => {
-            setIsLoading(false);
+          setIsLoading(false);
         }
-        });
+      });
     } catch (err) {
-        setError('Something went wrong. Please try again.');
-        setIsLoading(false);
+      setError('Something went wrong. Please try again.');
+      setIsLoading(false);
     }
   };
 
