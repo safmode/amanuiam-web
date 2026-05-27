@@ -14,7 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Simple Dropdown Component
+// Simple Dropdown Component - FIXED: No overflow on outer container
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -39,11 +39,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
       {trigger}
       {isOpen && (
         <div
-          className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-w-[400px] max-h-[70vh] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}
-          style={{
-            maxHeight: '70vh',
-            overflowY: 'auto'
-          }}
+          className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-w-[400px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}
         >
           {children}
         </div>
@@ -983,7 +979,7 @@ const Alerts = () => {
                 </Button>
               }
             >
-              <div className="bg-white p-4 max-h-96 overflow-y-auto dark:bg-slate-800 rounded-xl min-w-[280px]">
+              <div className="bg-white p-4 dark:bg-slate-800 rounded-xl min-w-[280px]">
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1008,28 +1004,28 @@ const Alerts = () => {
                   </div>
                   <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                  {/* LOCATIONS SECTION - NO SCROLLING, FULL EXPANSION */}
+                  {/* LOCATIONS SECTION - SCROLLABLE */}
                   <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
-                            {filters.locations.length > 0 && (
-                            <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
-                            )}
-                        </div>
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                        {locations.map((loc) => (
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                      {filters.locations.length > 0 && (
+                        <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                      )}
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                      {locations.map((loc) => (
                         <label key={loc} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                            <input
+                          <input
                             type="checkbox"
                             checked={filters.locations.includes(loc)}
                             onChange={() => toggleFilter('locations', loc)}
                             className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853] mt-0.5"
-                            />
-                            <span className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-normal flex-1">{loc}</span>
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-normal flex-1">{loc}</span>
                         </label>
-                        ))}
+                      ))}
                     </div>
-                    </div>
+                  </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                   <Button
