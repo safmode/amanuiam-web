@@ -1020,17 +1020,17 @@ const Alerts = () => {
                       )}
                     </div>
                     <div className="space-y-2">
-                      {locations.map((loc) => (
-                        <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={filters.locations.includes(loc)}
-                            onChange={() => toggleFilter('locations', loc)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                          />
-                          <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
-                        </label>
-                      ))}
+                        {locations.map((loc) => (
+                            <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                            <input
+                                type="checkbox"
+                                checked={filters.locations.includes(loc)}
+                                onChange={() => toggleFilter('locations', loc)}
+                                className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                            />
+                            <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
+                            </label>
+                        ))}
                     </div>
                   </div>
                 </div>
