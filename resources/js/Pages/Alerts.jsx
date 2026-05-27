@@ -38,7 +38,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-w-[400px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
           {children}
         </div>
       )}
@@ -590,7 +590,7 @@ const Alerts = () => {
   };
   const hasActiveFilters = getFilterCount() > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
 
-  // Get page numbers for pagination (similar to Reports component)
+  // Get page numbers for pagination
   const getPageNumbers = () => {
     const totalPages = pagination.last_page;
     const currentPage = pagination.current_page;
@@ -614,20 +614,14 @@ const Alerts = () => {
     params.append('page', page);
     params.append('per_page', perPage);
 
-    // Add status filter
     if (filters.status.length > 0) {
       params.append('status', filters.status.join(','));
     }
-
-    // Note: The API currently doesn't support search, date filters, or location filters
-    // Your EmergencyController index method only supports status filter
-    // You'll need to update the backend to support these filters
 
     return params;
   };
 
   // ---------------------- API CALLS ----------------------
-  // Fetch global stats (total counts from database)
   const fetchGlobalStats = async () => {
     try {
       const response = await axios.get('/api/emergencies/counts');
@@ -656,7 +650,6 @@ const Alerts = () => {
       const uniqueLocations = [...new Set(data.data.map(a => a.address || a.location?.mahallah || a.location || 'Unknown'))];
       setLocations(uniqueLocations);
 
-      // Dispatch event to update sidebar badge
       window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
       console.error('Failed to fetch emergencies:', error);
@@ -665,7 +658,6 @@ const Alerts = () => {
     }
   };
 
-  // Delete single emergency
   const handleDeleteEmergency = async (alert) => {
     const alertId = alert._id || alert.id;
     if (confirm('Are you sure you want to delete this emergency record? This action cannot be undone.')) {
@@ -692,14 +684,12 @@ const Alerts = () => {
     }
   };
 
-  // Handle page change - reset to page 1 when filters change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.last_page) {
       fetchEmergencies(newPage, pagination.per_page);
     }
   };
 
-  // Handle per page change
   const handlePerPageChange = (newPerPage) => {
     setPagination(prev => ({ ...prev, per_page: newPerPage }));
     fetchEmergencies(1, newPerPage);
@@ -717,7 +707,6 @@ const Alerts = () => {
       };
       return newFilters;
     });
-    // Reset to page 1 when filters change
     setPagination(prev => ({ ...prev, current_page: 1 }));
   };
 
@@ -730,7 +719,6 @@ const Alerts = () => {
     setPagination(prev => ({ ...prev, current_page: 1 }));
   };
 
-  // Apply filters when they change (debounced)
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -748,9 +736,6 @@ const Alerts = () => {
     };
   }, [filters.status, pagination.per_page]);
 
-  // NOTE: The frontend filtering is still applied because your API doesn't support
-  // search, date, and location filters yet. You'll need to update EmergencyController
-  // to accept these filter parameters.
   const filteredAlerts = alerts.filter(alert => {
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
@@ -1016,27 +1001,29 @@ const Alerts = () => {
                     </div>
                   </div>
                   <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                  {/* LOCATIONS SECTION - NO SCROLLING, FULL EXPANSION */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
-                        {filters.locations.length > 0 && (
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                      {filters.locations.length > 0 && (
                         <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
-                        )}
+                      )}
                     </div>
-                    <div className="space-y-2 max-h-[280px] overflow-y-auto">
-                        {locations.map((loc) => (
-                        <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                            <input
+                    <div className="space-y-2">
+                      {locations.map((loc) => (
+                        <label key={loc} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded dark:hover:bg-slate-700">
+                          <input
                             type="checkbox"
                             checked={filters.locations.includes(loc)}
                             onChange={() => toggleFilter('locations', loc)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                            />
-                            <span className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-normal">{loc}</span>
+                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853] mt-0.5"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-normal flex-1">{loc}</span>
                         </label>
-                        ))}
+                      ))}
                     </div>
-                    </div>
+                  </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                   <Button
@@ -1221,7 +1208,7 @@ const Alerts = () => {
             </div>
           )}
 
-          {/* Pagination - Similar to Reports component */}
+          {/* Pagination */}
           {pagination.total > 0 && (
             <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
