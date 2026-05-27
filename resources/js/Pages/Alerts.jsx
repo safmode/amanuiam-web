@@ -14,51 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Location labels for filtering (SAME AS REPORTS PAGE)
-const locationLabels = {
-  'Mahallahs': {
-    'Asiah': 'Mahallah Asiah',
-    'Aminah': 'Mahallah Aminah',
-    'Safiyyah': 'Mahallah Safiyyah',
-    'Maryam': 'Mahallah Maryam',
-    'Ruqayyah': 'Mahallah Ruqayyah',
-    'Ali': 'Mahallah Ali',
-    'Faruq': 'Mahallah Faruq',
-    'Bilal': 'Mahallah Bilal',
-    'Asma': 'Mahallah Asma',
-    'Hafsah': 'Mahallah Hafsah',
-    'Halimah': 'Mahallah Halimah',
-    'Siddiq': 'Mahallah Siddiq',
-    'Salahuddin': 'Mahallah Salahuddin',
-    'Uthman': 'Mahallah Uthman',
-    'Nusaibah': 'Mahallah Nusaibah',
-    'Zubair Al-Awwam': 'Mahallah Zubair',
-    'Sumayyah': 'Mahallah Sumayyah',
-  },
-  'Kulliyyahs': {
-    'KIRKHS': 'KIRKHS (AHAS KIRKHS)',
-    'KICT': 'KICT (ICT)',
-    'KOE': 'KOE (Engineering)',
-    'KAED': 'KAED (Architecture)',
-    'KENMS': 'KENMS (Economics)',
-    'AIKOL': 'AIKOL (Law)',
-    'KOED': 'KOED (Education)',
-  },
-  'Facilities': {
-    'Dar al-Hikmah Library': 'Dar al-Hikmah Library',
-    'Female Sports Complex': 'Female Sports Complex',
-    'Saidina Hamzah Stadium': 'Saidina Hamzah Stadium',
-    'IIUM Archery Range': 'IIUM Archery Range',
-    'UIA Football Turf': 'UIA Football Turf',
-    'IIUM Cricket Ground': 'IIUM Cricket Ground',
-    'IIUM Rugby Field': 'IIUM Rugby Field',
-    'Padang Kawad UIAM': 'Padang Kawad UIAM',
-    'IIUM Educare': 'IIUM Educare',
-    'Sultan Haji Ahmad Shah Mosque': 'Sultan Haji Ahmad Shah Mosque',
-  },
-};
-
-// Simple Dropdown Component (SAME AS REPORTS PAGE)
+// Simple Dropdown Component
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -531,7 +487,6 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
   );
 };
 
-
 // ============================================================
 // MAIN ALERTS COMPONENT
 // ============================================================
@@ -540,6 +495,7 @@ const Alerts = () => {
   // ---------------------- STATE MANAGEMENT ----------------------
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [locations, setLocations] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedAlertForDispatch, setSelectedAlertForDispatch] = useState(null);
 
@@ -622,6 +578,7 @@ const Alerts = () => {
   };
 
   const getFilterCount = () => filters.status.length + filters.locations.length;
+
   const getDateFilterLabel = () => {
     if (datePreset === 'today') return 'Today';
     if (datePreset === 'week') return 'This Week';
@@ -631,6 +588,7 @@ const Alerts = () => {
     if (customDateTo) return `Until ${customDateTo}`;
     return 'Date Range';
   };
+
   const hasActiveFilters = getFilterCount() > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
 
   // Get page numbers for pagination
@@ -659,9 +617,6 @@ const Alerts = () => {
 
     if (filters.status.length > 0) {
       params.append('status', filters.status.join(','));
-    }
-    if (filters.locations.length > 0) {
-      params.append('locations', filters.locations.join(','));
     }
 
     return params;
@@ -692,6 +647,9 @@ const Alerts = () => {
 
       setAlerts(data.data);
       setPagination(data.pagination);
+
+      const uniqueLocations = [...new Set(data.data.map(a => a.address || a.location?.mahallah || a.location || 'Unknown'))];
+      setLocations(uniqueLocations);
 
       window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
@@ -777,7 +735,57 @@ const Alerts = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [filters.status, filters.locations, pagination.per_page]);
+  }, [filters.status, pagination.per_page]);
+
+  const filteredAlerts = alerts.filter(alert => {
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const studentName = alert.student?.name?.toLowerCase() || '';
+      const matrixNumber = alert.student?.matrixNumber?.toLowerCase() || '';
+      const location = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || alert.location?.toLowerCase() || '';
+      if (!studentName.includes(searchLower) && !matrixNumber.includes(searchLower) && !location.includes(searchLower)) {
+        return false;
+      }
+    }
+    if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
+    if (filters.locations.length > 0) {
+      const alertLocation = alert.address || alert.location?.mahallah || alert.location;
+      if (!filters.locations.some(loc => alertLocation?.includes(loc))) return false;
+    }
+    const alertDate = new Date(alert.triggeredAt);
+    alertDate.setHours(0, 0, 0, 0);
+    if (datePreset === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (alertDate.getTime() !== today.getTime()) return false;
+    } else if (datePreset === 'week') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const weekAgo = new Date();
+      weekAgo.setDate(today.getDate() - 7);
+      weekAgo.setHours(0, 0, 0, 0);
+      if (alertDate < weekAgo) return false;
+    } else if (datePreset === 'month') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const monthAgo = new Date();
+      monthAgo.setMonth(today.getMonth() - 1);
+      monthAgo.setHours(0, 0, 0, 0);
+      if (alertDate < monthAgo) return false;
+    } else if (customDateFrom || customDateTo) {
+      if (customDateFrom) {
+        const fromDate = new Date(customDateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        if (alertDate < fromDate) return false;
+      }
+      if (customDateTo) {
+        const toDate = new Date(customDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (alertDate > toDate) return false;
+      }
+    }
+    return true;
+  });
 
   // ---------------------- ACTION HANDLERS ----------------------
   const updateLocalAlertStatus = (alertId, newStatus) => {
@@ -949,6 +957,7 @@ const Alerts = () => {
               />
             </div>
 
+            {/* FILTER DROPDOWN - FIXED NESTED SCROLL ISSUE */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
@@ -970,6 +979,7 @@ const Alerts = () => {
                 </Button>
               }
             >
+              {/* REMOVED overflow-y-auto from here - let content determine height */}
               <div className="bg-white p-4 dark:bg-slate-800 rounded-xl min-w-[280px]">
                 <div className="space-y-4">
                   {/* Status Section */}
@@ -977,7 +987,9 @@ const Alerts = () => {
                     <div className="flex items-center justify-between mb-2">
                       <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
                       {filters.status.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                        <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                          Clear
+                        </button>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -997,36 +1009,33 @@ const Alerts = () => {
 
                   <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                  {/* LOCATIONS SECTION - SAME AS REPORTS PAGE */}
+                  {/* Locations Section - REMOVED max-h-48 overflow-y-auto to fix nested scroll */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Incident Location</Label>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
                       {filters.locations.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear all</button>
+                        <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                          Clear
+                        </button>
                       )}
                     </div>
-                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-                      {Object.entries(locationLabels).map(([groupName, locations]) => (
-                        <div key={groupName}>
-                          <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
-                          <div className="space-y-2 pl-2">
-                            {Object.entries(locations).map(([key, label]) => (
-                              <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                                <input
-                                  type="checkbox"
-                                  checked={filters.locations.includes(key)}
-                                  onChange={() => toggleFilter('locations', key)}
-                                  className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
+                    <div className="space-y-2">
+                      {locations.map((loc) => (
+                        <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={filters.locations.includes(loc)}
+                            onChange={() => toggleFilter('locations', loc)}
+                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                          />
+                          <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
+                        </label>
                       ))}
                     </div>
                   </div>
                 </div>
+
+                {/* Clear All button at bottom */}
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                   <Button
                     variant="ghost"
@@ -1040,6 +1049,7 @@ const Alerts = () => {
               </div>
             </SimpleDropdown>
 
+            {/* DATE DROPDOWN */}
             <SimpleDropdown
               isOpen={showDateDropdown}
               onClose={() => setShowDateDropdown(false)}
@@ -1161,21 +1171,12 @@ const Alerts = () => {
                   <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('status', s)} />
                 </Badge>
               ))}
-              {filters.locations.map(l => {
-                let displayName = l;
-                for (const group of Object.values(locationLabels)) {
-                  if (group[l]) {
-                    displayName = group[l];
-                    break;
-                  }
-                }
-                return (
-                  <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
-                    <MapPin className="w-3 h-3" /> {displayName}
-                    <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
-                  </Badge>
-                );
-              })}
+              {filters.locations.map(l => (
+                <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  <MapPin className="w-3 h-3" /> {l}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
+                </Badge>
+              ))}
               {(datePreset !== 'all' || customDateFrom || customDateTo) && (
                 <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
                   <Calendar className="w-3 h-3" /> {getDateFilterLabel()}

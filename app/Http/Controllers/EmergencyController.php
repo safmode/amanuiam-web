@@ -6,20 +6,12 @@ use App\Models\Emergencies;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Http\Controllers\NotificationController;
-use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
-    use LocationMatchingTrait;
-
-    public function __construct()
-    {
-        $this->initLocationMatching();
-    }
-
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -97,6 +89,8 @@ class EmergencyController extends Controller
 
             NotificationController::createEmergencyAlert($emergency, $student);
 
+            Log::info('Emergency created - waiting for dispatch before sending Telegram');
+
             // Mobile notification via Node.js
             try {
                 $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
@@ -121,7 +115,7 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get all emergencies with pagination - WITH LOCATION FILTERING (same as Reports)
+     * Get all emergencies with pagination - OPTIMIZED VERSION
      */
     public function index(Request $request)
     {
@@ -129,62 +123,17 @@ class EmergencyController extends Controller
             $perPage = (int) $request->get('per_page', 15);
             $page = (int) $request->get('page', 1);
             $status = $request->get('status');
-            $locations = $request->get('locations');
 
-            Log::info('Emergency index called', [
-                'status' => $status,
-                'locations' => $locations,
-                'page' => $page,
-                'per_page' => $perPage
-            ]);
-
-            // Build query
+            // Build query with eager loading and indexing
             $query = Emergencies::orderBy('triggeredAt', 'desc');
 
-            // Apply status filter
+            // Apply status filter if provided (comma-separated or single)
             if ($status) {
                 $statuses = explode(',', $status);
                 $query->whereIn('status', $statuses);
             }
 
-            // Apply location filter using the same logic as Reports
-            if ($locations) {
-                $locationArray = explode(',', $locations);
-
-                // First, get all emergencies
-                $allEmergencies = $query->get();
-
-                // Filter emergencies by determining their actual location using proximity
-                $filteredIds = [];
-                foreach ($allEmergencies as $emergency) {
-                    // Create a fake report object to use the trait's method
-                    $fakeReport = new \stdClass();
-                    $fakeReport->location = [
-                        'latitude' => $emergency->latitude,
-                        'longitude' => $emergency->longitude,
-                        'address' => $emergency->address,
-                        'locationArea' => $emergency->address
-                    ];
-                    $fakeReport->description = '';
-                    $fakeReport->address = $emergency->address;
-
-                    $determinedLocationKey = $this->determineReportLocation($fakeReport, true);
-
-                    if ($determinedLocationKey && in_array($determinedLocationKey, $locationArray)) {
-                        $filteredIds[] = $emergency->_id;
-                        Log::debug("Emergency {$emergency->_id} matched location: {$determinedLocationKey}");
-                    }
-                }
-
-                // Apply the filter to the query
-                if (!empty($filteredIds)) {
-                    $query->whereIn('_id', array_unique($filteredIds));
-                } else {
-                    $query->whereIn('_id', []);
-                }
-            }
-
-            // Select only needed fields
+            // OPTIMIZATION: Select only needed fields to reduce data transfer
             $query->select([
                 '_id', 'studentId', 'status', 'triggeredAt', 'address', 'location',
                 'assigned_officer_id', 'assigned_officer_name', 'dispatch_notes',
@@ -194,12 +143,7 @@ class EmergencyController extends Controller
             // Execute paginated query
             $emergencies = $query->paginate($perPage, ['*'], 'page', $page);
 
-            Log::info('Emergency query executed', [
-                'total' => $emergencies->total(),
-                'count' => $emergencies->count()
-            ]);
-
-            // Batch load all students
+            // OPTIMIZATION: Batch load all students in ONE query instead of N queries
             $studentIds = [];
             foreach ($emergencies->items() as $emergency) {
                 if ($emergency->studentId && !in_array($emergency->studentId, $studentIds)) {
@@ -216,8 +160,9 @@ class EmergencyController extends Controller
                 }
             }
 
-            // Transform results
+            // Transform results with batched student data
             $emergencies->getCollection()->transform(function ($emergency) use ($students) {
+                // Attach student data from batch-loaded collection
                 if ($emergency->studentId && isset($students[(string)$emergency->studentId])) {
                     $student = $students[(string)$emergency->studentId];
                     $emergency->reporterName = $student->name;
@@ -233,10 +178,14 @@ class EmergencyController extends Controller
                     $emergency->student = null;
                 }
 
+                // Ensure fields exist
                 $emergency->assigned_officer_id = $emergency->assigned_officer_id ?? null;
                 $emergency->assigned_officer_name = $emergency->assigned_officer_name ?? null;
                 $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
                 $emergency->dispatched_at = $emergency->dispatched_at ?? null;
+
+                // Remove large fields that aren't needed for list view
+                unset($emergency->location);
 
                 return $emergency;
             });
@@ -262,12 +211,16 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get emergency counts
+     * Get emergency counts - CACHED VERSION (optional)
+     * Add caching to reduce database queries
      */
     public function getActiveCount()
     {
         try {
-            $counts = cache()->remember('emergency_counts', 30, function () {
+            // Use cache to reduce database hits (cache for 30 seconds)
+            $cacheKey = 'emergency_counts';
+
+            $counts = cache()->remember($cacheKey, 30, function () {
                 return [
                     'active' => Emergencies::where('status', 'active')->count(),
                     'responding' => Emergencies::where('status', 'responding')->count(),
@@ -331,6 +284,7 @@ class EmergencyController extends Controller
     public function dispatch(Request $request, $id)
     {
         Log::info('Dispatch method called for ID: ' . $id);
+        Log::info('Dispatch data:', $request->all());
 
         try {
             $validated = $request->validate([
@@ -341,6 +295,7 @@ class EmergencyController extends Controller
 
             $emergency = Emergencies::find($id);
             if (!$emergency) {
+                Log::error('Emergency not found: ' . $id);
                 return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
             }
 
@@ -362,15 +317,20 @@ class EmergencyController extends Controller
             $emergency->dispatched_at = now();
             $emergency->save();
 
+            // Clear cache for counts
             cache()->forget('emergency_counts');
 
-            // Send Telegram notification to assigned officer
+            Log::info('Emergency saved with assigned officer: ' . $emergency->assigned_officer_name);
+
+            // Send Telegram notification ONLY to the ASSIGNED officer
             try {
                 $assignedOfficer = Officer::where('officerName', $validated['officerName'])
                     ->orWhere('officerId', $validated['officerId'])
                     ->first();
 
                 if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
+                    Log::info('Sending Telegram notification to assigned officer only: ' . $assignedOfficer->officerName);
+
                     $message = "👮 *TASK ASSIGNED TO YOU* 👮\n\n";
                     $message .= "*{$assignedOfficer->officerName}*, you have been assigned to an emergency.\n\n";
                     $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
@@ -386,9 +346,11 @@ class EmergencyController extends Controller
                     $message .= "⚠️ *Please respond to this emergency as soon as possible!*";
 
                     $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
+                } else {
+                    Log::warning('Assigned officer not found or has no Telegram: ' . $validated['officerName']);
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to send Telegram notification: ' . $e->getMessage());
+                Log::error('Failed to send Telegram notification to assigned officer: ' . $e->getMessage());
             }
 
             // Send mobile notification
@@ -403,7 +365,7 @@ class EmergencyController extends Controller
                     'message' => "Officer {$validated['officerName']} has been dispatched to your location. Stay calm and await assistance."
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server: ' . $e->getMessage());
+                Log::error('Failed to notify mobile server for emergency dispatch: ' . $e->getMessage());
             }
 
             return response()->json(['success' => true, 'emergency' => $emergency]);
@@ -418,9 +380,12 @@ class EmergencyController extends Controller
      */
     public function resolve($id)
     {
+        Log::info('Resolve method called for ID: ' . $id);
+
         try {
             $emergency = Emergencies::find($id);
             if (!$emergency) {
+                Log::error('Emergency not found: ' . $id);
                 return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
             }
 
@@ -437,9 +402,10 @@ class EmergencyController extends Controller
             $emergency->resolvedAt = now();
             $emergency->save();
 
+            // Clear cache for counts
             cache()->forget('emergency_counts');
 
-            // Send Telegram notification to assigned officer
+            // Send Telegram notification ONLY to the assigned officer
             try {
                 $assignedOfficer = null;
                 if ($emergency->assigned_officer_id) {
@@ -450,6 +416,8 @@ class EmergencyController extends Controller
                 }
 
                 if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
+                    Log::info('Sending Telegram resolution notification to assigned officer only: ' . $assignedOfficer->officerName);
+
                     $message = "✅ *EMERGENCY RESOLVED* ✅\n\n";
                     $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
                     $message .= "*Status:* Emergency has been marked as resolved\n";
@@ -457,9 +425,11 @@ class EmergencyController extends Controller
                     $message .= "The situation has been handled. Good work, {$assignedOfficer->officerName}!";
 
                     $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
+                } else {
+                    Log::info('No assigned officer found with Telegram for resolution notification');
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to send Telegram resolution notification: ' . $e->getMessage());
+                Log::error('Failed to send Telegram resolution notification to assigned officer: ' . $e->getMessage());
             }
 
             // Send mobile notification
@@ -474,7 +444,7 @@ class EmergencyController extends Controller
                     'message' => "Your emergency has been marked as resolved. If you need further assistance, please contact security."
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server: ' . $e->getMessage());
+                Log::error('Failed to notify mobile server for emergency resolution: ' . $e->getMessage());
             }
 
             return response()->json(['success' => true, 'emergency' => $emergency]);
@@ -489,10 +459,13 @@ class EmergencyController extends Controller
      */
     public function destroy($id)
     {
+        Log::info('Delete method called for ID: ' . $id);
+
         try {
             $emergency = Emergencies::find($id);
 
             if (!$emergency) {
+                Log::error('Emergency not found for deletion: ' . $id);
                 return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
             }
 
@@ -500,7 +473,13 @@ class EmergencyController extends Controller
             $emergencyId = (string)$emergency->_id;
             $emergency->delete();
 
+            // Clear cache for counts
             cache()->forget('emergency_counts');
+
+            Log::info('Emergency deleted successfully', [
+                'emergency_id' => $emergencyId,
+                'student_id' => $studentId
+            ]);
 
             try {
                 $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
@@ -526,6 +505,8 @@ class EmergencyController extends Controller
      */
     public function bulkDelete(Request $request)
     {
+        Log::info('Bulk delete method called');
+
         try {
             $validated = $request->validate([
                 'ids' => 'required|array',
@@ -533,21 +514,31 @@ class EmergencyController extends Controller
             ]);
 
             $deletedCount = 0;
+            $failedIds = [];
 
             foreach ($validated['ids'] as $id) {
                 $emergency = Emergencies::find($id);
                 if ($emergency) {
                     $emergency->delete();
                     $deletedCount++;
+                } else {
+                    $failedIds[] = $id;
                 }
             }
 
+            // Clear cache for counts
             cache()->forget('emergency_counts');
+
+            Log::info('Bulk delete completed', [
+                'deleted_count' => $deletedCount,
+                'failed_ids' => $failedIds
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Successfully deleted {$deletedCount} emergency records",
-                'deleted_count' => $deletedCount
+                'deleted_count' => $deletedCount,
+                'failed_ids' => $failedIds
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to perform bulk delete: ' . $e->getMessage());
@@ -560,6 +551,8 @@ class EmergencyController extends Controller
      */
     public function revert(Request $request, $id)
     {
+        Log::info('Revert method called for ID: ' . $id);
+
         try {
             $emergency = Emergencies::find($id);
             if (!$emergency) {
@@ -586,6 +579,7 @@ class EmergencyController extends Controller
             }
             $emergency->save();
 
+            // Clear cache for counts
             cache()->forget('emergency_counts');
 
             // Send mobile notification
@@ -600,10 +594,10 @@ class EmergencyController extends Controller
                     'message' => $newStatus === 'responding' ? 'An officer is responding to your location' : 'Your emergency is active and awaiting response'
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server: ' . $e->getMessage());
+                Log::error('Failed to notify mobile server for emergency revert: ' . $e->getMessage());
             }
 
-            // Send Telegram notification to assigned officer for revert
+            // Send Telegram notification ONLY to the assigned officer for revert
             try {
                 $assignedOfficer = null;
                 if ($emergency->assigned_officer_id) {
@@ -614,6 +608,8 @@ class EmergencyController extends Controller
                 }
 
                 if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
+                    Log::info('Sending Telegram revert notification to assigned officer only: ' . $assignedOfficer->officerName);
+
                     if ($newStatus === 'responding') {
                         $message = "👮 *OFFICER DISPATCHED* 👮\n\n";
                         $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
@@ -628,9 +624,11 @@ class EmergencyController extends Controller
                     }
 
                     $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
+                } else {
+                    Log::info('No assigned officer found with Telegram for revert notification');
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to send Telegram revert notification: ' . $e->getMessage());
+                Log::error('Failed to send Telegram revert notification to assigned officer: ' . $e->getMessage());
             }
 
             return response()->json(['success' => true, 'emergency' => $emergency]);
