@@ -1018,25 +1018,25 @@ const Alerts = () => {
                   <div className="border-t border-gray-200 dark:border-slate-700" />
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
-                      {filters.locations.length > 0 && (
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                        {filters.locations.length > 0 && (
                         <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
-                      )}
+                        )}
                     </div>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {locations.map((loc) => (
+                    <div className="space-y-2 max-h-[280px] overflow-y-auto">
+                        {locations.map((loc) => (
                         <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                          <input
+                            <input
                             type="checkbox"
                             checked={filters.locations.includes(loc)}
                             onChange={() => toggleFilter('locations', loc)}
                             className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                          />
-                          <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-normal">{loc}</span>
                         </label>
-                      ))}
+                        ))}
                     </div>
-                  </div>
+                    </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                   <Button
