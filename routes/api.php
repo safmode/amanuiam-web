@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\NotificationController;
+
+// ============================================
+// WEBHOOK FOR NODE.JS
+// ============================================
+Route::post('/webhook/new-report', function (Request $request) {
+    \Log::info('===== WEBHOOK HIT =====', $request->all());
+
+    try {
+        $report = new \stdClass();
+        $report->reportId = $request->reportId;
+        $report->incidentCategory = $request->category ?? 'other';
+        $report->mahallah = $request->mahallah ?? 'Unknown';
+        $report->description = $request->description ?? 'No description';
+
+        NotificationController::createNewReport($report);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        \Log::error('Webhook error: ' . $e->getMessage());
+        return response()->json(['success' => false], 500);
+    }
+});
+
+// Your existing API routes can go here if you had any
