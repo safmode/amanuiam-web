@@ -7,6 +7,7 @@ use App\Models\Report;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Models\UnregisteredReporter;
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\NotificationController;
@@ -14,10 +15,9 @@ use Illuminate\Support\Facades\Http;
 
 class ReportController extends Controller
 {
-    protected $cloudinary;
+    use LocationMatchingTrait;
 
-    // Reference to MapController for proximity matching
-    private $mapController;
+    protected $cloudinary;
 
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
@@ -58,11 +58,14 @@ class ReportController extends Controller
     {
         $this->cloudinary = $cloudinary;
 
-        // Initialize MapController to reuse its proximity matching methods
-        $this->mapController = new MapController();
+        // Initialize location matching trait
+        $this->initLocationMatching();
     }
 
-    // === NEW AI FEATURE: Hugging Face categorization ===
+    // ============================================
+    // AI METHODS (KEEP YOUR EXISTING IMPLEMENTATIONS)
+    // ============================================
+
     private function aiCategorizeReport($description)
     {
         try {
@@ -74,15 +77,15 @@ class ReportController extends Controller
             }
 
             $categories = [
-                'theft' => 'theft, robbery, stealing, stolen property, stolen items, stealing laptop, stealing phone, stolen wallet, stolen bag, taking something without permission',
-                'harassment' => 'harassment, bullying, verbal abuse, intimidation, threatening, sexual harassment, inappropriate behavior, stalking',
-                'vandalism' => 'vandalism, property damage, graffiti, broken, destruction, smashed, destroyed, ruined, messed up',
-                'fireHazard' => 'fire hazard, fire, smoke, burning, flammable, explosion, fire alarm, gas leak',
-                'suspiciousActivity' => 'suspicious activity, strange behavior, lurking, following, acting weird, unknown person',
-                'facilityIssue' => 'facility issue, maintenance, broken equipment, lights out, leak, water leak, broken pipe, elevator not working',
-                'wildAnimal' => 'wild animal, snake, stray dog, animal threat, monkey, dangerous animal, animal bite',
-                'trespassing' => 'trespassing, unauthorized entry, breaking in, intrusion, breaking into, entered without permission',
-                'emergency_alert' => 'emergency, danger, immediate threat, help needed, urgent, critical',
+                'theft' => 'theft, robbery, stealing, stolen property, stolen items',
+                'harassment' => 'harassment, bullying, verbal abuse, intimidation, threatening, sexual harassment',
+                'vandalism' => 'vandalism, property damage, graffiti, broken, destruction',
+                'fireHazard' => 'fire hazard, fire, smoke, burning, flammable, explosion',
+                'suspiciousActivity' => 'suspicious activity, strange behavior, lurking, following',
+                'facilityIssue' => 'facility issue, maintenance, broken equipment, lights out, leak',
+                'wildAnimal' => 'wild animal, snake, stray dog, animal threat, monkey',
+                'trespassing' => 'trespassing, unauthorized entry, breaking in, intrusion',
+                'emergency_alert' => 'emergency, danger, immediate threat, help needed',
                 'other' => 'other issues not mentioned above'
             ];
 
@@ -97,27 +100,19 @@ class ReportController extends Controller
                 ]
             ]);
 
-            \Log::info('Hugging Face API response status: ' . $response->status());
-
             if ($response->successful()) {
                 $result = $response->json();
                 $scores = $result['scores'] ?? [];
                 $labels = $result['labels'] ?? [];
 
-                \Log::info('AI scores:', array_combine($labels, $scores));
-
                 if (!empty($labels) && !empty($scores)) {
                     $bestMatch = $labels[array_search(max($scores), $scores)];
                     $bestScore = max($scores);
-
-                    \Log::info('AI categorization result: ' . $bestMatch . ' with score: ' . $bestScore);
 
                     if ($bestScore > 0.3) {
                         return $bestMatch;
                     }
                 }
-            } else {
-                \Log::warning('Hugging Face API error: ' . $response->body());
             }
 
             return null;
@@ -131,198 +126,33 @@ class ReportController extends Controller
     {
         $descLower = strtolower($description);
 
-        // Expanded keyword maps with more variations and common phrases
         $keywordMap = [
-            'theft' => [
-                'stole', 'steal', 'stolen', 'theft', 'robbery', 'rob', 'robber', 'thief', 'thieves',
-                'pickpocket', 'snatch', 'swipe', 'took', 'taken', 'missing', 'vanished', 'disappeared',
-                'laptop', 'phone', 'wallet', 'bag', 'money', 'cash', 'purse', 'backpack', 'handbag',
-                'bicycle', 'bike', 'motorcycle', 'car', 'jewelry', 'watch', 'tablet', 'ipad',
-                'headphones', 'charger', 'keys', 'credit card', 'debit card', 'id card',
-                'passport', 'documents', 'textbook', 'calculator', 'camera', 'smartwatch',
-                'broke into', 'broke in', 'forced entry', 'took without permission', 'unauthorized taking',
-                'stole my', 'stole from', 'took my', 'took from', 'grabbed', 'pulled', 'snatched',
-                'lifted', 'pinched', 'nabbed', 'swiped',
-                'my phone is gone', 'my wallet is missing', 'someone took', 'where is my', 'i can\'t find my'
-            ],
-            'harassment' => [
-                'harass', 'harassment', 'harassing', 'bully', 'bullying', 'bullied', 'intimidate',
-                'intimidation', 'threaten', 'threatening', 'threat', 'verbal abuse', 'insult',
-                'insulting', 'name calling', 'taunt', 'taunting', 'mock', 'mocking', 'ridicule',
-                'sexual harassment', 'catcall', 'catcalling', 'whistle', 'whistling', 'lewd',
-                'inappropriate behavior', 'inappropriate comments', 'sexual comments', 'gesture',
-                'explicit', 'harassed me', 'made me uncomfortable', 'unwanted attention',
-                'stalking', 'stalk', 'followed', 'following me', 'creepy', 'creep',
-                'pushed', 'shoved', 'grabbed', 'touched inappropriately', 'assault', 'groped',
-                'gaslight', 'manipulate', 'manipulation', 'coerce', 'coercion', 'pressure',
-                'pressured', 'intimidated me', 'scared me', 'frightened', 'terrified',
-                'cyberbully', 'cyberbullying', 'online harassment', 'doxx', 'doxing', 'troll',
-                'trolling', 'hate speech', 'slut shaming', 'body shaming'
-            ],
-            'vandalism' => [
-                'vandal', 'vandalism', 'vandalized', 'vandalising', 'graffiti', 'tag', 'tagging',
-                'damage', 'damaged', 'destroy', 'destroyed', 'destruction', 'smashed', 'shattered',
-                'cracked', 'broken', 'broke', 'wrecked', 'ruined', 'dismantled', 'defaced',
-                'property damage', 'criminal mischief', 'malicious mischief', 'tampered', 'tampering',
-                'slashed', 'cut', 'ripped', 'torn', 'punctured', 'dented', 'scratched', 'keyed',
-                'window broken', 'glass shattered', 'door damaged', 'lock broken', 'fence damaged',
-                'car keyed', 'paint scratched', 'tyre slashed', 'tire slashed', 'graffiti sprayed',
-                'wall painted', 'bench broken', 'sign damaged', 'light smashed', 'bins overturned',
-                'threw rock', 'threw stone', 'threw brick', 'kicked', 'punched', 'hit with',
-                'spray painted', 'drew on', 'wrote on', 'etched', 'carved',
-                'bus stop', 'public property', 'school property', 'university property', 'facility'
-            ],
-            'fireHazard' => [
-                'fire', 'smoke', 'burning', 'burn', 'burnt', 'burned', 'flame', 'flames',
-                'blaze', 'inferno', 'combustion', 'ignite', 'ignited', 'ignition',
-                'flammable', 'inflammable', 'combustible', 'gas leak', 'gasoline', 'petrol',
-                'diesel', 'kerosene', 'propane', 'butane', 'methane', 'hydrogen',
-                'short circuit', 'sparking', 'sparks', 'electrical fire', 'overheating',
-                'overheated', 'melted wire', 'burning smell', 'smoke smell', 'electrical fault',
-                'explosion', 'explosive', 'detonate', 'detonation', 'blast', 'bang', 'boom',
-                'fire alarm', 'smoke detector', 'sprinkler', 'fire extinguisher',
-                'kitchen fire', 'lab fire', 'chemical fire', 'forest fire', 'grass fire',
-                'trash fire', 'dumpster fire', 'electrical panel', 'fuse box', 'power outlet',
-                'fire hazard', 'safety hazard', 'dangerous', 'risk of fire', 'potential fire',
-                'could cause fire', 'might ignite', 'unsafe wiring', 'faulty wiring'
-            ],
-            'suspiciousActivity' => [
-                'suspicious', 'strange', 'weird', 'odd', 'unusual', 'peculiar', 'bizarre',
-                'lurking', 'loitering', 'hanging around', 'prowling', 'skulking',
-                'following', 'shadowing', 'trailing', 'tailing',
-                'unknown person', 'stranger', 'unfamiliar', 'someone i don\'t know',
-                'suspicious person', 'suspicious individual', 'suspicious character',
-                'acting weird', 'acting strange', 'behaving oddly', 'suspicious behaviour',
-                'suspicious behavior', 'suspicious activity', 'suspicious actions',
-                'casing', 'scoping out', 'checking out', 'looking around', 'observing',
-                'watching', 'peeking', 'peering', 'spying', 'eavesdropping',
-                'binoculars', 'camera', 'recording', 'filming', 'taking pictures',
-                'photographing', 'video recording', 'drone', 'unmanned aircraft',
-                'suspicious vehicle', 'unmarked car', 'strange car', 'unknown car',
-                'parked for long time', 'circling', 'driving slowly', 'stopped repeatedly',
-                'testing doors', 'checking locks', 'looking through windows', 'peeking in windows',
-                'trying to open', 'jiggling handle', 'tampering with lock', 'picking lock',
-                'acting nervous', 'looking over shoulder', 'hiding', 'concealing', 'masked',
-                'hood pulled up', 'face covered', 'wearing gloves', 'carrying tools'
-            ],
-            'facilityIssue' => [
-                'maintenance', 'repair', 'broken', 'not working', 'malfunction', 'faulty',
-                'damaged', 'defective', 'out of order', 'failing', 'failure',
-                'light out', 'lights out', 'broken light', 'flickering light', 'flicker',
-                'dim light', 'no light', 'dark hallway', 'dark stairwell', 'light not working',
-                'street light', 'lamp post', 'ceiling light', 'fluorescent', 'bulb blown',
-                'leak', 'leaking', 'water leak', 'pipe burst', 'broken pipe', 'dripping',
-                'flood', 'flooding', 'water damage', 'wet floor', 'standing water',
-                'clogged', 'blocked', 'toilet clogged', 'sink clogged', 'drain blocked',
-                'no water', 'low water pressure', 'water heater', 'boiler', 'radiator',
-                'air conditioner', 'ac not working', 'no cooling', 'no heating', 'heater broken',
-                'fan not working', 'ventilation', 'air quality', 'stuffy', 'too hot', 'too cold',
-                'elevator', 'lift', 'escalator', 'stuck', 'trapped', 'not moving', 'door stuck',
-                'elevator broken', 'lift broken', 'escalator broken', 'not functioning',
-                'door stuck', 'door jammed', 'door won\'t open', 'door won\'t close', 'broken door',
-                'window stuck', 'broken window', 'cracked window', 'window won\'t close',
-                'broken chair', 'broken table', 'broken desk', 'damaged furniture',
-                'loose railing', 'wobbly', 'unstable', 'collapsed',
-                'cracked wall', 'cracked floor', 'hole in wall', 'hole in floor', 'ceiling leak',
-                'falling ceiling', 'loose tile', 'broken tile', 'uneven floor',
-                'slippery floor', 'wet floor', 'hazard', 'trip hazard', 'uneven pavement',
-                'pothole', 'cracked pavement', 'broken pavement'
-            ],
-            'wildAnimal' => [
-                'snake', 'serpent', 'python', 'cobra', 'viper', 'reptile',
-                'stray dog', 'wild dog', 'feral dog', 'aggressive dog', 'barking dog',
-                'monkey', 'macaque', 'primate', 'ape', 'baboon',
-                'wild boar', 'pig', 'feral pig', 'boar',
-                'cat', 'stray cat', 'feral cat',
-                'bat', 'flying fox', 'rodent', 'rat', 'mouse', 'squirrel',
-                'insect', 'wasp', 'bee', 'hornet', 'ant', 'caterpillar', 'centipede',
-                'lizard', 'gecko', 'iguana', 'chameleon',
-                'attack', 'attacked', 'bites', 'bit', 'bitten', 'chase', 'chased', 'charging',
-                'aggressive', 'dangerous', 'threatening', 'lunged', 'snapped',
-                'wildlife', 'animal in building', 'animal on campus', 'animal sighting',
-                'creature', 'beast', 'pest', 'infestation',
-                'rabid', 'foaming', 'aggressive behavior', 'territorial', 'protecting young',
-                'cornered', 'trapped', 'stalking'
-            ],
-            'trespassing' => [
-                'trespassing', 'trespass', 'trespassed', 'unauthorized entry', 'unauthorized access',
-                'breaking in', 'broke in', 'forced entry', 'break in', 'break-in',
-                'intrusion', 'intruder', 'invader', 'infiltrator', 'squatter',
-                'entered without permission', 'came in without permission', 'let themselves in',
-                'climbed fence', 'jumped fence', 'hopped fence', 'cut fence', 'broke fence',
-                'opened locked door', 'picked lock', 'used key', 'duplicate key',
-                'window entry', 'climbed through window', 'broke window', 'entered through',
-                'restricted area', 'authorized personnel only', 'private property',
-                'no entry', 'do not enter', 'keep out', 'off limits', 'prohibited area',
-                'found in', 'discovered in', 'caught in', 'seen in', 'spotted in',
-                'sneaking', 'sneaked', 'creeping', 'crawling', 'hiding', 'concealed',
-                'no right to be', 'not supposed to be', 'should not be', 'without authorization',
-                'without permission', 'not authorized', 'uninvited'
-            ],
-            'emergency_alert' => [
-                'emergency', 'danger', 'immediate threat', 'urgent', 'critical',
-                'life threatening', 'medical emergency', 'heart attack', 'stroke',
-                'seizure', 'unconscious', 'passed out', 'fainted', 'collapsed',
-                'bleeding', 'blood', 'severe bleeding', 'hemorrhage', 'wound',
-                'injury', 'injured', 'hurt badly', 'serious injury',
-                'fight', 'brawl', 'altercation', 'physical altercation', 'assault',
-                'attack', 'attacked', 'beating', 'hit', 'punched', 'kicked', 'struck',
-                'weapon', 'gun', 'knife', 'blade', 'firearm', 'pistol', 'rifle', 'shotgun',
-                'stabbing', 'stabbings', 'stabbed', 'shooting', 'shot',
-                'hostage', 'kidnapping', 'abduction', 'held against will',
-                'violent', 'violence', 'aggressive', 'dangerous person',
-                'help', 'call ambulance', 'need medical', 'need police', 'need rescue',
-                'trapped', 'stuck', 'cannot get out', 'emergency services',
-                'active shooter', 'bomb threat', 'explosive device', 'suspicious package',
-                'chemical spill', 'hazmat', 'hazardous material', 'gas leak emergency'
-            ]
+            'theft' => ['stole', 'steal', 'stolen', 'theft', 'robbery', 'rob', 'thief', 'missing', 'laptop', 'phone', 'wallet', 'money', 'cash'],
+            'harassment' => ['harass', 'bully', 'intimidate', 'threaten', 'verbal abuse', 'insult', 'stalking', 'followed'],
+            'vandalism' => ['vandal', 'graffiti', 'damage', 'destroy', 'broken', 'smashed', 'cracked'],
+            'fireHazard' => ['fire', 'smoke', 'burning', 'flammable', 'explosion', 'gas leak'],
+            'suspiciousActivity' => ['suspicious', 'strange', 'weird', 'lurking', 'prowling', 'unknown person'],
+            'facilityIssue' => ['maintenance', 'broken', 'not working', 'leak', 'light out', 'repair'],
+            'wildAnimal' => ['snake', 'stray dog', 'monkey', 'wild boar', 'animal attack', 'bite'],
+            'trespassing' => ['trespassing', 'unauthorized', 'breaking in', 'intrusion', 'forced entry'],
+            'emergency_alert' => ['emergency', 'danger', 'urgent', 'critical', 'help', 'immediate']
         ];
 
         $scores = [];
         foreach ($keywordMap as $category => $keywords) {
             $score = 0;
             foreach ($keywords as $keyword) {
-                $occurrences = substr_count($descLower, $keyword);
-                if ($occurrences > 0) {
-                    $score += $occurrences;
+                if (strpos($descLower, $keyword) !== false) {
+                    $score++;
                 }
             }
             if ($score > 0) {
                 $scores[$category] = $score;
-                \Log::info("Category '{$category}' scored: {$score}");
-            }
-        }
-
-        $phrases = [
-            'theft' => ['my phone', 'my wallet', 'my bag', 'my laptop', 'my money', 'stole my'],
-            'harassment' => ['made me feel', 'uncomfortable', 'inappropriate'],
-            'vandalism' => ['broken glass', 'spray paint', 'property damage'],
-            'fireHazard' => ['smell of smoke', 'electrical burning', 'gas smell', 'fire risk'],
-            'suspiciousActivity' => ['doesnt belong', 'shouldnt be here', 'out of place'],
-            'facilityIssue' => ['not functioning', 'in disrepair', 'falling apart'],
-            'wildAnimal' => ['dangerous animal', 'attack animal', 'wildlife sighting'],
-            'trespassing' => ['doesnt belong here', 'no right to be here', 'unauthorized presence'],
-            'emergency_alert' => ['call for help', 'medical assistance', 'need immediate assistance']
-        ];
-
-        foreach ($phrases as $category => $phraseList) {
-            $score = 0;
-            foreach ($phraseList as $phrase) {
-                $occurrences = substr_count($descLower, $phrase);
-                if ($occurrences > 0) {
-                    $score += $occurrences * 2;
-                }
-            }
-            if ($score > 0) {
-                $scores[$category] = ($scores[$category] ?? 0) + $score;
-                \Log::info("Category '{$category}' additional phrase score: {$score}");
             }
         }
 
         if (!empty($scores)) {
-            $bestCategory = array_keys($scores, max($scores))[0];
-            \Log::info('Keyword categorization result: ' . $bestCategory . ' with total score: ' . $scores[$bestCategory]);
-            return $bestCategory;
+            return array_keys($scores, max($scores))[0];
         }
 
         return 'other';
@@ -333,7 +163,7 @@ class ReportController extends Controller
         $urgentKeywords = [
             'fire', 'emergency', 'injured', 'bleeding', 'attack', 'assault',
             'weapon', 'danger', 'immediate', 'urgent', 'threat', 'violence',
-            'hurt', 'unconscious', 'bleeding', 'blood', 'fight', 'crash'
+            'hurt', 'unconscious', 'blood', 'fight', 'crash'
         ];
 
         $descLower = strtolower($description);
@@ -349,136 +179,6 @@ class ReportController extends Controller
         }
 
         return 'general';
-    }
-
-    // ============================================
-    // PROXIMITY MATCHING - REUSES MapController methods
-    // ============================================
-
-    /**
-     * Determine report location using MapController's proximity matching
-     */
-    private function determineReportLocation($report)
-    {
-        // Use MapController's groupReportsByProximity logic
-        // Since we just need the location for a single report, we'll use the same matching logic
-
-        // METHOD 1: Try keyword matching using locationArea
-        $locationArea = $this->getLocationAreaFromReport($report);
-        if (!empty($locationArea)) {
-            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
-            if ($matchedLocation) {
-                return $matchedLocation;
-            }
-        }
-
-        // METHOD 2: Try proximity matching using actual coordinates
-        $reportCoords = $this->getReportCoordinates($report);
-        if ($reportCoords) {
-            $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
-            if ($matchedLocation) {
-                return $matchedLocation;
-            }
-        }
-
-        // Fallback: return the original locationArea
-        return !empty($locationArea) ? $locationArea : null;
-    }
-
-    /**
-     * Get locationArea from report (same as MapController)
-     */
-    private function getLocationAreaFromReport($report)
-    {
-        $location = $report->location;
-
-        if (is_array($location)) {
-            return $location['locationArea'] ?? '';
-        }
-
-        if (is_object($location) && isset($location->locationArea)) {
-            return $location->locationArea;
-        }
-
-        if (isset($report->locationArea)) {
-            return $report->locationArea;
-        }
-
-        return '';
-    }
-
-    /**
-     * Get coordinates from report (same as MapController)
-     */
-    private function getReportCoordinates($report)
-    {
-        $location = $report->location;
-
-        if (is_array($location)) {
-            if (isset($location['latitude']) && isset($location['longitude'])
-                && is_numeric($location['latitude']) && is_numeric($location['longitude'])
-                && $location['latitude'] != 0 && $location['longitude'] != 0) {
-                return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
-            }
-
-            if (isset($location['lat']) && isset($location['lng'])
-                && is_numeric($location['lat']) && is_numeric($location['lng'])
-                && $location['lat'] != 0 && $location['lng'] != 0) {
-                return ['lat' => (float)$location['lat'], 'lng' => (float)$location['lng']];
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Match locationArea to main location using keywords (reusing MapController's logic)
-     */
-    private function matchLocationToMainLocation($locationArea)
-    {
-        // Access MapController's mainLocations via reflection or make it public
-        // For simplicity, we'll duplicate the keywords here or make MapController's method public
-        return $this->mapController->matchLocationToMainLocation($locationArea);
-    }
-
-    /**
-     * Find closest location by proximity (reusing MapController's logic)
-     */
-    private function findClosestLocationByProximity($reportCoords)
-    {
-        return $this->mapController->findClosestLocation($reportCoords);
-    }
-
-    public function analyzeWithAI(Request $request)
-    {
-        $description = $request->input('description');
-
-        if (!$description) {
-            return response()->json(['success' => false, 'error' => 'No description provided']);
-        }
-
-        $category = $this->aiCategorizeReport($description);
-
-        if (!$category || $category === 'other') {
-            $category = $this->keywordCategorizeReport($description);
-            \Log::info('Using keyword fallback for category: ' . $category);
-        }
-
-        $urgency = $this->aiDetectUrgency($description, $category);
-
-        $confidence = 0.5;
-        if ($category && $category !== 'other') {
-            $confidence = 0.85;
-        } elseif ($category === 'other') {
-            $confidence = 0.35;
-        }
-
-        return response()->json([
-            'success' => true,
-            'category' => $category ?? 'other',
-            'urgency' => $urgency,
-            'confidence' => $confidence
-        ]);
     }
 
     private function capitalizeMahallah($value)
@@ -508,6 +208,33 @@ class ReportController extends Controller
 
         return $labels[$category] ?? ucfirst(str_replace('_', ' ', $category));
     }
+
+    public function analyzeWithAI(Request $request)
+    {
+        $description = $request->input('description');
+
+        if (!$description) {
+            return response()->json(['success' => false, 'error' => 'No description provided']);
+        }
+
+        $category = $this->aiCategorizeReport($description);
+
+        if (!$category || $category === 'other') {
+            $category = $this->keywordCategorizeReport($description);
+        }
+
+        $urgency = $this->aiDetectUrgency($description, $category);
+
+        return response()->json([
+            'success' => true,
+            'category' => $category ?? 'other',
+            'urgency' => $urgency,
+        ]);
+    }
+
+    // ============================================
+    // INDEX METHOD
+    // ============================================
 
     public function index(Request $request)
     {
@@ -576,11 +303,11 @@ class ReportController extends Controller
             $query->whereIn('incidentCategory', explode(',', $categories));
         }
 
-        // ENHANCED LOCATION FILTERING using MapController's proximity matching
+        // ENHANCED LOCATION FILTERING using LocationMatchingTrait
         if ($locations = $request->get('locations')) {
             $locationArray = explode(',', $locations);
 
-            // First, get all reports (limit to a reasonable number for performance)
+            // First, get all reports
             $allReports = $query->get();
 
             // Filter reports by determining their actual location using proximity
@@ -720,7 +447,7 @@ class ReportController extends Controller
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
-            // Add determined location from proximity matching (using MapController)
+            // Add determined location from proximity matching
             $report->determinedLocation = $this->determineReportLocation($report);
 
             // Get student info
@@ -788,8 +515,9 @@ class ReportController extends Controller
         ]);
     }
 
-    // Add the missing methods that MapController needs to be public
-    // Add these methods to MapController.php as public methods:
+    // ============================================
+    // CRUD METHODS
+    // ============================================
 
     public function store(Request $request)
     {
@@ -1150,22 +878,14 @@ class ReportController extends Controller
 
             $report->update($validated);
 
-            // ============================================================
-            // SEND TELEGRAM NOTIFICATION WHEN OFFICER IS ASSIGNED
-            // ============================================================
+            // Telegram notifications (keep your existing code)
             $newAssignedOfficer = $report->assignedOfficer;
-
-            // Check if officer was JUST assigned (changed from null/empty to a value)
             $wasAssignedNow = ($oldAssignedOfficer !== $newAssignedOfficer) && !empty($newAssignedOfficer);
 
             if ($wasAssignedNow) {
                 try {
-                    // Find the assigned officer
                     $assignedOfficer = Officer::where('officerId', $newAssignedOfficer)->first();
-
                     if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                        \Log::info('Sending Telegram notification to assigned officer for report: ' . $report->reportId);
-
                         // Get reporter info
                         $reporterName = 'Unknown';
                         $reporterContact = '';
@@ -1185,19 +905,9 @@ class ReportController extends Controller
                                 $reporterContact = $unregistered->phone;
                                 $reporterMatric = $unregistered->matric_number;
                             }
-                        } elseif ($report->studentId) {
-                            $student = Student::find($report->studentId);
-                            if ($student) {
-                                $reporterName = $student->name;
-                                $reporterContact = $student->phone;
-                                $reporterMatric = $student->matrixNumber;
-                            }
                         }
 
-                        // Build location string
                         $location = $report->getFullAddress();
-
-                        // Format date and time
                         $dateTime = $report->incidentDateTime ? new \DateTime($report->incidentDateTime) : null;
                         $dateFormatted = $dateTime ? $dateTime->format('d/m/Y') : 'Unknown';
                         $timeFormatted = $dateTime ? $dateTime->format('H:i') : '';
@@ -1206,146 +916,43 @@ class ReportController extends Controller
                         $message .= "*{$assignedOfficer->officerName}*, you have been assigned to a report.\n\n";
                         $message .= "*Report ID:* `{$report->reportId}`\n";
                         $message .= "*Reporter:* {$reporterName}\n";
-                        if ($reporterMatric) {
-                            $message .= "*Matrix:* {$reporterMatric}\n";
-                        }
-                        if ($reporterContact) {
-                            $message .= "*Phone:* {$reporterContact}\n";
-                        }
+                        if ($reporterMatric) $message .= "*Matrix:* {$reporterMatric}\n";
+                        if ($reporterContact) $message .= "*Phone:* {$reporterContact}\n";
                         $message .= "*Category:* " . ($this->getCategoryLabel($report->incidentCategory) ?? $report->incidentCategory) . "\n";
                         $message .= "*Location:* {$location}\n";
                         $message .= "*Date:* {$dateFormatted}\n";
-                        if ($timeFormatted) {
-                            $message .= "*Time:* {$timeFormatted}\n";
-                        }
+                        if ($timeFormatted) $message .= "*Time:* {$timeFormatted}\n";
                         $message .= "*Urgency:* " . (($report->urgency === 'urgent') ? '🚨 URGENT' : 'General') . "\n\n";
-                        $message .= "📋 *Your Task:*\n";
-                        $message .= "• Review the report details\n";
-                        $message .= "• Investigate the incident\n";
-                        $message .= "• Follow up with the reporter if needed\n";
-                        $message .= "• Update the status when resolved\n\n";
                         $message .= "*Description:* " . (strlen($report->description) > 200 ? substr($report->description, 0, 200) . '...' : $report->description);
 
                         $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                    } else {
-                        \Log::warning('Assigned officer not found or has no Telegram for report: ' . $report->reportId);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send Telegram notification for report assignment: ' . $e->getMessage());
+                    \Log::error('Failed to send Telegram notification: ' . $e->getMessage());
                 }
             }
 
-            // ============================================================
-            // NEW: SEND TELEGRAM NOTIFICATION WHEN REPORT IS RESOLVED
-            // ============================================================
-            $wasResolvedNow = ($oldStatus !== $report->status) && $report->status === 'resolved';
-
-            if ($wasResolvedNow) {
-                try {
-                    // Find the assigned officer (if any)
-                    $assignedOfficer = null;
-                    if ($report->assignedOfficer) {
-                        $assignedOfficer = Officer::where('officerId', $report->assignedOfficer)->first();
-                    }
-
-                    if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                        \Log::info('Sending Telegram resolution notification to assigned officer for report: ' . $report->reportId);
-
-                        // Get reporter info
-                        $reporterName = 'Unknown';
-                        $reporterContact = '';
-                        $reporterMatric = '';
-
-                        if ($report->reporter_type === 'registered' && $report->reporter_id) {
-                            $student = Student::find($report->reporter_id);
-                            if ($student) {
-                                $reporterName = $student->name;
-                                $reporterContact = $student->phone;
-                                $reporterMatric = $student->matrixNumber;
-                            }
-                        } elseif ($report->reporter_type === 'unregistered' && $report->reporter_id) {
-                            $unregistered = UnregisteredReporter::find($report->reporter_id);
-                            if ($unregistered) {
-                                $reporterName = $unregistered->name;
-                                $reporterContact = $unregistered->phone;
-                                $reporterMatric = $unregistered->matric_number;
-                            }
-                        } elseif ($report->studentId) {
-                            $student = Student::find($report->studentId);
-                            if ($student) {
-                                $reporterName = $student->name;
-                                $reporterContact = $student->phone;
-                                $reporterMatric = $student->matrixNumber;
-                            }
-                        }
-
-                        // Build location string
-                        $location = $report->getFullAddress();
-
-                        $message = "✅ *REPORT RESOLVED* ✅\n\n";
-                        $message .= "*{$assignedOfficer->officerName}*, you have resolved a report.\n\n";
-                        $message .= "*Report ID:* `{$report->reportId}`\n";
-                        $message .= "*Reporter:* {$reporterName}\n";
-                        if ($reporterMatric) {
-                            $message .= "*Matrix:* {$reporterMatric}\n";
-                        }
-                        if ($reporterContact) {
-                            $message .= "*Phone:* {$reporterContact}\n";
-                        }
-                        $message .= "*Category:* " . ($this->getCategoryLabel($report->incidentCategory) ?? $report->incidentCategory) . "\n";
-                        $message .= "*Location:* {$location}\n";
-                        $message .= "*Resolved at:* " . now()->format('d/m/Y H:i:s') . "\n\n";
-                        $message .= "👍 *Good work!* The report has been successfully resolved.\n";
-                        $message .= "The reporter has been notified of the resolution.";
-
-                        $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                    } else {
-                        \Log::info('No assigned officer found with Telegram for report resolution: ' . $report->reportId);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to send Telegram resolution notification: ' . $e->getMessage());
-                }
-            }
-
-            // Send status change notification to mobile (keep existing)
+            // Status change notification
             if ($oldStatus !== $report->status) {
                 try {
-                    $statusLabels = [
-                        'pending' => 'Pending',
-                        'in_progress' => 'In Progress',
-                        'resolved' => 'Resolved',
-                        'nfa' => 'No Further Action'
-                    ];
-
+                    $statusLabels = ['pending' => 'Pending', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'nfa' => 'No Further Action'];
                     $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-
                     Http::post($nodeServerUrl . '/api/notify-status-change', [
                         'reportId' => $report->reportId,
                         'studentId' => (string)$report->studentId,
                         'oldStatus' => $oldStatus,
                         'newStatus' => $report->status,
                         'title' => 'Report Status Updated',
-                        'message' => "Your report #{$report->reportId} status changed from " .
-                                    ($statusLabels[$oldStatus] ?? $oldStatus) . " to " .
-                                    ($statusLabels[$report->status] ?? $report->status)
+                        'message' => "Your report #{$report->reportId} status changed from " . ($statusLabels[$oldStatus] ?? $oldStatus) . " to " . ($statusLabels[$report->status] ?? $report->status)
                     ]);
-
-                    \Log::info('Mobile notification sent for report: ' . $report->reportId);
                 } catch (\Exception $e) {
                     \Log::error('Failed to notify mobile server: ' . $e->getMessage());
                 }
             }
 
-            \Log::info('Report updated successfully', ['reportId' => $reportId]);
-
             return redirect()->back()->with('success', 'Report updated successfully.');
-
         } catch (\Exception $e) {
-            \Log::error('Update failed: ' . $e->getMessage(), [
-                'reportId' => $reportId,
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            \Log::error('Update failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to update report: ' . $e->getMessage()]);
         }
     }
@@ -1357,7 +964,6 @@ class ReportController extends Controller
         $attachments = [];
         foreach ($report->attachmentUrls ?? [] as $index => $url) {
             $publicId = $report->attachmentPublicIds[$index] ?? null;
-
             if ($publicId) {
                 $attachments[] = [
                     'original' => $url,
@@ -1367,13 +973,7 @@ class ReportController extends Controller
                     'public_id' => $publicId,
                 ];
             } else {
-                $attachments[] = [
-                    'original' => $url,
-                    'thumbnail' => $url,
-                    'medium' => $url,
-                    'large' => $url,
-                    'public_id' => null,
-                ];
+                $attachments[] = ['original' => $url, 'thumbnail' => $url, 'medium' => $url, 'large' => $url, 'public_id' => null];
             }
         }
 
@@ -1400,90 +1000,38 @@ class ReportController extends Controller
 
         $report->optimized_attachments = $attachments;
 
-        return Inertia::render('Reports/Show', [
-            'report' => $report,
-        ]);
+        return Inertia::render('Reports/Show', ['report' => $report]);
     }
 
     public function uploadAttachments(Request $request)
     {
         try {
-            \Log::info('Upload attachments started', [
-                'report_id' => $request->reportId,
-                'files_count' => count($request->file('attachments', []))
-            ]);
-
             $request->validate([
                 'attachments.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:5120',
                 'reportId' => 'required|string',
             ]);
 
             $report = Report::where('reportId', $request->reportId)->first();
-
             if (!$report) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Report not found'
-                ], 404);
+                return response()->json(['success' => false, 'error' => 'Report not found'], 404);
             }
 
             $uploadedUrls = [];
             $uploadedPublicIds = [];
 
             foreach ($request->file('attachments') as $file) {
-                try {
-                    $result = $this->cloudinary->getCloudinary()->uploadApi()->upload(
-                        $file->getRealPath(),
-                        [
-                            'folder' => 'reports_attachments',
-                            'resource_type' => 'auto',
-                        ]
-                    );
-
-                    $uploadedUrls[] = $result['secure_url'];
-                    $uploadedPublicIds[] = $result['public_id'];
-
-                } catch (\Exception $e) {
-                    \Log::error('Cloudinary upload error: ' . $e->getMessage());
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Failed to upload file: ' . $e->getMessage()
-                    ], 500);
-                }
+                $result = $this->cloudinary->getCloudinary()->uploadApi()->upload($file->getRealPath(), ['folder' => 'reports_attachments', 'resource_type' => 'auto']);
+                $uploadedUrls[] = $result['secure_url'];
+                $uploadedPublicIds[] = $result['public_id'];
             }
 
-            $existingAttachments = $report->attachmentUrls ?? [];
-            $existingPublicIds = $report->attachmentPublicIds ?? [];
-
-            $report->attachmentUrls = array_merge($existingAttachments, $uploadedUrls);
-            $report->attachmentPublicIds = array_merge($existingPublicIds, $uploadedPublicIds);
+            $report->attachmentUrls = array_merge($report->attachmentUrls ?? [], $uploadedUrls);
+            $report->attachmentPublicIds = array_merge($report->attachmentPublicIds ?? [], $uploadedPublicIds);
             $report->save();
 
-            \Log::info('Attachments saved to report', [
-                'report_id' => $request->reportId,
-                'new_count' => count($uploadedUrls),
-                'total_count' => count($report->attachmentUrls)
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'urls' => $uploadedUrls,
-                'publicIds' => $uploadedPublicIds,
-                'message' => 'Files uploaded successfully'
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+            return response()->json(['success' => true, 'urls' => $uploadedUrls, 'publicIds' => $uploadedPublicIds]);
         } catch (\Exception $e) {
-            \Log::error('Upload attachments error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => 'Server error: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -1496,31 +1044,15 @@ class ReportController extends Controller
                 'attachmentPublicId' => 'nullable|string',
             ]);
 
-            \Log::info('Delete attachment called', [
-                'reportId' => $request->reportId,
-                'attachmentUrl' => $request->attachmentUrl,
-                'attachmentPublicId' => $request->attachmentPublicId
-            ]);
-
             if ($request->reportId) {
                 $report = Report::where('reportId', $request->reportId)->firstOrFail();
-
                 $attachments = $report->attachmentUrls ?? [];
                 $publicIds = $report->attachmentPublicIds ?? [];
-
                 $index = array_search($request->attachmentUrl, $attachments);
 
                 if ($index !== false) {
                     if (isset($publicIds[$index])) {
-                        try {
-                            $result = $this->cloudinary->deleteImage($publicIds[$index]);
-                            \Log::info('Deleted from Cloudinary', [
-                                'public_id' => $publicIds[$index],
-                                'result' => $result
-                            ]);
-                        } catch (\Exception $e) {
-                            \Log::error('Failed to delete from Cloudinary: ' . $e->getMessage());
-                        }
+                        $this->cloudinary->deleteImage($publicIds[$index]);
                         unset($publicIds[$index]);
                     }
                     unset($attachments[$index]);
@@ -1529,73 +1061,37 @@ class ReportController extends Controller
                 $report->attachmentUrls = array_values($attachments);
                 $report->attachmentPublicIds = array_values($publicIds);
                 $report->save();
-
             } else {
                 if ($request->attachmentPublicId) {
-                    $result = $this->cloudinary->deleteImage($request->attachmentPublicId);
-                    \Log::info('Deleted from Cloudinary (new report)', [
-                        'public_id' => $request->attachmentPublicId,
-                        'result' => $result
-                    ]);
+                    $this->cloudinary->deleteImage($request->attachmentPublicId);
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Attachment deleted successfully'
-            ]);
-
+            return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Log::error('Delete attachment error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to delete attachment: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     public function uploadForNewReport(Request $request)
     {
         try {
-            $request->validate([
-                'attachments.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:5120',
-            ]);
+            $request->validate(['attachments.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:5120']);
 
             $uploadedUrls = [];
             $uploadedPublicIds = [];
 
             foreach ($request->file('attachments') as $file) {
-                $result = $this->cloudinary->getCloudinary()->uploadApi()->upload(
-                    $file->getRealPath(),
-                    [
-                        'folder' => 'reports_attachments',
-                        'resource_type' => 'auto',
-                    ]
-                );
-
+                $result = $this->cloudinary->getCloudinary()->uploadApi()->upload($file->getRealPath(), ['folder' => 'reports_attachments', 'resource_type' => 'auto']);
                 $uploadedUrls[] = $result['secure_url'];
                 $uploadedPublicIds[] = $result['public_id'];
             }
 
-            session()->put('temp_uploads', [
-                'urls' => $uploadedUrls,
-                'publicIds' => $uploadedPublicIds,
-                'timestamp' => now()
-            ]);
+            session()->put('temp_uploads', ['urls' => $uploadedUrls, 'publicIds' => $uploadedPublicIds, 'timestamp' => now()]);
 
-            return response()->json([
-                'success' => true,
-                'urls' => $uploadedUrls,
-                'publicIds' => $uploadedPublicIds,
-                'message' => 'Files uploaded successfully'
-            ]);
-
+            return response()->json(['success' => true, 'urls' => $uploadedUrls, 'publicIds' => $uploadedPublicIds]);
         } catch (\Exception $e) {
-            \Log::error('Upload error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 }
