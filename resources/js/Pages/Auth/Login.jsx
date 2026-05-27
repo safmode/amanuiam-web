@@ -26,30 +26,26 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setIsPendingApproval(false);
     setIsLoading(true);
 
     try {
-      // FIX: Refresh CSRF token before login to prevent 419 error
-      await axios.get('/sanctum/csrf-cookie');
+        // Alternative: Fetch a fresh page to get new CSRF token
+        await axios.get('/');
 
-      await router.post('/login', {
+        await router.post('/login', {
         email,
         password,
-      }, {
+        }, {
         onError: (errors) => {
-          setError(errors.email || 'Invalid email or password');
+            setError(errors.email || 'Invalid email or password');
         },
         onFinish: () => {
-          setIsLoading(false);
+            setIsLoading(false);
         }
-      });
-
-      // If login success, Laravel should redirect automatically
+        });
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
-      setIsLoading(false);
+        setError('Something went wrong. Please try again.');
+        setIsLoading(false);
     }
   };
 
