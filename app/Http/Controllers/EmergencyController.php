@@ -1,664 +1,365 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Traits;
 
-use App\Models\Emergencies;
-use App\Models\Student;
-use App\Models\Officer;
-use App\Http\Controllers\NotificationController;
-use App\Traits\LocationMatchingTrait;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class EmergencyController extends Controller
+trait LocationMatchingTrait
 {
-    use LocationMatchingTrait;
+    // Define main locations with their keywords and radius
+    private $mainLocations = [
+        // Mahallahs
+        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200, 'key' => 'Asiah'],
+        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200, 'key' => 'Aminah'],
+        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200, 'key' => 'Safiyyah'],
+        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200, 'key' => 'Maryam'],
+        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200, 'key' => 'Ruqayyah'],
+        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200, 'key' => 'Ali'],
+        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200, 'key' => 'Faruq'],
+        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200, 'key' => 'Bilal'],
+        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200, 'key' => 'Asma'],
+        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200, 'key' => 'Hafsah'],
+        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200, 'key' => 'Halimah'],
+        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200, 'key' => 'Siddiq'],
+        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200, 'key' => 'Salahuddin'],
+        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200, 'key' => 'Uthman'],
+        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200, 'key' => 'Nusaibah'],
+        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200, 'key' => 'Zubair Al-Awwam'],
+        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200, 'key' => 'Sumayyah'],
 
-    public function __construct()
+        // Kulliyyahs
+        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'ahmad ibrahim', 'human sciences'], 'radius' => 150, 'key' => 'KIRKHS'],
+        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'computer science', 'kulliyyah of information', 'iibf', 'islamic banking'], 'radius' => 200, 'key' => 'KICT'],
+        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering', 'engineer', 'kulliyyah of engineering'], 'radius' => 150, 'key' => 'KOE'],
+        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture', 'design'], 'radius' => 150, 'key' => 'KAED'],
+        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics', 'management', 'business'], 'radius' => 150, 'key' => 'KENMS'],
+        'AIKOL (Law)' => ['keywords' => ['aikol', 'law', 'legal'], 'radius' => 150, 'key' => 'AIKOL'],
+        'KOED (Education)' => ['keywords' => ['koed', 'education', 'teaching'], 'radius' => 150, 'key' => 'KOED'],
+
+        // Facilities
+        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah', 'perpustakaan'], 'radius' => 100, 'key' => 'Dar al-Hikmah Library'],
+        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym', 'women sports'], 'radius' => 150, 'key' => 'Female Sports Complex'],
+        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah', 'field'], 'radius' => 200, 'key' => 'Saidina Hamzah Stadium'],
+        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100, 'key' => 'IIUM Archery Range'],
+        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120, 'key' => 'UIA Football Turf'],
+        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150, 'key' => 'IIUM Cricket Ground'],
+        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150, 'key' => 'IIUM Rugby Field'],
+        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade', 'kawad'], 'radius' => 150, 'key' => 'Padang Kawad UIAM'],
+        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten', 'preschool', 'taska'], 'radius' => 100, 'key' => 'IIUM Educare'],
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid', 'sultan haji ahmad shah', 'prayer hall', 'surau'], 'radius' => 150, 'key' => 'Sultan Haji Ahmad Shah Mosque'],
+    ];
+
+    // Pre-loaded coordinates from config
+    private $mainLocationCoordinates = [];
+
+    /**
+     * Initialize the trait (call this in controller constructor)
+     */
+    protected function initLocationMatching()
     {
-        $this->initLocationMatching();
+        if (file_exists(config_path('map_coordinates.php'))) {
+            $this->mainLocationCoordinates = include(config_path('map_coordinates.php'));
+            Log::info('Loaded ' . count($this->mainLocationCoordinates) . ' coordinates for location matching');
+        } else {
+            Log::warning('Map coordinates config file not found. Run: php artisan map:seed-coordinates');
+        }
     }
 
-    // Helper function to send Telegram messages directly
-    private function sendTelegramMessage($chatId, $message)
+    // ============================================
+    // REPORT METHODS
+    // ============================================
+
+    /**
+     * Get locationArea from report
+     */
+    protected function getLocationAreaFromReport($report)
     {
-        $token = env('TELEGRAM_BOT_TOKEN');
+        $location = $report->location;
 
-        if (!$token) {
-            Log::error('TELEGRAM_BOT_TOKEN not set');
-            return false;
+        if (is_array($location)) {
+            return $location['locationArea'] ?? '';
         }
 
-        if (!$chatId) {
-            Log::warning('No chat ID provided');
-            return false;
+        if (is_object($location) && isset($location->locationArea)) {
+            return $location->locationArea;
         }
 
-        try {
-            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                'chat_id' => $chatId,
-                'text' => $message,
-                'parse_mode' => 'Markdown'
-            ]);
-
-            if ($response->successful()) {
-                Log::info('Telegram message sent', ['chat_id' => $chatId]);
-                return true;
-            } else {
-                Log::error('Telegram API error', ['response' => $response->body()]);
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Telegram send error: ' . $e->getMessage());
-            return false;
+        if (isset($report->locationArea)) {
+            return $report->locationArea;
         }
+
+        return '';
     }
 
     /**
-     * Store a new emergency alert (called from mobile app)
+     * Get address from report
      */
-    public function store(Request $request)
+    protected function getAddressFromReport($report)
     {
-        try {
-            Log::info('Emergency store method called', $request->all());
+        $location = $report->location;
 
-            $validated = $request->validate([
-                'studentId' => 'required|string',
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'address' => 'nullable|string',
-                'location' => 'nullable|array',
-            ]);
-
-            $student = Student::find($validated['studentId']);
-            if (!$student) {
-                $student = new \stdClass();
-                $student->name = 'Unknown Student';
-                $student->matrixNumber = 'N/A';
-                $student->phone = 'N/A';
-                $student->email = 'N/A';
-            }
-
-            $emergency = Emergencies::create([
-                'studentId' => $validated['studentId'],
-                'latitude' => $validated['latitude'],
-                'longitude' => $validated['longitude'],
-                'address' => $validated['address'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'status' => 'active',
-                'triggeredAt' => now(),
-            ]);
-
-            Log::info('Emergency alert created', [
-                'emergency_id' => (string)$emergency->_id,
-                'student_id' => $validated['studentId']
-            ]);
-
-            NotificationController::createEmergencyAlert($emergency, $student);
-
-            Log::info('Emergency created - waiting for dispatch before sending Telegram');
-
-            // Mobile notification via Node.js
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::timeout(5)->post($nodeServerUrl . '/api/notify-emergency-status', [
-                    'emergencyId' => (string)$emergency->_id,
-                    'studentId' => $validated['studentId'],
-                    'oldStatus' => null,
-                    'newStatus' => 'active',
-                    'title' => '🚨 EMERGENCY ALERT',
-                    'message' => "Emergency alert triggered at " . ($validated['address'] ?? 'your location')
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Mobile notification failed: ' . $e->getMessage());
-            }
-
-            return response()->json(['success' => true, 'emergency' => $emergency]);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to store emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        if (is_array($location)) {
+            return $location['address'] ?? '';
         }
+
+        if (is_object($location) && isset($location->address)) {
+            return $location->address;
+        }
+
+        return '';
     }
 
     /**
-     * Get all emergencies with pagination - WITH LOCATION MATCHING
+     * Get coordinates from report
      */
-    public function index(Request $request)
+    protected function getReportCoordinates($report)
     {
-        try {
-            $perPage = (int) $request->get('per_page', 15);
-            $page = (int) $request->get('page', 1);
-            $status = $request->get('status');
-            $locations = $request->get('locations');
+        $location = $report->location;
 
-            // Build query with eager loading and indexing
-            $query = Emergencies::orderBy('triggeredAt', 'desc');
-
-            // Apply status filter if provided (comma-separated or single)
-            if ($status) {
-                $statuses = explode(',', $status);
-                $query->whereIn('status', $statuses);
+        if (is_array($location)) {
+            if (isset($location['latitude']) && isset($location['longitude'])
+                && is_numeric($location['latitude']) && is_numeric($location['longitude'])
+                && $location['latitude'] != 0 && $location['longitude'] != 0) {
+                return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
             }
 
-            // OPTIMIZATION: Select only needed fields to reduce data transfer
-            $query->select([
-                '_id', 'studentId', 'status', 'triggeredAt', 'address', 'location',
-                'assigned_officer_id', 'assigned_officer_name', 'dispatch_notes',
-                'dispatched_at', 'resolvedAt', 'latitude', 'longitude'
-            ]);
-
-            // Execute paginated query
-            $emergencies = $query->paginate($perPage, ['*'], 'page', $page);
-
-            // OPTIMIZATION: Batch load all students in ONE query instead of N queries
-            $studentIds = [];
-            foreach ($emergencies->items() as $emergency) {
-                if ($emergency->studentId && !in_array($emergency->studentId, $studentIds)) {
-                    $studentIds[] = $emergency->studentId;
-                }
+            if (isset($location['lat']) && isset($location['lng'])
+                && is_numeric($location['lat']) && is_numeric($location['lng'])
+                && $location['lat'] != 0 && $location['lng'] != 0) {
+                return ['lat' => (float)$location['lat'], 'lng' => (float)$location['lng']];
             }
-
-            // Batch fetch students
-            $students = [];
-            if (!empty($studentIds)) {
-                $studentCollection = Student::whereIn('_id', $studentIds)->get();
-                foreach ($studentCollection as $student) {
-                    $students[(string)$student->_id] = $student;
-                }
-            }
-
-            // Transform results with batched student data
-            $emergencies->getCollection()->transform(function ($emergency) use ($students) {
-                // Attach student data from batch-loaded collection
-                if ($emergency->studentId && isset($students[(string)$emergency->studentId])) {
-                    $student = $students[(string)$emergency->studentId];
-                    $emergency->reporterName = $student->name;
-                    $emergency->reporterPhone = $student->phone;
-                    $emergency->reporterEmail = $student->email;
-                    $emergency->reporterMatric = $student->matrixNumber;
-                    $emergency->student = $student;
-                } else {
-                    $emergency->reporterName = 'Unknown Student';
-                    $emergency->reporterPhone = null;
-                    $emergency->reporterEmail = null;
-                    $emergency->reporterMatric = null;
-                    $emergency->student = null;
-                }
-
-                // Ensure fields exist
-                $emergency->assigned_officer_id = $emergency->assigned_officer_id ?? null;
-                $emergency->assigned_officer_name = $emergency->assigned_officer_name ?? null;
-                $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
-                $emergency->dispatched_at = $emergency->dispatched_at ?? null;
-
-                // Determine location using the trait
-                $emergency->determined_location = $this->determineEmergencyLocation($emergency);
-
-                // Remove large fields that aren't needed for list view
-                unset($emergency->location);
-
-                return $emergency;
-            });
-
-            // Apply location filter if provided
-            if ($locations) {
-                $locationArray = explode(',', $locations);
-                $filteredItems = $emergencies->getCollection()->filter(function ($emergency) use ($locationArray) {
-                    return in_array($emergency->determined_location, $locationArray);
-                });
-                $emergencies->setCollection($filteredItems);
-                $totalItems = $filteredItems->count();
-                $emergencies->total = $totalItems;
-                $emergencies->lastPage = ceil($totalItems / $perPage);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $emergencies->items(),
-                'pagination' => [
-                    'current_page' => $emergencies->currentPage(),
-                    'per_page' => $emergencies->perPage(),
-                    'total' => $emergencies->total(),
-                    'last_page' => $emergencies->lastPage(),
-                    'from' => $emergencies->firstItem(),
-                    'to' => $emergencies->lastItem(),
-                    'next_page_url' => $emergencies->nextPageUrl(),
-                    'prev_page_url' => $emergencies->previousPageUrl(),
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch emergencies: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to fetch emergencies'], 500);
         }
+
+        return null;
     }
 
     /**
-     * Get emergency counts - CACHED VERSION
+     * Calculate distance between two points in meters (Haversine formula)
      */
-    public function getActiveCount()
+    protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
     {
-        try {
-            $cacheKey = 'emergency_counts';
+        $earthRadius = 6371000; // meters
 
-            $counts = cache()->remember($cacheKey, 30, function () {
-                return [
-                    'active' => Emergencies::where('status', 'active')->count(),
-                    'responding' => Emergencies::where('status', 'responding')->count(),
-                    'resolved' => Emergencies::where('status', 'resolved')->count(),
-                    'total' => Emergencies::count()
-                ];
-            });
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
 
-            return response()->json($counts);
-        } catch (\Exception $e) {
-            Log::error('Failed to get emergency counts: ' . $e->getMessage());
-            return response()->json(['active' => 0, 'responding' => 0, 'resolved' => 0, 'total' => 0]);
-        }
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 
     /**
-     * Get single emergency by ID
+     * Match locationArea to main location using keywords
      */
-    public function show($id)
+    protected function matchLocationToMainLocation($locationArea)
     {
-        try {
-            $emergency = Emergencies::find($id);
+        if (empty($locationArea)) return null;
 
-            if (!$emergency) {
-                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
-            }
+        $locationAreaLower = strtolower($locationArea);
 
-            if ($emergency->studentId) {
-                $student = Student::find($emergency->studentId);
-                if ($student) {
-                    $emergency->reporterName = $student->name;
-                    $emergency->reporterPhone = $student->phone;
-                    $emergency->reporterEmail = $student->email;
-                    $emergency->reporterMatric = $student->matrixNumber;
-                    $emergency->student = $student;
-                } else {
-                    $emergency->reporterName = 'Unknown Student';
-                    $emergency->reporterPhone = null;
-                    $emergency->reporterEmail = null;
-                    $emergency->reporterMatric = null;
-                    $emergency->student = null;
+        foreach ($this->mainLocations as $mainLocationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                    return $mainLocationName;
                 }
-            } else {
-                $emergency->reporterName = 'Unknown Student';
-                $emergency->reporterPhone = null;
-                $emergency->reporterEmail = null;
-                $emergency->reporterMatric = null;
-                $emergency->student = null;
             }
-
-            $emergency->determined_location = $this->determineEmergencyLocation($emergency);
-
-            return response()->json(['success' => true, 'data' => $emergency]);
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to fetch emergency'], 500);
         }
+
+        return null;
     }
 
     /**
-     * Dispatch an officer to an emergency
+     * Find closest location by proximity
      */
-    public function dispatch(Request $request, $id)
+    protected function findClosestLocationByProximity($reportCoords)
     {
-        Log::info('Dispatch method called for ID: ' . $id);
-        Log::info('Dispatch data:', $request->all());
-
-        try {
-            $validated = $request->validate([
-                'officerId' => 'required|string',
-                'officerName' => 'required|string',
-                'dispatchNotes' => 'nullable|string'
-            ]);
-
-            $emergency = Emergencies::find($id);
-            if (!$emergency) {
-                Log::error('Emergency not found: ' . $id);
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
-            }
-
-            $oldStatus = $emergency->status;
-            $studentId = (string)$emergency->studentId;
-            $student = Student::find($studentId);
-
-            if (!$student) {
-                $student = new \stdClass();
-                $student->name = 'Unknown Student';
-                $student->matrixNumber = 'N/A';
-                $student->phone = 'N/A';
-            }
-
-            $emergency->status = 'responding';
-            $emergency->assigned_officer_id = $validated['officerId'];
-            $emergency->assigned_officer_name = $validated['officerName'];
-            $emergency->dispatch_notes = $validated['dispatchNotes'] ?? null;
-            $emergency->dispatched_at = now();
-            $emergency->save();
-
-            // Clear cache for counts
-            cache()->forget('emergency_counts');
-
-            Log::info('Emergency saved with assigned officer: ' . $emergency->assigned_officer_name);
-
-            // Send Telegram notification ONLY to the ASSIGNED officer
-            try {
-                $assignedOfficer = Officer::where('officerName', $validated['officerName'])
-                    ->orWhere('officerId', $validated['officerId'])
-                    ->first();
-
-                if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                    Log::info('Sending Telegram notification to assigned officer only: ' . $assignedOfficer->officerName);
-
-                    $message = "👮 *TASK ASSIGNED TO YOU* 👮\n\n";
-                    $message .= "*{$assignedOfficer->officerName}*, you have been assigned to an emergency.\n\n";
-                    $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                    $message .= "*Matrix:* " . ($student->matrixNumber ?? 'N/A') . "\n";
-                    $message .= "*Phone:* " . ($student->phone ?? 'N/A') . "\n";
-                    $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
-                    $message .= "*Reported at:* " . $emergency->triggeredAt->format('d/m/Y H:i:s') . "\n\n";
-                    $message .= "📋 *Your Task:*\n";
-                    $message .= "• Respond to the location immediately\n";
-                    $message .= "• Assess the situation\n";
-                    $message .= "• Provide assistance to the student\n";
-                    $message .= "• Update the status when resolved\n\n";
-                    $message .= "⚠️ *Please respond to this emergency as soon as possible!*";
-
-                    $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                } else {
-                    Log::warning('Assigned officer not found or has no Telegram: ' . $validated['officerName']);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to send Telegram notification to assigned officer: ' . $e->getMessage());
-            }
-
-            // Send mobile notification
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::timeout(5)->post($nodeServerUrl . '/api/notify-emergency-status', [
-                    'emergencyId' => (string)$emergency->_id,
-                    'studentId' => $studentId,
-                    'oldStatus' => $oldStatus,
-                    'newStatus' => 'responding',
-                    'title' => '👮 Officer Dispatched',
-                    'message' => "Officer {$validated['officerName']} has been dispatched to your location. Stay calm and await assistance."
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server for emergency dispatch: ' . $e->getMessage());
-            }
-
-            return response()->json(['success' => true, 'emergency' => $emergency]);
-        } catch (\Exception $e) {
-            Log::error('Failed to dispatch officer: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to dispatch officer: ' . $e->getMessage()], 500);
+        if (!$reportCoords || empty($this->mainLocationCoordinates)) {
+            return null;
         }
+
+        $bestMatch = null;
+        $bestDistance = PHP_FLOAT_MAX;
+
+        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+            $distance = $this->calculateDistance(
+                $reportCoords['lat'], $reportCoords['lng'],
+                $locationCoords['lat'], $locationCoords['lng']
+            );
+
+            if ($distance <= $radius && $distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestMatch = $locationName;
+            }
+        }
+
+        return $bestMatch;
     }
 
     /**
-     * Resolve an emergency
+     * Get the short key for a location (for frontend filtering)
      */
-    public function resolve($id)
+    protected function getLocationKey($locationName)
     {
-        Log::info('Resolve method called for ID: ' . $id);
-
-        try {
-            $emergency = Emergencies::find($id);
-            if (!$emergency) {
-                Log::error('Emergency not found: ' . $id);
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+        foreach ($this->mainLocations as $fullName => $config) {
+            if ($fullName === $locationName) {
+                return $config['key'];
             }
-
-            $oldStatus = $emergency->status;
-            $studentId = (string)$emergency->studentId;
-            $student = Student::find($studentId);
-
-            if (!$student) {
-                $student = new \stdClass();
-                $student->name = 'Unknown Student';
-            }
-
-            $emergency->status = 'resolved';
-            $emergency->resolvedAt = now();
-            $emergency->save();
-
-            // Clear cache for counts
-            cache()->forget('emergency_counts');
-
-            // Send Telegram notification ONLY to the assigned officer
-            try {
-                $assignedOfficer = null;
-                if ($emergency->assigned_officer_id) {
-                    $assignedOfficer = Officer::where('officerId', $emergency->assigned_officer_id)->first();
-                }
-                if (!$assignedOfficer && $emergency->assigned_officer_name) {
-                    $assignedOfficer = Officer::where('officerName', $emergency->assigned_officer_name)->first();
-                }
-
-                if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                    Log::info('Sending Telegram resolution notification to assigned officer only: ' . $assignedOfficer->officerName);
-
-                    $message = "✅ *EMERGENCY RESOLVED* ✅\n\n";
-                    $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                    $message .= "*Status:* Emergency has been marked as resolved\n";
-                    $message .= "*Time:* " . now()->format('d/m/Y H:i:s') . "\n\n";
-                    $message .= "The situation has been handled. Good work, {$assignedOfficer->officerName}!";
-
-                    $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                } else {
-                    Log::info('No assigned officer found with Telegram for resolution notification');
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to send Telegram resolution notification to assigned officer: ' . $e->getMessage());
-            }
-
-            // Send mobile notification
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::timeout(5)->post($nodeServerUrl . '/api/notify-emergency-status', [
-                    'emergencyId' => (string)$emergency->_id,
-                    'studentId' => $studentId,
-                    'oldStatus' => $oldStatus,
-                    'newStatus' => 'resolved',
-                    'title' => '✅ Emergency Resolved',
-                    'message' => "Your emergency has been marked as resolved. If you need further assistance, please contact security."
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server for emergency resolution: ' . $e->getMessage());
-            }
-
-            return response()->json(['success' => true, 'emergency' => $emergency]);
-        } catch (\Exception $e) {
-            Log::error('Failed to resolve emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to resolve emergency: ' . $e->getMessage()], 500);
         }
+
+        // If not found, return the original
+        return $locationName;
     }
 
     /**
-     * Delete an emergency record
+     * Determine report location using keyword matching first, then proximity
      */
-    public function destroy($id)
+    protected function determineReportLocation($report, $returnKey = true)
     {
-        Log::info('Delete method called for ID: ' . $id);
-
-        try {
-            $emergency = Emergencies::find($id);
-
-            if (!$emergency) {
-                Log::error('Emergency not found for deletion: ' . $id);
-                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+        // METHOD 1: Try keyword matching using locationArea
+        $locationArea = $this->getLocationAreaFromReport($report);
+        if (!empty($locationArea)) {
+            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
+            if ($matchedLocation) {
+                return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
             }
-
-            $studentId = (string)$emergency->studentId;
-            $emergencyId = (string)$emergency->_id;
-            $emergency->delete();
-
-            // Clear cache for counts
-            cache()->forget('emergency_counts');
-
-            Log::info('Emergency deleted successfully', [
-                'emergency_id' => $emergencyId,
-                'student_id' => $studentId
-            ]);
-
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::post($nodeServerUrl . '/api/notify-emergency-deleted', [
-                    'emergencyId' => $emergencyId,
-                    'studentId' => $studentId,
-                    'title' => '🗑️ Emergency Record Removed',
-                    'message' => "Your emergency record has been removed from the system."
-                ]);
-            } catch (\Exception $e) {
-                Log::warning('Failed to send deletion notification: ' . $e->getMessage());
-            }
-
-            return response()->json(['success' => true, 'message' => 'Emergency record deleted successfully']);
-        } catch (\Exception $e) {
-            Log::error('Failed to delete emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to delete emergency: ' . $e->getMessage()], 500);
         }
+
+        // METHOD 2: Try proximity matching using actual coordinates
+        $reportCoords = $this->getReportCoordinates($report);
+        if ($reportCoords) {
+            $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
+            if ($matchedLocation) {
+                return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
+            }
+        }
+
+        // METHOD 3: Try matching by description/address
+        $description = $report->description ?? '';
+        $address = $this->getAddressFromReport($report);
+        $searchText = strtolower($description . ' ' . $address);
+
+        foreach ($this->mainLocations as $locationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($searchText, strtolower($keyword)) !== false) {
+                    return $returnKey ? $this->getLocationKey($locationName) : $locationName;
+                }
+            }
+        }
+
+        // Fallback: return the original locationArea
+        return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
+    }
+
+    // ============================================
+    // EMERGENCY METHODS
+    // ============================================
+
+    /**
+     * Get locationArea from emergency
+     */
+    protected function getLocationAreaFromEmergency($emergency)
+    {
+        $location = $emergency->location;
+
+        if (is_array($location)) {
+            return $location['locationArea'] ?? '';
+        }
+
+        if (is_object($location) && isset($location->locationArea)) {
+            return $location->locationArea;
+        }
+
+        return '';
     }
 
     /**
-     * Bulk delete emergencies
+     * Get coordinates from emergency
      */
-    public function bulkDelete(Request $request)
+    protected function getEmergencyCoordinates($emergency)
     {
-        Log::info('Bulk delete method called');
-
-        try {
-            $validated = $request->validate([
-                'ids' => 'required|array',
-                'ids.*' => 'required|string'
-            ]);
-
-            $deletedCount = 0;
-            $failedIds = [];
-
-            foreach ($validated['ids'] as $id) {
-                $emergency = Emergencies::find($id);
-                if ($emergency) {
-                    $emergency->delete();
-                    $deletedCount++;
-                } else {
-                    $failedIds[] = $id;
-                }
-            }
-
-            // Clear cache for counts
-            cache()->forget('emergency_counts');
-
-            Log::info('Bulk delete completed', [
-                'deleted_count' => $deletedCount,
-                'failed_ids' => $failedIds
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Successfully deleted {$deletedCount} emergency records",
-                'deleted_count' => $deletedCount,
-                'failed_ids' => $failedIds
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to perform bulk delete: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to delete emergencies: ' . $e->getMessage()], 500);
+        if (isset($emergency->latitude) && isset($emergency->longitude)
+            && is_numeric($emergency->latitude) && is_numeric($emergency->longitude)
+            && $emergency->latitude != 0 && $emergency->longitude != 0) {
+            return ['lat' => (float)$emergency->latitude, 'lng' => (float)$emergency->longitude];
         }
+
+        $location = $emergency->location;
+        if (is_array($location)) {
+            if (isset($location['latitude']) && isset($location['longitude'])
+                && is_numeric($location['latitude']) && is_numeric($location['longitude'])
+                && $location['latitude'] != 0 && $location['longitude'] != 0) {
+                return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Revert an emergency status
+     * Determine emergency location using keyword matching
      */
-    public function revert(Request $request, $id)
+    protected function determineEmergencyLocation($emergency)
     {
-        Log::info('Revert method called for ID: ' . $id);
+        // Check address field directly (emergencies store address here)
+        $address = strtolower($emergency->address ?? '');
 
-        try {
-            $emergency = Emergencies::find($id);
-            if (!$emergency) {
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
-            }
+        // Check location array for additional info
+        $location = $emergency->location;
+        $mahallah = '';
+        $locationArea = '';
+        $building = '';
 
-            $newStatus = $request->input('status');
-            if (!in_array($newStatus, ['active', 'responding', 'resolved'])) {
-                return response()->json(['error' => 'Invalid status', 'success' => false], 400);
-            }
-
-            $oldStatus = $emergency->status;
-            $studentId = (string)$emergency->studentId;
-            $student = Student::find($studentId);
-
-            if (!$student) {
-                $student = new \stdClass();
-                $student->name = 'Unknown Student';
-            }
-
-            $emergency->status = $newStatus;
-            if ($newStatus !== 'resolved') {
-                $emergency->resolvedAt = null;
-            }
-            $emergency->save();
-
-            // Clear cache for counts
-            cache()->forget('emergency_counts');
-
-            // Send mobile notification
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::timeout(5)->post($nodeServerUrl . '/api/notify-emergency-status', [
-                    'emergencyId' => (string)$emergency->_id,
-                    'studentId' => $studentId,
-                    'oldStatus' => $oldStatus,
-                    'newStatus' => $newStatus,
-                    'title' => $newStatus === 'responding' ? '🔄 Officer Responding' : '🔄 Emergency Active',
-                    'message' => $newStatus === 'responding' ? 'An officer is responding to your location' : 'Your emergency is active and awaiting response'
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server for emergency revert: ' . $e->getMessage());
-            }
-
-            // Send Telegram notification ONLY to the assigned officer for revert
-            try {
-                $assignedOfficer = null;
-                if ($emergency->assigned_officer_id) {
-                    $assignedOfficer = Officer::where('officerId', $emergency->assigned_officer_id)->first();
-                }
-                if (!$assignedOfficer && $emergency->assigned_officer_name) {
-                    $assignedOfficer = Officer::where('officerName', $emergency->assigned_officer_name)->first();
-                }
-
-                if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                    Log::info('Sending Telegram revert notification to assigned officer only: ' . $assignedOfficer->officerName);
-
-                    if ($newStatus === 'responding') {
-                        $message = "👮 *OFFICER DISPATCHED* 👮\n\n";
-                        $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                        $message .= "*Officer:* " . ($emergency->assigned_officer_name ?? 'An officer') . "\n";
-                        $message .= "*Status:* Responding to emergency\n\n";
-                        $message .= "✅ You have been assigned to respond to this emergency.";
-                    } else {
-                        $message = "🚨 *EMERGENCY ACTIVE* 🚨\n\n";
-                        $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                        $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n\n";
-                        $message .= "⚠️ You are assigned to this emergency. Please respond as soon as possible.";
-                    }
-
-                    $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                } else {
-                    Log::info('No assigned officer found with Telegram for revert notification');
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to send Telegram revert notification to assigned officer: ' . $e->getMessage());
-            }
-
-            return response()->json(['success' => true, 'emergency' => $emergency]);
-        } catch (\Exception $e) {
-            Log::error('Failed to revert emergency status: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to revert emergency status: ' . $e->getMessage()], 500);
+        if (is_array($location)) {
+            $mahallah = strtolower($location['mahallah'] ?? '');
+            $locationArea = strtolower($location['locationArea'] ?? '');
+            $building = strtolower($location['building'] ?? '');
         }
+
+        // Combine all searchable text
+        $searchText = $address . ' ' . $mahallah . ' ' . $locationArea . ' ' . $building;
+
+        // Log for debugging
+        Log::info('Emergency location matching - Search text: ' . $searchText);
+
+        // METHOD 1: Direct keyword matching against all searchable text
+        foreach ($this->mainLocations as $locationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($searchText, strtolower($keyword)) !== false) {
+                    Log::info('Emergency location matched: ' . $config['key'] . ' from keyword: ' . $keyword);
+                    return $config['key'];
+                }
+            }
+        }
+
+        // METHOD 2: Try to extract "Mahallah X" pattern from address
+        if (preg_match('/mahallah\s+(\w+)/i', $searchText, $matches)) {
+            $found = ucfirst(strtolower($matches[1]));
+            foreach ($this->mainLocations as $locationName => $config) {
+                if (strcasecmp($config['key'], $found) === 0) {
+                    Log::info('Emergency location matched by regex: ' . $config['key']);
+                    return $config['key'];
+                }
+            }
+        }
+
+        // METHOD 3: Try proximity matching using coordinates
+        $emergencyCoords = $this->getEmergencyCoordinates($emergency);
+        if ($emergencyCoords) {
+            $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
+            if ($matchedLocation) {
+                $key = $this->getLocationKey($matchedLocation);
+                Log::info('Emergency location matched by proximity: ' . $key);
+                return $key;
+            }
+        }
+
+        Log::warning('No location match for emergency ID: ' . ($emergency->_id ?? 'unknown') . ' Address: ' . ($emergency->address ?? 'no address'));
+        return null;
     }
 }
