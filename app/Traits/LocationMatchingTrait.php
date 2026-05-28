@@ -213,11 +213,27 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine report location using keyword matching first, then proximity
+     * Determine report location using PROXIMITY first, then keyword matching
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // Get locationArea from report
+        // METHOD 1: Try proximity matching using coordinates (MOST ACCURATE)
+        $reportCoords = $this->getReportCoordinates($report);
+        if ($reportCoords && !empty($this->mainLocationCoordinates)) {
+            $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
+            if ($matchedLocation) {
+                $key = $this->getLocationKey($matchedLocation);
+                $distance = $this->calculateDistance(
+                    $reportCoords['lat'], $reportCoords['lng'],
+                    $this->mainLocationCoordinates[$matchedLocation]['lat'],
+                    $this->mainLocationCoordinates[$matchedLocation]['lng']
+                );
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by PROXIMITY: ' . $key . ' (distance: ' . round($distance, 2) . 'm)');
+                return $returnKey ? $key : $matchedLocation;
+            }
+        }
+
+        // METHOD 2: Fallback to keyword matching using locationArea
         $locationArea = $this->getLocationAreaFromReport($report);
 
         if (!empty($locationArea)) {
@@ -225,7 +241,7 @@ trait LocationMatchingTrait
 
             // Check for IIiBF specifically first (higher priority)
             if (strpos($locationAreaLower, 'iibf') !== false || strpos($locationAreaLower, 'islamic banking') !== false) {
-                return $returnKey ? 'KICT' : 'KICT (ICT)'; // IIiBF belongs to KICT
+                return $returnKey ? 'KICT' : 'KICT (ICT)';
             }
 
             // Check for KOED (Education)
@@ -291,16 +307,7 @@ trait LocationMatchingTrait
             }
         }
 
-        // METHOD 2: Try proximity matching using actual coordinates
-        $reportCoords = $this->getReportCoordinates($report);
-        if ($reportCoords) {
-            $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
-            if ($matchedLocation) {
-                return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
-            }
-        }
-
-        // METHOD 3: Try matching by description/address
+        // METHOD 3: Try matching by description/address (only if no coordinates)
         $description = $report->description ?? '';
         $address = $this->getAddressFromReport($report);
         $searchText = strtolower($description . ' ' . $address);
@@ -308,12 +315,15 @@ trait LocationMatchingTrait
         foreach ($this->mainLocations as $locationName => $config) {
             foreach ($config['keywords'] as $keyword) {
                 if (strpos($searchText, strtolower($keyword)) !== false) {
+                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by KEYWORD: ' . $config['key']);
                     return $returnKey ? $this->getLocationKey($locationName) : $locationName;
                 }
             }
         }
 
         // Fallback: return the original locationArea
+        $locationArea = $this->getLocationAreaFromReport($report);
+        Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using fallback locationArea: ' . $locationArea);
         return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
     }
 
@@ -345,69 +355,60 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine emergency location using keyword matching on address
+     * Determine emergency location using PROXIMITY first, then keyword fallback
      */
     protected function determineEmergencyLocation($emergency)
     {
-        // Check address field directly (emergencies store location here)
-        $address = strtolower($emergency->address ?? '');
-
-        if (empty($address)) {
-            return null;
-        }
-
-        // Direct keyword mapping for emergencies
-        $locationMap = [
-            'aminah' => 'Aminah',
-            'asiah' => 'Asiah',
-            'safiyyah' => 'Safiyyah',
-            'maryam' => 'Maryam',
-            'ruqayyah' => 'Ruqayyah',
-            'ali' => 'Ali',
-            'faruq' => 'Faruq',
-            'bilal' => 'Bilal',
-            'asma' => 'Asma',
-            'hafsah' => 'Hafsah',
-            'halimah' => 'Halimah',
-            'siddiq' => 'Siddiq',
-            'salahuddin' => 'Salahuddin',
-            'uthman' => 'Uthman',
-            'nusaibah' => 'Nusaibah',
-            'zubair' => 'Zubair Al-Awwam',
-            'sumayyah' => 'Sumayyah',
-            'kirkhs' => 'KIRKHS',
-            'kict' => 'KICT',
-            'koe' => 'KOE',
-            'kaed' => 'KAED',
-            'kenms' => 'KENMS',
-            'aikol' => 'AIKOL',
-            'koed' => 'KOED',
-            'library' => 'Dar al-Hikmah Library',
-            'stadium' => 'Saidina Hamzah Stadium',
-            'archery' => 'IIUM Archery Range',
-            'football' => 'UIA Football Turf',
-            'cricket' => 'IIUM Cricket Ground',
-            'rugby' => 'IIUM Rugby Field',
-            'educare' => 'IIUM Educare',
-            'mosque' => 'Sultan Haji Ahmad Shah Mosque',
-            'engineering' => 'KOE',
-        ];
-
-        foreach ($locationMap as $keyword => $locationKey) {
-            if (strpos($address, $keyword) !== false) {
-                Log::info('Emergency location matched: ' . $locationKey . ' from address: ' . $address);
-                return $locationKey;
+        // METHOD 1: Try proximity matching using coordinates (MOST ACCURATE)
+        $emergencyCoords = $this->getEmergencyCoordinates($emergency);
+        if ($emergencyCoords && !empty($this->mainLocationCoordinates)) {
+            $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
+            if ($matchedLocation) {
+                $key = $this->getLocationKey($matchedLocation);
+                $distance = $this->calculateDistance(
+                    $emergencyCoords['lat'], $emergencyCoords['lng'],
+                    $this->mainLocationCoordinates[$matchedLocation]['lat'],
+                    $this->mainLocationCoordinates[$matchedLocation]['lng']
+                );
+                Log::info('Emergency location matched by PROXIMITY: ' . $key . ' (distance: ' . round($distance, 2) . 'm)');
+                return $key;
             }
         }
 
-        // Try regex for "Mahallah X" pattern
-        if (preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
-            $found = ucfirst(strtolower($matches[1]));
-            Log::info('Emergency location matched by regex: ' . $found);
-            return $found;
+        // METHOD 2: Fallback to keyword matching on address
+        $address = strtolower($emergency->address ?? '');
+
+        if (!empty($address)) {
+            $locationMap = [
+                'aminah' => 'Aminah', 'asiah' => 'Asiah', 'safiyyah' => 'Safiyyah',
+                'maryam' => 'Maryam', 'ruqayyah' => 'Ruqayyah', 'ali' => 'Ali',
+                'faruq' => 'Faruq', 'bilal' => 'Bilal', 'asma' => 'Asma',
+                'hafsah' => 'Hafsah', 'halimah' => 'Halimah', 'siddiq' => 'Siddiq',
+                'salahuddin' => 'Salahuddin', 'uthman' => 'Uthman', 'nusaibah' => 'Nusaibah',
+                'zubair' => 'Zubair Al-Awwam', 'sumayyah' => 'Sumayyah',
+                'kirkhs' => 'KIRKHS', 'kict' => 'KICT', 'koe' => 'KOE',
+                'kaed' => 'KAED', 'kenms' => 'KENMS', 'aikol' => 'AIKOL',
+                'koed' => 'KOED', 'library' => 'Dar al-Hikmah Library',
+                'stadium' => 'Saidina Hamzah Stadium', 'mosque' => 'Sultan Haji Ahmad Shah Mosque',
+                'masjid' => 'Sultan Haji Ahmad Shah Mosque', 'engineering' => 'KOE',
+                'education' => 'KOED',
+            ];
+
+            foreach ($locationMap as $keyword => $locationKey) {
+                if (strpos($address, $keyword) !== false) {
+                    Log::info('Emergency location matched by KEYWORD: ' . $locationKey . ' from address: ' . $address);
+                    return $locationKey;
+                }
+            }
+
+            if (preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
+                $found = ucfirst(strtolower($matches[1]));
+                Log::info('Emergency location matched by REGEX: ' . $found);
+                return $found;
+            }
         }
 
-        Log::warning('No location match for emergency - Address: ' . $address);
+        Log::warning('No location match for emergency - Address: ' . ($emergency->address ?? 'no address'));
         return null;
     }
 }
