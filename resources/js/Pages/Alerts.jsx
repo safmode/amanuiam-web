@@ -66,7 +66,7 @@ const formatLocationName = (locationKey) => {
   return locationKey;
 };
 
-// Simple Dropdown Component
+// Simple Dropdown Component - FIXED: No overflow on container (prevents nested scroll)
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -84,8 +84,8 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[320px] max-h-[450px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
-          <div className="p-1">{children}</div>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[320px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+          {children}
         </div>
       )}
     </div>
@@ -289,7 +289,7 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// Alert Detail Modal - LARGER FONT, NO SCROLLING, ORGANIZED
+// Alert Detail Modal - STACKED LAYOUT, NO SCROLLING
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
   const getHeaderColor = () => {
     switch (alert?.status) {
@@ -397,7 +397,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           <StatusBadge status={alert.status} />
         </div>
 
-        {/* Content - Stacked Layout */}
+        {/* Content - Stacked Layout, No Scroll */}
         <div className="p-6 space-y-4">
 
           {/* Reporter Information - Full Width */}
@@ -883,7 +883,7 @@ const Alerts = () => {
               />
             </div>
 
-            {/* Filters Dropdown */}
+            {/* Filters Dropdown - FIXED: Single scroll container, no nested scroll */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
@@ -905,8 +905,9 @@ const Alerts = () => {
                 </Button>
               }
             >
-              <div className="p-4 space-y-4">
-                {/* Status */}
+              {/* SINGLE SCROLL CONTAINER - handles ALL scrolling for the dropdown */}
+              <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+                {/* Status Section */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
@@ -936,7 +937,7 @@ const Alerts = () => {
 
                 <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                {/* Locations */}
+                {/* Locations Section - NO internal scrollbar */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
@@ -946,7 +947,7 @@ const Alerts = () => {
                       </button>
                     )}
                   </div>
-                  <div className="space-y-4 max-h-56 overflow-y-auto pr-2">
+                  <div className="space-y-4">
                     {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
                       <div key={groupName}>
                         <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
@@ -1000,7 +1001,7 @@ const Alerts = () => {
                 </Button>
               }
             >
-              <div className="p-4 min-w-[260px] space-y-4">
+              <div className="p-4 min-w-[260px] space-y-4 max-h-[400px] overflow-y-auto">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
