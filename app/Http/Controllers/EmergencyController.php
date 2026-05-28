@@ -6,20 +6,12 @@ use App\Models\Emergencies;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Http\Controllers\NotificationController;
-use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
-    use LocationMatchingTrait;  // <-- ADD THIS
-
-    public function __construct()  // <-- ADD THIS
-    {
-        $this->initLocationMatching();
-    }
-
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -131,7 +123,6 @@ class EmergencyController extends Controller
             $perPage = (int) $request->get('per_page', 15);
             $page = (int) $request->get('page', 1);
             $status = $request->get('status');
-            $locations = $request->get('locations');  // ADD THIS LINE
 
             // Build query with eager loading and indexing
             $query = Emergencies::orderBy('triggeredAt', 'desc');
@@ -193,26 +184,11 @@ class EmergencyController extends Controller
                 $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
                 $emergency->dispatched_at = $emergency->dispatched_at ?? null;
 
-                // ADD THIS LINE - Determine location using the trait
-                $emergency->determined_location = $this->determineEmergencyLocation($emergency);
-
                 // Remove large fields that aren't needed for list view
                 unset($emergency->location);
 
                 return $emergency;
             });
-
-            // ADD THIS BLOCK - Apply location filter if provided
-            if ($locations) {
-                $locationArray = explode(',', $locations);
-                $filteredItems = $emergencies->getCollection()->filter(function ($emergency) use ($locationArray) {
-                    return in_array($emergency->determined_location, $locationArray);
-                });
-                $emergencies->setCollection($filteredItems);
-                $totalItems = $filteredItems->count();
-                $emergencies->total = $totalItems;
-                $emergencies->lastPage = ceil($totalItems / $perPage);
-            }
 
             return response()->json([
                 'success' => true,
@@ -233,7 +209,6 @@ class EmergencyController extends Controller
             return response()->json(['success' => false, 'error' => 'Failed to fetch emergencies'], 500);
         }
     }
-
 
     /**
      * Get emergency counts - CACHED VERSION (optional)
