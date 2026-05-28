@@ -217,9 +217,74 @@ trait LocationMatchingTrait
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // METHOD 1: Try keyword matching using locationArea
+        // Get locationArea from report
         $locationArea = $this->getLocationAreaFromReport($report);
+
         if (!empty($locationArea)) {
+            $locationAreaLower = strtolower($locationArea);
+
+            // Check for IIiBF specifically first (higher priority)
+            if (strpos($locationAreaLower, 'iibf') !== false || strpos($locationAreaLower, 'islamic banking') !== false) {
+                return $returnKey ? 'KICT' : 'KICT (ICT)'; // IIiBF belongs to KICT
+            }
+
+            // Check for KOED (Education)
+            if (strpos($locationAreaLower, 'koed') !== false || strpos($locationAreaLower, 'education') !== false) {
+                return $returnKey ? 'KOED' : 'KOED (Education)';
+            }
+
+            // Check for KOE (Engineering)
+            if (strpos($locationAreaLower, 'koe') !== false || strpos($locationAreaLower, 'engineering') !== false) {
+                return $returnKey ? 'KOE' : 'KOE (Engineering)';
+            }
+
+            // Check for KICT
+            if (strpos($locationAreaLower, 'kict') !== false || strpos($locationAreaLower, 'information technology') !== false) {
+                return $returnKey ? 'KICT' : 'KICT (ICT)';
+            }
+
+            // Check for KIRKHS
+            if (strpos($locationAreaLower, 'kirkhs') !== false || strpos($locationAreaLower, 'human sciences') !== false) {
+                return $returnKey ? 'KIRKHS' : 'KIRKHS (AHAS KIRKHS)';
+            }
+
+            // Check for Mahallahs
+            $mahallahs = [
+                'asiah' => 'Asiah', 'aminah' => 'Aminah', 'safiyyah' => 'Safiyyah',
+                'maryam' => 'Maryam', 'ruqayyah' => 'Ruqayyah', 'ali' => 'Ali',
+                'faruq' => 'Faruq', 'bilal' => 'Bilal', 'asma' => 'Asma',
+                'hafsah' => 'Hafsah', 'halimah' => 'Halimah', 'siddiq' => 'Siddiq',
+                'salahuddin' => 'Salahuddin', 'uthman' => 'Uthman', 'nusaibah' => 'Nusaibah',
+                'zubair' => 'Zubair Al-Awwam', 'sumayyah' => 'Sumayyah'
+            ];
+
+            foreach ($mahallahs as $keyword => $key) {
+                if (strpos($locationAreaLower, $keyword) !== false) {
+                    return $returnKey ? $key : 'Mahallah ' . ucfirst($keyword);
+                }
+            }
+
+            // Check for Facilities
+            $facilities = [
+                'library' => 'Dar al-Hikmah Library',
+                'stadium' => 'Saidina Hamzah Stadium',
+                'archery' => 'IIUM Archery Range',
+                'football' => 'UIA Football Turf',
+                'cricket' => 'IIUM Cricket Ground',
+                'rugby' => 'IIUM Rugby Field',
+                'educare' => 'IIUM Educare',
+                'mosque' => 'Sultan Haji Ahmad Shah Mosque',
+                'masjid' => 'Sultan Haji Ahmad Shah Mosque',
+            ];
+
+            foreach ($facilities as $keyword => $displayName) {
+                if (strpos($locationAreaLower, $keyword) !== false) {
+                    $key = str_replace(' ', '_', $displayName);
+                    return $returnKey ? $key : $displayName;
+                }
+            }
+
+            // Fallback to original matching
             $matchedLocation = $this->matchLocationToMainLocation($locationArea);
             if ($matchedLocation) {
                 return $returnKey ? $this->getLocationKey($matchedLocation) : $matchedLocation;
