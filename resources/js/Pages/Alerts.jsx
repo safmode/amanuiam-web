@@ -14,7 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Location labels for filtering (same as Reports.jsx)
+// COPY THE LOCATION LABELS FROM REPORTS.JSX
 const locationLabels = {
   'Mahallahs': {
     'Asiah': 'Mahallah Asiah',
@@ -58,7 +58,6 @@ const locationLabels = {
   },
 };
 
-// Helper function to format location name for display
 const formatLocationName = (locationKey) => {
   if (!locationKey) return 'Unknown Location';
   for (const group of Object.values(locationLabels)) {
@@ -299,7 +298,6 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
     return null;
   };
 
-  // Use determined_location from backend
   const displayLocation = alert.determined_location
     ? formatLocationName(alert.determined_location)
     : (alert.address || alert.location?.mahallah || alert.location || 'Unknown Location');
@@ -674,7 +672,7 @@ const Alerts = () => {
     return pages;
   };
 
-  // Build query parameters for API - FIXED: Added locations parameter
+  // Build query parameters for API
   const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
     const params = new URLSearchParams();
     params.append('page', page);
@@ -785,7 +783,6 @@ const Alerts = () => {
     setPagination(prev => ({ ...prev, current_page: 1 }));
   };
 
-  // FIXED: Added filters.locations to dependency array
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -1072,37 +1069,37 @@ const Alerts = () => {
 
                   <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                  {/* Locations Section - Grouped like Reports.jsx */}
-                    <div>
+                  {/* Locations Section - SAME AS REPORTS.JSX */}
+                  <div>
                     <div className="flex items-center justify-between mb-2">
-                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
-                        {filters.locations.length > 0 && (
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                      {filters.locations.length > 0 && (
                         <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                            Clear all
+                          Clear all
                         </button>
-                        )}
+                      )}
                     </div>
                     <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-                        {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
+                      {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
                         <div key={groupName}>
-                            <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
-                            <div className="space-y-2 pl-2">
+                          <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
+                          <div className="space-y-2 pl-2">
                             {Object.entries(locationsGroup).map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                              <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
                                 <input
-                                    type="checkbox"
-                                    checked={filters.locations.includes(key)}
-                                    onChange={() => toggleFilter('locations', key)}
-                                    className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                                  type="checkbox"
+                                  checked={filters.locations.includes(key)}
+                                  onChange={() => toggleFilter('locations', key)}
+                                  className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
                                 />
                                 <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                                </label>
+                              </label>
                             ))}
-                            </div>
+                          </div>
                         </div>
-                        ))}
+                      ))}
                     </div>
-                    </div>
+                  </div>
                 </div>
 
                 {/* Clear All button at bottom */}
