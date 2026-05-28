@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
+    use LocationMatchingTrait;  // <-- ADD THIS
+
+    public function __construct()  // <-- ADD THIS
+    {
+        $this->initLocationMatching();
+    }
+
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
