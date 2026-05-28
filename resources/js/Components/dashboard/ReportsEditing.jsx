@@ -8,16 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye, Trash2, Calendar, Mail, Phone, MapPin, Sparkles } from 'lucide-react';
-import { categoryLabels, statusLabels, urgencyLabels, locationLabels, formatLocationName } from '@/Pages/Reports';
+import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye, Trash2, Mail, Phone, MapPin, Sparkles } from 'lucide-react';
+import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
 
 // Helper function to extract location data from report
 const extractLocationData = (report) => {
   if (!report) return { locationArea: '', building: '', specificPlace: '', fullAddress: '' };
-
-  console.log('FULL REPORT OBJECT:', report);
-  console.log('REPORT LOCATION:', report.location);
 
   let locationArea = '';
   let building = '';
@@ -25,77 +22,30 @@ const extractLocationData = (report) => {
   let fullAddress = '';
 
   // Try multiple ways to get the data
-  // Method 1: Direct from location object (your database structure)
   if (report.location) {
     if (report.location.locationArea) {
       locationArea = report.location.locationArea;
-      console.log('Found locationArea in report.location:', locationArea);
     }
     if (report.location.building) {
       building = report.location.building;
-      console.log('Found building in report.location:', building);
     }
     if (report.location.specificPlace) {
       specificPlace = report.location.specificPlace;
-      console.log('Found specificPlace in report.location:', specificPlace);
     }
     if (report.location.address) {
       fullAddress = report.location.address;
-      console.log('Found address in report.location:', fullAddress);
     }
   }
 
-  // Method 2: Check if location is an array with index 0
-  if (!locationArea && Array.isArray(report.location) && report.location[0]) {
-    if (report.location[0].locationArea) {
-      locationArea = report.location[0].locationArea;
-      console.log('Found locationArea in location[0]:', locationArea);
-    }
-    if (report.location[0].building) {
-      building = report.location[0].building;
-      console.log('Found building in location[0]:', building);
-    }
-    if (report.location[0].specificPlace) {
-      specificPlace = report.location[0].specificPlace;
-      console.log('Found specificPlace in location[0]:', specificPlace);
-    }
-  }
-
-  // Method 3: Check direct properties on report (fallback)
+  // Check direct properties on report (fallback)
   if (!locationArea && report.locationArea) {
     locationArea = report.locationArea;
-    console.log('Found locationArea on report:', locationArea);
   }
   if (!building && report.building) {
     building = report.building;
-    console.log('Found building on report:', building);
   }
   if (!specificPlace && report.specificPlace) {
     specificPlace = report.specificPlace;
-    console.log('Found specificPlace on report:', specificPlace);
-  }
-
-  // Method 4: Check _raw property (Inertia sometimes wraps data)
-  if (!locationArea && report._raw?.location?.locationArea) {
-    locationArea = report._raw.location.locationArea;
-    console.log('Found locationArea in _raw:', locationArea);
-  }
-  if (!building && report._raw?.location?.building) {
-    building = report._raw.location.building;
-    console.log('Found building in _raw:', building);
-  }
-  if (!specificPlace && report._raw?.location?.specificPlace) {
-    specificPlace = report._raw.location.specificPlace;
-    console.log('Found specificPlace in _raw:', specificPlace);
-  }
-
-  // MATCH locationArea to predefined labels
-  if (locationArea) {
-    const matchedLabel = matchLocationAreaToLabel(locationArea);
-    if (matchedLabel) {
-      locationArea = matchedLabel;
-      console.log('Matched locationArea to label:', locationArea);
-    }
   }
 
   // Build full address
@@ -109,66 +59,7 @@ const extractLocationData = (report) => {
 
   fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No address specified';
 
-  console.log('FINAL EXTRACTED DATA:', { locationArea, building, specificPlace, fullAddress });
-
   return { locationArea, building, specificPlace, fullAddress };
-};
-
-// Helper function to match locationArea to predefined labels
-const matchLocationAreaToLabel = (value) => {
-  if (!value) return null;
-
-  const lowerValue = value.toLowerCase().trim();
-
-  // Flatten all location labels for matching
-  const allLocations = {};
-  Object.values(locationLabels).forEach(group => {
-    Object.assign(allLocations, group);
-  });
-
-  // Create a reverse mapping for easier matching
-  const labelToKey = {};
-  Object.entries(allLocations).forEach(([key, label]) => {
-    labelToKey[label.toLowerCase()] = key;
-    labelToKey[key.toLowerCase()] = key;
-  });
-
-  // Check for exact match first (case insensitive)
-  if (labelToKey[lowerValue]) {
-    // Return the display label, not the key
-    return allLocations[labelToKey[lowerValue]];
-  }
-
-  // Check if value contains any of our keys or labels
-  for (const [key, label] of Object.entries(allLocations)) {
-    if (lowerValue.includes(key.toLowerCase()) ||
-        key.toLowerCase().includes(lowerValue) ||
-        lowerValue.includes(label.toLowerCase())) {
-      return label;
-    }
-  }
-
-  // Special handling for common variations
-  const specialMatches = {
-    'aminah': 'Mahallah Aminah',
-    'asiah': 'Mahallah Asiah',
-    'ali': 'Mahallah Ali',
-    'kict': 'Kulliyyah of Information and Communication Technology (KICT)',
-    'koe': 'Kulliyyah of Engineering (KOE)',
-    'kaed': 'Kulliyyah of Architecture and Environmental Design (KAED)',
-    'kenms': 'Kulliyyah of Economics and Management Sciences (KENMS)',
-    'aikol': 'Ahmad Ibrahim Kulliyyah of Law (AIKOL)',
-    'koed': 'Kulliyyah of Education (KOED)',
-  };
-
-  for (const [variation, label] of Object.entries(specialMatches)) {
-    if (lowerValue.includes(variation)) {
-      return label;
-    }
-  }
-
-  // If nothing matches, return the original value (it will show but won't match dropdown)
-  return value;
 };
 
 export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
@@ -177,9 +68,12 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const [errors, setErrors] = useState({});
   const [uploading, setUploading] = useState(false);
   const [officersList, setOfficersList] = useState([]);
-  const [officerOptions, setOfficerOptions] = useState({});
   const [isLoadingOfficers, setIsLoadingOfficers] = useState(false);
   const fileInputRef = useRef(null);
+
+  // State for dynamic location options from database
+  const [dynamicLocationOptions, setDynamicLocationOptions] = useState({});
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
   // State for delete attachment modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -201,9 +95,46 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisTimeout, setAnalysisTimeout] = useState(null);
 
+  // Fetch unique location areas from existing reports
+  const fetchUniqueLocationAreas = async () => {
+    setIsLoadingLocations(true);
+    try {
+      const response = await fetch('/api/reports/locations/unique');
+      const data = await response.json();
+
+      if (data.success && data.locations) {
+        // Group dynamic locations by category
+        const grouped = {
+          'From Existing Reports': {}
+        };
+
+        data.locations.forEach(location => {
+          // Skip if location is already in predefined labels
+          let isPredefined = false;
+          Object.values(locationLabels).forEach(group => {
+            if (Object.values(group).includes(location)) {
+              isPredefined = true;
+            }
+          });
+
+          if (!isPredefined && location && location.trim() !== '') {
+            grouped['From Existing Reports'][location] = location;
+          }
+        });
+
+        setDynamicLocationOptions(grouped);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unique locations:', error);
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
+
   // Fetch officers for dropdown
   useEffect(() => {
     fetchOfficers();
+    fetchUniqueLocationAreas(); // Fetch unique locations when component mounts
   }, []);
 
   const fetchOfficers = async () => {
@@ -212,12 +143,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       const response = await fetch('/api/officers/list');
       const officers = await response.json();
       setOfficersList(officers);
-
-      const options = {};
-      officers.forEach(officer => {
-        options[officer.officerId] = officer.officerName;
-      });
-      setOfficerOptions(options);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
     } finally {
@@ -257,11 +182,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   // Initialize form when report changes or modal opens
   useEffect(() => {
     if (report && isOpen) {
-      // Extract location data properly
-      console.log('RAW REPORT FROM PROPS:', report);
       const { locationArea, building, specificPlace, fullAddress } = extractLocationData(report);
-
-      console.log('Extracted location data:', { locationArea, building, specificPlace, fullAddress });
 
       let formattedDate = '';
       let formattedTime = '';
@@ -271,7 +192,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         formattedTime = dateObj.toTimeString().slice(0, 5);
       }
 
-      // Get existing Cloudinary URLs from the report
       const existingUrls = report.attachmentUrls || report._raw?.attachmentUrls || [];
       const existingPublicIds = report.attachmentPublicIds || report._raw?.attachmentPublicIds || [];
 
@@ -286,7 +206,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         incidentTime: formattedTime,
         locationArea: locationArea || '',
         building: building || '',
-        specificPlace: specificPlace || '', // Add specificPlace field
+        specificPlace: specificPlace || '',
         fullAddress: fullAddress || '',
         injuries: report.injuries || '',
         damages: report.damages || '',
@@ -409,7 +329,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   };
 
-  // Handle file selection - create preview but DON'T upload to Cloudinary yet
+  // Handle file selection
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -431,13 +351,12 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Update full address when locationArea, building, or specificPlace changes
+  // Update full address
   const updateFullAddress = (locationAreaVal, buildingVal, specificPlaceVal) => {
     const parts = [];
     if (locationAreaVal && locationAreaVal.trim() !== '') {
       parts.push(locationAreaVal);
     }
-    // Prioritize specificPlace over building for place names
     if (specificPlaceVal && specificPlaceVal.trim() !== '') {
       parts.push(specificPlaceVal);
     } else if (buildingVal && buildingVal.trim() !== '') {
@@ -590,11 +509,11 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       }
       const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
 
-      // Build location object with all three fields
+      // Build location object
       const locationObj = {
         locationArea: editedReport.locationArea || '',
         building: editedReport.building || '',
-        specificPlace: editedReport.specificPlace || '', // Add specificPlace
+        specificPlace: editedReport.specificPlace || '',
         address: combinedAddress,
         timestamp: new Date().toISOString()
       };
@@ -617,7 +536,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         attachmentUrls: allUrls,
         attachmentPublicIds: allPublicIds,
         location: locationObj,
-        // Include individual fields as fallback
         mahallah: editedReport.locationArea || '',
         building: editedReport.building || '',
         specificPlace: editedReport.specificPlace || '',
@@ -633,14 +551,11 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
           setIsSaving(false);
           showToast('Report updated successfully', 'success');
 
-          const updatedReportData = {
-            ...editedReport,
-            attachmentUrls: allUrls,
-            attachmentPublicIds: allPublicIds,
-          };
+          // Refresh the unique locations list after saving
+          fetchUniqueLocationAreas();
 
           if (onSaveSuccess) {
-            onSaveSuccess(updatedReportData);
+            onSaveSuccess(editedReport);
           }
           onClose();
           resetModalState();
@@ -795,6 +710,18 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const getOfficerDisplayName = (officerId) => {
     const officer = officersList.find(o => o.officerId === officerId);
     return officer ? officer.officerName : 'Not Assigned';
+  };
+
+  // Combine all location options (predefined + dynamic from existing reports)
+  const getAllLocationOptions = () => {
+    const options = { ...locationLabels };
+
+    // Add dynamic locations if they exist
+    if (dynamicLocationOptions && Object.keys(dynamicLocationOptions).length > 0) {
+      Object.assign(options, dynamicLocationOptions);
+    }
+
+    return options;
   };
 
   if (!report || !isOpen || !editedReport) return null;
@@ -980,31 +907,38 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       <p className="text-[10px] text-gray-500 dark:text-gray-400">
                         Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
                       </p>
-                      <Select
-                        value={editedReport.locationArea || ""}
-                        onValueChange={handleLocationAreaChange}
-                      >
-                        <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
-                          <SelectValue placeholder="Select location area" />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                          {Object.entries(locationLabels).map(([groupName, locations]) => (
-                            <Fragment key={groupName}>
-                              <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
-                                {groupName}
-                              </div>
-                              {Object.entries(locations).map(([key, label]) => (
-                                <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700">
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </Fragment>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isLoadingLocations ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          <span className="text-xs text-gray-500">Loading locations...</span>
+                        </div>
+                      ) : (
+                        <Select
+                          value={editedReport.locationArea || ""}
+                          onValueChange={handleLocationAreaChange}
+                        >
+                          <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                            <SelectValue placeholder="Select location area" />
+                          </SelectTrigger>
+                          <SelectContent className="dark:bg-slate-800 dark:border-slate-700 max-h-[300px]">
+                            {Object.entries(getAllLocationOptions()).map(([groupName, locations]) => (
+                              <Fragment key={groupName}>
+                                <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
+                                  {groupName}
+                                </div>
+                                {Object.entries(locations).map(([key, label]) => (
+                                  <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700 pl-4">
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
-                    {/* Specific Address (Building/Room/Block/Specific Place) */}
+                    {/* Specific Address */}
                     <div>
                       <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block/Specific Place)</Label>
                       <div className="flex items-start gap-1.5 mt-1 mb-1">
@@ -1015,17 +949,16 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       <Textarea
                         value={editedReport.specificPlace || editedReport.building || ''}
                         onChange={(e) => {
-                          // Try to detect if it's a place name vs building detail
                           const value = e.target.value;
                           const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
                           const isPlaceName = placeNames.some(place => value.toLowerCase().includes(place.toLowerCase()));
 
                           if (isPlaceName) {
                             handleSpecificPlaceChange(value);
-                            handleBuildingChange(''); // Clear building if it's a specific place
+                            handleBuildingChange('');
                           } else {
                             handleBuildingChange(value);
-                            handleSpecificPlaceChange(''); // Clear specificPlace if it's building detail
+                            handleSpecificPlaceChange('');
                           }
                         }}
                         className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
