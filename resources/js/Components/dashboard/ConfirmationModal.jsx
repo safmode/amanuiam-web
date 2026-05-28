@@ -40,18 +40,18 @@ export const ConfirmationModal = ({ open, onClose, onConfirm, title, description
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        <div className={`p-6 bg-gradient-to-r ${colors.bg} to-white dark:to-slate-800`}>
+      <DialogContent className="sm:max-w-[420px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        <div className={`px-6 py-4 ${colors.bg} border-b border-gray-100 dark:border-slate-700`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${colors.iconBg} flex items-center justify-center`}>
+            <div className={`w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center`}>
               <CheckCircle className={`w-5 h-5 ${colors.iconText}`} />
             </div>
-            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</DialogTitle>
+            <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</DialogTitle>
           </div>
         </div>
 
         <div className="p-6 space-y-4">
-          <p className="text-gray-600 dark:text-gray-400">{description}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
 
           {alert && (
             <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
@@ -67,11 +67,11 @@ export const ConfirmationModal = ({ open, onClose, onConfirm, title, description
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+            <Button variant="outline" className="flex-1 rounded-lg h-10 text-sm dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
               Cancel
             </Button>
             <Button
-              className={`flex-1 ${colors.button} text-white rounded-xl gap-2`}
+              className={`flex-1 ${colors.button} text-white rounded-lg gap-2 h-10 text-sm font-medium`}
               onClick={onConfirm}
               disabled={isProcessing}
             >

@@ -289,7 +289,7 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// Alert Detail Modal - COMPLETELY REDESIGNED - NO SCROLLING, NO OVERLAP
+// Alert Detail Modal - LARGER FONT, NO SCROLLING, ORGANIZED
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
   const getHeaderColor = () => {
     switch (alert?.status) {
@@ -306,7 +306,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
     if (alert.status === 'active') {
       return (
         <Button
-          className="bg-red-500 hover:bg-red-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
+          className="bg-red-500 hover:bg-red-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
           onClick={() => onAction('dispatch', alert)}
           disabled={isDispatching}
         >
@@ -317,7 +317,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
     } else if (alert.status === 'responding') {
       return (
         <Button
-          className="bg-green-500 hover:bg-green-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
+          className="bg-green-500 hover:bg-green-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
           onClick={() => onAction('resolve', alert)}
         >
           <CheckCircle className="w-4 h-4" />
@@ -329,7 +329,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-9 text-sm">
+              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-10 text-sm">
                 <Undo2 className="w-4 h-4" />
                 Revert
               </Button>
@@ -353,14 +353,14 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           </DropdownMenu>
           <Button
             variant="outline"
-            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-9 text-sm"
+            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-10 text-sm"
             onClick={() => onDelete(alert)}
           >
             <Trash2 className="w-4 h-4" />
             Delete
           </Button>
           <Button
-            className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
+            className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
             onClick={() => onAction('createReport', alert)}
           >
             <FileText className="w-4 h-4" />
@@ -380,54 +380,56 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        {/* Header - Compact */}
-        <div className={`px-5 py-3 ${getHeaderColor()} flex items-center justify-between`}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-              {alert.status === 'active' && <AlertTriangle className="w-3.5 h-3.5 text-white" />}
-              {alert.status === 'responding' && <Radio className="w-3.5 h-3.5 text-white" />}
-              {alert.status === 'resolved' && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+      <DialogContent className="sm:max-w-[560px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        {/* Header */}
+        <div className={`px-6 py-4 ${getHeaderColor()} flex items-center justify-between`}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              {alert.status === 'active' && <AlertTriangle className="w-4 h-4 text-white" />}
+              {alert.status === 'responding' && <Radio className="w-4 h-4 text-white" />}
+              {alert.status === 'resolved' && <CheckCircle className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <DialogTitle className="text-sm font-bold text-white">Emergency Alert</DialogTitle>
-              <p className="text-white/70 text-[10px]">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
+              <DialogTitle className="text-base font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/70 text-xs">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
             </div>
           </div>
           <StatusBadge status={alert.status} />
         </div>
 
-        {/* Content - Fixed height, no scroll */}
-        <div className="p-5">
-          {/* Two Column Layout for Compact Display */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Content - No Scroll */}
+        <div className="p-6">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-2 gap-5">
 
             {/* Left Column - Reporter Info */}
-            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-              <div className="flex items-center gap-1.5 mb-2">
-                <User className="w-3.5 h-3.5 text-amber-500" />
-                <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Reporter</p>
+            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
+                  <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter</p>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-xs">
+              <div className="space-y-2">
+                <p className="text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
                   <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
                 </p>
                 {alert.student?.matrixNumber && (
-                  <p className="text-xs">
+                  <p className="text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
                     <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
                   </p>
                 )}
                 {alert.student?.phone && (
-                  <p className="text-xs flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-gray-400" />
+                  <p className="text-sm flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-gray-400" />
                     <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
                   </p>
                 )}
                 {alert.student?.email && (
-                  <p className="text-xs flex items-center gap-1 truncate">
-                    <Mail className="w-3 h-3 text-gray-400 shrink-0" />
+                  <p className="text-sm flex items-center gap-1.5 truncate">
+                    <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span className="text-gray-700 dark:text-gray-300 truncate">{alert.student.email}</span>
                   </p>
                 )}
@@ -435,29 +437,31 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
 
             {/* Right Column - Location & Time */}
-            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-              <div className="flex items-center gap-1.5 mb-2">
-                <MapPin className="w-3.5 h-3.5 text-red-500" />
-                <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Location & Time</p>
+            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
+                  <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                </div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-xs">
+              <div className="space-y-2">
+                <p className="text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
                   <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
                 </p>
                 {alert.address && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
                 )}
                 {alert.location?.building && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
                 )}
-                <p className="text-xs">
+                <p className="text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Triggered:</span>{' '}
                   <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
                 </p>
-                <p className="text-[10px] text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
+                <p className="text-xs text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
                 {alert.resolvedAt && (
-                  <p className="text-xs">
+                  <p className="text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
                     <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
                   </p>
@@ -465,28 +469,30 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
               </div>
             </div>
 
-            {/* Assigned Officer - Full Width (if exists) */}
+            {/* Assigned Officer - Full Width */}
             {alert.assigned_officer_name && (
-              <div className="col-span-2 bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Shield className="w-3.5 h-3.5 text-blue-500" />
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Assigned Officer</p>
+              <div className="col-span-2 bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
+                    <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-xs">
+                <div className="space-y-2">
+                  <p className="text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
                     <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
                   </p>
                   {alert.dispatched_at && (
-                    <p className="text-xs">
+                    <p className="text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
                       <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
                     </p>
                   )}
                   {alert.dispatch_notes && (
                     <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                      <p className="text-[10px] text-gray-500 mb-1 dark:text-gray-400">Dispatch Notes:</p>
-                      <div className="bg-white dark:bg-slate-800 p-2 rounded border border-gray-200 dark:border-slate-700 text-xs text-gray-700 dark:text-gray-300 max-h-24 overflow-y-auto">
+                      <p className="text-xs text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
+                      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-32 overflow-y-auto whitespace-pre-wrap">
                         {alert.dispatch_notes}
                       </div>
                     </div>
@@ -496,9 +502,9 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             )}
           </div>
 
-          {/* Action Buttons - Fixed at bottom */}
-          <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-gray-200 dark:border-slate-700">
-            <Button variant="outline" className="rounded-lg h-9 px-4 text-sm dark:border-slate-700 dark:text-gray-300" onClick={onClose}>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+            <Button variant="outline" className="rounded-lg h-10 px-5 text-sm dark:border-slate-700 dark:text-gray-300" onClick={onClose}>
               Close
             </Button>
             {getActionButtons()}
