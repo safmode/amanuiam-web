@@ -16,7 +16,7 @@ import {
 import AddOfficerModal from '@/components/dashboard/AddOfficerModal';
 import ViewOfficerModal from '@/components/dashboard/ViewOfficerModal';
 import EditOfficerModal from '@/components/dashboard/EditOfficerModal';
-import DeleteOfficerModal from '@/components/dashboard/DeleteOfficerModal'; // Import the new modal
+import DeleteOfficerModal from '@/components/dashboard/DeleteOfficerModal';
 
 // Simple Dropdown Component
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
@@ -198,8 +198,13 @@ const Officers = () => {
   const avgResponseRate = localOfficers.length > 0
     ? Math.round(localOfficers.reduce((sum, o) => sum + (o.responseRate || 0), 0) / localOfficers.length)
     : 0;
-  const topPerformer = localOfficers.reduce((best, current) =>
-    (current.responseRate || 0) > (best?.responseRate || 0) ? current : best, localOfficers[0]);
+
+  // Find top performer based on response rate (with full name)
+  const topPerformer = localOfficers.reduce((best, current) => {
+    const currentRate = current.responseRate || 0;
+    const bestRate = best?.responseRate || 0;
+    return currentRate > bestRate ? current : best;
+  }, localOfficers[0]);
 
   const stats = {
     total: localTotal,
@@ -518,8 +523,16 @@ const Officers = () => {
                 <Star className="w-6 h-6 text-white" />
             </div>
             <div>
-                <p className="text-lg font-bold text-[#5F6368] dark:text-gray-300 truncate">{stats.topPerformer?.officerName?.split(' ')[0] || '-'}</p>
+                {/* Show FULL NAME of top performer */}
+                <p className="text-base font-bold text-[#5F6368] dark:text-gray-300 truncate max-w-[150px]" title={stats.topPerformer?.officerName || '-'}>
+                  {stats.topPerformer?.officerName || '-'}
+                </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">Top Performer</p>
+                {stats.topPerformer && (
+                  <p className="text-[10px] text-green-600 dark:text-green-400 mt-0.5">
+                    {stats.topPerformer.responseRate || 0}% response rate
+                  </p>
+                )}
             </div>
             </CardContent>
         </Card>
@@ -852,36 +865,36 @@ const Officers = () => {
                           <td className="px-4 py-3 text-sm font-mono text-[#D4A853] dark:text-amber-500">{officer.officerId || 'N/A'}</td>
                           <td className="px-4 py-3">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-200">{officer.officerName}</p>
-                            </td>
+                          </td>
                           <td className="px-4 py-3">{getRoleBadge(officer.rank)}</td>
                           <td className="px-4 py-3">
                             <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
                               <MapPin className="w-3 h-3 shrink-0" />
                               {officer.department}
                             </span>
-                           </td>
+                          </td>
                           <td className="px-4 py-3">
                             <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
                               <Phone className="w-3 h-3 shrink-0" />
                               {officer.phone}
                             </span>
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <span className="text-sm font-bold text-gray-800 dark:text-white">
                               {officer.casesHandled || 0}
                             </span>
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <span className="text-sm font-bold text-green-600 dark:text-green-400">
                               {officer.responseRate || 0}%
                             </span>
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <Badge variant="outline" className={`${perfBadge.className} text-xs font-medium gap-1`}>
                               {perfBadge.icon}
                               {perfBadge.label}
                             </Badge>
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <div onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
@@ -907,7 +920,7 @@ const Officers = () => {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
-                           </td>
+                          </td>
                           <td className="px-4 py-3">
                             <Button
                               variant="ghost"
@@ -920,8 +933,8 @@ const Officers = () => {
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
-                           </td>
-                         </tr>
+                          </td>
+                        </tr>
                       );
                     })
                   ) : (
