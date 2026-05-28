@@ -787,27 +787,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/upload-attachments', [ReportController::class, 'uploadAttachments'])->name('reports.upload.attachments');
     Route::post('/reports/upload-for-new', [ReportController::class, 'uploadForNewReport'])->name('reports.upload-for-new');
     Route::delete('/reports/delete-attachment', [ReportController::class, 'deleteAttachment'])->name('reports.delete.attachment');
-
-    Route::get('/reports/locations/unique', function () {
-        $locations = App\Models\Report::distinct('location.locationArea')->get();
-
-        // Also check for locationArea directly if not nested
-        $directLocations = App\Models\Report::whereNotNull('locationArea')
-            ->distinct('locationArea')
-            ->pluck('locationArea')
-            ->toArray();
-
-        $allLocations = array_unique(array_merge($locations->toArray(), $directLocations));
-
-        // Remove null/empty values
-        $allLocations = array_filter($allLocations);
-
-        return response()->json([
-            'success' => true,
-            'locations' => array_values($allLocations)
-        ]);
-    })->name('reports.locations.unique');
-
+    
     Route::get('/Officers', [OfficerController::class, 'index'])->name('officers');
     Route::post('/Officers', [OfficerController::class, 'store'])->name('officers.store');
     Route::put('/Officers/{officerId}', [OfficerController::class, 'update'])->name('officers.update');
