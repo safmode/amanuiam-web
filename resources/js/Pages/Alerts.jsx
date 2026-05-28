@@ -931,39 +931,34 @@ const Alerts = () => {
 
                 {/* Locations — grouped, keys match LocationMatchingTrait */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
                     {filters.locations.length > 0 && (
-                      <button
-                        onClick={() => setFilters(prev => ({ ...prev, locations: [] }))}
-                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      >
+                    <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
                         Clear all
-                      </button>
+                    </button>
                     )}
-                  </div>
-                  <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                </div>
+                <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
                     {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
-                      <div key={groupName}>
-                        <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">
-                          {groupName}
-                        </Label>
+                    <div key={groupName}>
+                        <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
                         <div className="space-y-2 pl-2">
-                          {Object.entries(locationsGroup).map(([key, label]) => (
+                        {Object.entries(locationsGroup).map(([key, label]) => (
                             <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                              <input
+                            <input
                                 type="checkbox"
                                 checked={filters.locations.includes(key)}
                                 onChange={() => toggleFilter('locations', key)}
                                 className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                             </label>
-                          ))}
+                        ))}
                         </div>
-                      </div>
+                    </div>
                     ))}
-                  </div>
+                </div>
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
