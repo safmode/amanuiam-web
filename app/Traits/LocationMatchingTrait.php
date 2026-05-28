@@ -65,95 +65,6 @@ trait LocationMatchingTrait
         }
     }
 
-    // ============================================
-    // SHARED METHODS
-    // ============================================
-
-    /**
-     * Calculate distance between two points in meters (Haversine formula)
-     */
-    protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
-    {
-        $earthRadius = 6371000; // meters
-
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lngDelta = deg2rad($lng2 - $lng1);
-
-        $a = sin($latDelta / 2) * sin($latDelta / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($lngDelta / 2) * sin($lngDelta / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
-    }
-
-    /**
-     * Get the short key for a location (for frontend filtering)
-     */
-    protected function getLocationKey($locationName)
-    {
-        foreach ($this->mainLocations as $fullName => $config) {
-            if ($fullName === $locationName) {
-                return $config['key'];
-            }
-        }
-        return $locationName;
-    }
-
-    /**
-     * Match locationArea to main location using keywords
-     */
-    protected function matchLocationToMainLocation($locationArea)
-    {
-        if (empty($locationArea)) return null;
-
-        $locationAreaLower = strtolower($locationArea);
-
-        foreach ($this->mainLocations as $mainLocationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
-                    return $mainLocationName;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Find closest location by proximity
-     */
-    protected function findClosestLocationByProximity($coords)
-    {
-        if (!$coords || empty($this->mainLocationCoordinates)) {
-            return null;
-        }
-
-        $bestMatch = null;
-        $bestDistance = PHP_FLOAT_MAX;
-
-        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
-            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
-
-            $distance = $this->calculateDistance(
-                $coords['lat'], $coords['lng'],
-                $locationCoords['lat'], $locationCoords['lng']
-            );
-
-            if ($distance <= $radius && $distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch = $locationName;
-            }
-        }
-
-        return $bestMatch;
-    }
-
-    // ============================================
-    // REPORT METHODS
-    // ============================================
-
     /**
      * Get locationArea from report
      */
@@ -219,6 +130,89 @@ trait LocationMatchingTrait
     }
 
     /**
+     * Calculate distance between two points in meters (Haversine formula)
+     */
+    protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371000; // meters
+
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Match locationArea to main location using keywords
+     */
+    protected function matchLocationToMainLocation($locationArea)
+    {
+        if (empty($locationArea)) return null;
+
+        $locationAreaLower = strtolower($locationArea);
+
+        foreach ($this->mainLocations as $mainLocationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                    return $mainLocationName;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find closest location by proximity
+     */
+    protected function findClosestLocationByProximity($reportCoords)
+    {
+        if (!$reportCoords || empty($this->mainLocationCoordinates)) {
+            return null;
+        }
+
+        $bestMatch = null;
+        $bestDistance = PHP_FLOAT_MAX;
+
+        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+            $distance = $this->calculateDistance(
+                $reportCoords['lat'], $reportCoords['lng'],
+                $locationCoords['lat'], $locationCoords['lng']
+            );
+
+            if ($distance <= $radius && $distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestMatch = $locationName;
+            }
+        }
+
+        return $bestMatch;
+    }
+
+    /**
+     * Get the short key for a location (for frontend filtering)
+     */
+    protected function getLocationKey($locationName)
+    {
+        foreach ($this->mainLocations as $fullName => $config) {
+            if ($fullName === $locationName) {
+                return $config['key'];
+            }
+        }
+
+        // If not found, return the original
+        return $locationName;
+    }
+
+    /**
      * Determine report location using keyword matching first, then proximity
      */
     protected function determineReportLocation($report, $returnKey = true)
@@ -259,26 +253,8 @@ trait LocationMatchingTrait
     }
 
     // ============================================
-    // EMERGENCY METHODS
+    // EMERGENCY METHODS - ADD THIS SECTION
     // ============================================
-
-    /**
-     * Get locationArea from emergency
-     */
-    protected function getLocationAreaFromEmergency($emergency)
-    {
-        $location = $emergency->location;
-
-        if (is_array($location)) {
-            return $location['locationArea'] ?? '';
-        }
-
-        if (is_object($location) && isset($location->locationArea)) {
-            return $location->locationArea;
-        }
-
-        return '';
-    }
 
     /**
      * Get coordinates from emergency
