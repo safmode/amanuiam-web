@@ -14,7 +14,60 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// Simple Dropdown Component - FIXED: Single scroll at dropdown level
+// Location labels for filtering (same as Reports.jsx)
+const locationLabels = {
+  'Mahallahs': {
+    'Asiah': 'Mahallah Asiah',
+    'Aminah': 'Mahallah Aminah',
+    'Safiyyah': 'Mahallah Safiyyah',
+    'Maryam': 'Mahallah Maryam',
+    'Ruqayyah': 'Mahallah Ruqayyah',
+    'Ali': 'Mahallah Ali',
+    'Faruq': 'Mahallah Faruq',
+    'Bilal': 'Mahallah Bilal',
+    'Asma': 'Mahallah Asma',
+    'Hafsah': 'Mahallah Hafsah',
+    'Halimah': 'Mahallah Halimah',
+    'Siddiq': 'Mahallah Siddiq',
+    'Salahuddin': 'Mahallah Salahuddin',
+    'Uthman': 'Mahallah Uthman',
+    'Nusaibah': 'Mahallah Nusaibah',
+    'Zubair Al-Awwam': 'Mahallah Zubair',
+    'Sumayyah': 'Mahallah Sumayyah',
+  },
+  'Kulliyyahs': {
+    'KIRKHS': 'KIRKHS (AHAS KIRKHS)',
+    'KICT': 'KICT (ICT)',
+    'KOE': 'KOE (Engineering)',
+    'KAED': 'KAED (Architecture)',
+    'KENMS': 'KENMS (Economics)',
+    'AIKOL': 'AIKOL (Law)',
+    'KOED': 'KOED (Education)',
+  },
+  'Facilities': {
+    'Dar al-Hikmah Library': 'Dar al-Hikmah Library',
+    'Female Sports Complex': 'Female Sports Complex',
+    'Saidina Hamzah Stadium': 'Saidina Hamzah Stadium',
+    'IIUM Archery Range': 'IIUM Archery Range',
+    'UIA Football Turf': 'UIA Football Turf',
+    'IIUM Cricket Ground': 'IIUM Cricket Ground',
+    'IIUM Rugby Field': 'IIUM Rugby Field',
+    'Padang Kawad UIAM': 'Padang Kawad UIAM',
+    'IIUM Educare': 'IIUM Educare',
+    'Sultan Haji Ahmad Shah Mosque': 'Sultan Haji Ahmad Shah Mosque',
+  },
+};
+
+// Helper function to format location name for display
+const formatLocationName = (locationKey) => {
+  if (!locationKey) return 'Unknown Location';
+  for (const group of Object.values(locationLabels)) {
+    if (group[locationKey]) return group[locationKey];
+  }
+  return locationKey;
+};
+
+// Simple Dropdown Component - NO SCROLLING HERE
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -38,7 +91,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-h-[400px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
           {children}
         </div>
       )}
@@ -246,6 +299,11 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
     return null;
   };
 
+  // Get display location - use determined_location if available
+  const displayLocation = alert.determined_location
+    ? formatLocationName(alert.determined_location)
+    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown Location');
+
   return (
     <Card
       className={`border-l-4 ${getAlertCardStyle(alert.status)} rounded-xl cursor-pointer hover:shadow-md transition-all duration-200 dark:bg-slate-800`}
@@ -273,7 +331,7 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
               )}
               <p className="text-xs text-gray-500 flex items-center gap-1.5 dark:text-gray-400">
                 <MapPin className="w-3 h-3" />
-                <span className="truncate">{alert.address || alert.location?.mahallah || alert.location || 'Unknown Location'}</span>
+                <span className="truncate">{displayLocation}</span>
               </p>
             </div>
           </div>
@@ -355,6 +413,10 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   if (!alert) return null;
 
+  const displayLocation = alert.determined_location
+    ? formatLocationName(alert.determined_location)
+    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown');
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[550px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
@@ -417,9 +479,15 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-3 h-3 text-red-400" />
-                <span className="text-gray-500 dark:text-gray-400">Address:</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.address || alert.location?.mahallah || alert.location || 'Unknown'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
               </div>
+              {alert.address && alert.determined_location && (
+                <div className="flex items-center gap-1.5 ml-5">
+                  <span className="text-gray-500 dark:text-gray-400">Address:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.address}</span>
+                </div>
+              )}
               {alert.location?.building && (
                 <div className="flex items-center gap-1.5 ml-5">
                   <span className="text-gray-500 dark:text-gray-400">Building:</span>
@@ -495,11 +563,10 @@ const Alerts = () => {
   // ---------------------- STATE MANAGEMENT ----------------------
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [locations, setLocations] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedAlertForDispatch, setSelectedAlertForDispatch] = useState(null);
 
-  // Global stats (total counts from database, not paginated)
+  // Global stats
   const [globalStats, setGlobalStats] = useState({
     active: 0,
     responding: 0,
@@ -507,24 +574,24 @@ const Alerts = () => {
     total: 0
   });
 
-  // SEPARATE MODAL STATES
+  // Modal states
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [showAddReportModal, setShowAddReportModal] = useState(false);
 
-  // SEPARATE DATA FOR EACH MODAL
+  // Modal data
   const [alertToResolve, setAlertToResolve] = useState(null);
   const [alertForReport, setAlertForReport] = useState(null);
 
-  // Loading States
+  // Loading states
   const [isDispatching, setIsDispatching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Filter States
+  // Filter states
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -536,7 +603,7 @@ const Alerts = () => {
     locations: [],
   });
 
-  // Pagination States
+  // Pagination states
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -552,10 +619,9 @@ const Alerts = () => {
     { value: 'resolved', label: 'Resolved' }
   ];
 
-  // Debounce timer for search
   const searchTimeoutRef = useRef(null);
 
-  // ---------------------- HELPER FUNCTIONS ----------------------
+  // Helper functions
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-MY', {
@@ -591,7 +657,6 @@ const Alerts = () => {
 
   const hasActiveFilters = getFilterCount() > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
 
-  // Get page numbers for pagination
   const getPageNumbers = () => {
     const totalPages = pagination.last_page;
     const currentPage = pagination.current_page;
@@ -609,7 +674,6 @@ const Alerts = () => {
     return pages;
   };
 
-  // Build query parameters for API
   const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
     const params = new URLSearchParams();
     params.append('page', page);
@@ -619,10 +683,14 @@ const Alerts = () => {
       params.append('status', filters.status.join(','));
     }
 
+    if (filters.locations.length > 0) {
+      params.append('locations', filters.locations.join(','));
+    }
+
     return params;
   };
 
-  // ---------------------- API CALLS ----------------------
+  // API calls
   const fetchGlobalStats = async () => {
     try {
       const response = await axios.get('/api/emergencies/counts');
@@ -647,10 +715,6 @@ const Alerts = () => {
 
       setAlerts(data.data);
       setPagination(data.pagination);
-
-      const uniqueLocations = [...new Set(data.data.map(a => a.address || a.location?.mahallah || a.location || 'Unknown'))];
-      setLocations(uniqueLocations);
-
       window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
       console.error('Failed to fetch emergencies:', error);
@@ -696,7 +760,7 @@ const Alerts = () => {
     fetchEmergencies(1, newPerPage);
   };
 
-  // ---------------------- FILTER FUNCTIONS ----------------------
+  // Filter functions
   const toggleFilter = (filterType, value) => {
     setFilters(prev => {
       const current = prev[filterType];
@@ -735,7 +799,7 @@ const Alerts = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [filters.status, pagination.per_page]);
+  }, [filters.status, filters.locations, pagination.per_page]);
 
   const filteredAlerts = alerts.filter(alert => {
     if (searchQuery) {
@@ -743,15 +807,13 @@ const Alerts = () => {
       const studentName = alert.student?.name?.toLowerCase() || '';
       const matrixNumber = alert.student?.matrixNumber?.toLowerCase() || '';
       const location = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || alert.location?.toLowerCase() || '';
-      if (!studentName.includes(searchLower) && !matrixNumber.includes(searchLower) && !location.includes(searchLower)) {
+      const determinedLocation = alert.determined_location?.toLowerCase() || '';
+      if (!studentName.includes(searchLower) && !matrixNumber.includes(searchLower) && !location.includes(searchLower) && !determinedLocation.includes(searchLower)) {
         return false;
       }
     }
     if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
-    if (filters.locations.length > 0) {
-      const alertLocation = alert.address || alert.location?.mahallah || alert.location;
-      if (!filters.locations.some(loc => alertLocation?.includes(loc))) return false;
-    }
+
     const alertDate = new Date(alert.triggeredAt);
     alertDate.setHours(0, 0, 0, 0);
     if (datePreset === 'today') {
@@ -787,7 +849,7 @@ const Alerts = () => {
     return true;
   });
 
-  // ---------------------- ACTION HANDLERS ----------------------
+  // Action handlers
   const updateLocalAlertStatus = (alertId, newStatus) => {
     setAlerts(prev => prev.map(a =>
       (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a
@@ -919,7 +981,7 @@ const Alerts = () => {
     }
   };
 
-  // ---------------------- EFFECTS ----------------------
+  // Effects
   useEffect(() => {
     fetchEmergencies();
     fetchGlobalStats();
@@ -932,7 +994,7 @@ const Alerts = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // ---------------------- RENDER ----------------------
+  // Render
   return (
     <DashboardLayout title="Emergency Alerts" subtitle="Monitor and respond to emergency situations">
       {/* Stats Cards */}
@@ -957,7 +1019,7 @@ const Alerts = () => {
               />
             </div>
 
-            {/* FILTER DROPDOWN - FIXED: NO NESTED SCROLLING */}
+            {/* FILTER DROPDOWN */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
@@ -979,7 +1041,6 @@ const Alerts = () => {
                 </Button>
               }
             >
-              {/* Inner content - NO overflow classes, parent handles scrolling */}
               <div className="bg-white p-4 dark:bg-slate-800 rounded-xl min-w-[280px]">
                 <div className="space-y-4">
                   {/* Status Section */}
@@ -1009,27 +1070,34 @@ const Alerts = () => {
 
                   <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                  {/* Locations Section - NO max-h or overflow-y-auto */}
+                  {/* Locations Section - Grouped like Reports.jsx */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
                       {filters.locations.length > 0 && (
                         <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                          Clear
+                          Clear all
                         </button>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      {locations.map((loc) => (
-                        <label key={loc} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={filters.locations.includes(loc)}
-                            onChange={() => toggleFilter('locations', loc)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                          />
-                          <span className="text-sm truncate text-gray-700 dark:text-gray-300">{loc}</span>
-                        </label>
+                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                      {Object.entries(locationLabels).map(([groupName, locations]) => (
+                        <div key={groupName}>
+                          <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
+                          <div className="space-y-2 pl-2">
+                            {Object.entries(locations).map(([key, label]) => (
+                              <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                                <input
+                                  type="checkbox"
+                                  checked={filters.locations.includes(key)}
+                                  onChange={() => toggleFilter('locations', key)}
+                                  className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1171,12 +1239,22 @@ const Alerts = () => {
                   <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('status', s)} />
                 </Badge>
               ))}
-              {filters.locations.map(l => (
-                <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
-                  <MapPin className="w-3 h-3" /> {l}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
-                </Badge>
-              ))}
+              {filters.locations.map(l => {
+                let displayName = l;
+                for (const group of Object.values(locationLabels)) {
+                  if (group[l]) {
+                    displayName = group[l];
+                    break;
+                  }
+                }
+                return (
+                  <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                    <MapPin className="w-3 h-3" />
+                    {displayName}
+                    <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
+                  </Badge>
+                );
+              })}
               {(datePreset !== 'all' || customDateFrom || customDateTo) && (
                 <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
                   <Calendar className="w-3 h-3" /> {getDateFilterLabel()}

@@ -6,12 +6,21 @@ use App\Models\Emergencies;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Http\Controllers\NotificationController;
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
+    use LocationMatchingTrait;
+
+    public function __construct()
+    {
+        // Initialize location matching
+        $this->initLocationMatching();
+    }
+
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -115,7 +124,7 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get all emergencies with pagination - OPTIMIZED VERSION
+     * Get all emergencies with pagination - USING SHARED LOCATION MATCHING
      */
     public function index(Request $request)
     {
@@ -123,27 +132,26 @@ class EmergencyController extends Controller
             $perPage = (int) $request->get('per_page', 15);
             $page = (int) $request->get('page', 1);
             $status = $request->get('status');
+            $locations = $request->get('locations');
 
-            // Build query with eager loading and indexing
+            // Build query
             $query = Emergencies::orderBy('triggeredAt', 'desc');
 
-            // Apply status filter if provided (comma-separated or single)
+            // Apply status filter
             if ($status) {
                 $statuses = explode(',', $status);
                 $query->whereIn('status', $statuses);
             }
 
-            // OPTIMIZATION: Select only needed fields to reduce data transfer
             $query->select([
                 '_id', 'studentId', 'status', 'triggeredAt', 'address', 'location',
                 'assigned_officer_id', 'assigned_officer_name', 'dispatch_notes',
                 'dispatched_at', 'resolvedAt', 'latitude', 'longitude'
             ]);
 
-            // Execute paginated query
             $emergencies = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // OPTIMIZATION: Batch load all students in ONE query instead of N queries
+            // Batch load students
             $studentIds = [];
             foreach ($emergencies->items() as $emergency) {
                 if ($emergency->studentId && !in_array($emergency->studentId, $studentIds)) {
@@ -151,7 +159,6 @@ class EmergencyController extends Controller
                 }
             }
 
-            // Batch fetch students
             $students = [];
             if (!empty($studentIds)) {
                 $studentCollection = Student::whereIn('_id', $studentIds)->get();
@@ -160,9 +167,9 @@ class EmergencyController extends Controller
                 }
             }
 
-            // Transform results with batched student data
+            // Transform results with determined location using the shared trait
             $emergencies->getCollection()->transform(function ($emergency) use ($students) {
-                // Attach student data from batch-loaded collection
+                // Attach student data
                 if ($emergency->studentId && isset($students[(string)$emergency->studentId])) {
                     $student = $students[(string)$emergency->studentId];
                     $emergency->reporterName = $student->name;
@@ -178,17 +185,30 @@ class EmergencyController extends Controller
                     $emergency->student = null;
                 }
 
+                // DETERMINE LOCATION using the shared trait
+                $emergency->determined_location = $this->determineItemLocation($emergency, true);
+
                 // Ensure fields exist
                 $emergency->assigned_officer_id = $emergency->assigned_officer_id ?? null;
                 $emergency->assigned_officer_name = $emergency->assigned_officer_name ?? null;
                 $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
                 $emergency->dispatched_at = $emergency->dispatched_at ?? null;
 
-                // Remove large fields that aren't needed for list view
-                unset($emergency->location);
-
                 return $emergency;
             });
+
+            // Apply location filter if provided (after determination)
+            if ($locations) {
+                $locationArray = explode(',', $locations);
+                $filteredItems = $emergencies->getCollection()->filter(function ($emergency) use ($locationArray) {
+                    return in_array($emergency->determined_location, $locationArray);
+                });
+                $emergencies->setCollection($filteredItems);
+                // Update pagination totals after filtering
+                $totalItems = $filteredItems->count();
+                $emergencies->total = $totalItems;
+                $emergencies->lastPage = ceil($totalItems / $perPage);
+            }
 
             return response()->json([
                 'success' => true,
@@ -211,13 +231,11 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get emergency counts - CACHED VERSION (optional)
-     * Add caching to reduce database queries
+     * Get emergency counts - CACHED VERSION
      */
     public function getActiveCount()
     {
         try {
-            // Use cache to reduce database hits (cache for 30 seconds)
             $cacheKey = 'emergency_counts';
 
             $counts = cache()->remember($cacheKey, 30, function () {
@@ -271,6 +289,8 @@ class EmergencyController extends Controller
                 $emergency->student = null;
             }
 
+            $emergency->determined_location = $this->determineItemLocation($emergency, true);
+
             return response()->json(['success' => true, 'data' => $emergency]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch emergency: ' . $e->getMessage());
@@ -317,12 +337,11 @@ class EmergencyController extends Controller
             $emergency->dispatched_at = now();
             $emergency->save();
 
-            // Clear cache for counts
             cache()->forget('emergency_counts');
 
             Log::info('Emergency saved with assigned officer: ' . $emergency->assigned_officer_name);
 
-            // Send Telegram notification ONLY to the ASSIGNED officer
+            // Send Telegram notification to assigned officer
             try {
                 $assignedOfficer = Officer::where('officerName', $validated['officerName'])
                     ->orWhere('officerId', $validated['officerId'])
@@ -402,10 +421,9 @@ class EmergencyController extends Controller
             $emergency->resolvedAt = now();
             $emergency->save();
 
-            // Clear cache for counts
             cache()->forget('emergency_counts');
 
-            // Send Telegram notification ONLY to the assigned officer
+            // Send Telegram notification to assigned officer
             try {
                 $assignedOfficer = null;
                 if ($emergency->assigned_officer_id) {
@@ -473,7 +491,6 @@ class EmergencyController extends Controller
             $emergencyId = (string)$emergency->_id;
             $emergency->delete();
 
-            // Clear cache for counts
             cache()->forget('emergency_counts');
 
             Log::info('Emergency deleted successfully', [
@@ -526,7 +543,6 @@ class EmergencyController extends Controller
                 }
             }
 
-            // Clear cache for counts
             cache()->forget('emergency_counts');
 
             Log::info('Bulk delete completed', [
@@ -579,7 +595,6 @@ class EmergencyController extends Controller
             }
             $emergency->save();
 
-            // Clear cache for counts
             cache()->forget('emergency_counts');
 
             // Send mobile notification
@@ -597,7 +612,7 @@ class EmergencyController extends Controller
                 Log::error('Failed to notify mobile server for emergency revert: ' . $e->getMessage());
             }
 
-            // Send Telegram notification ONLY to the assigned officer for revert
+            // Send Telegram notification to assigned officer
             try {
                 $assignedOfficer = null;
                 if ($emergency->assigned_officer_id) {
