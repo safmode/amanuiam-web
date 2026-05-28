@@ -309,62 +309,88 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   const getStatusIcon = () => {
     switch (alert?.status) {
-      case 'active': return <AlertTriangle className="w-5 h-5 text-white" />;
-      case 'responding': return <Radio className="w-5 h-5 text-white" />;
-      case 'resolved': return <CheckCircle className="w-5 h-5 text-white" />;
-      default: return <AlertTriangle className="w-5 h-5 text-white" />;
+      case 'active': return <AlertTriangle className="w-4 h-4 text-white" />;
+      case 'responding': return <Radio className="w-4 h-4 text-white" />;
+      case 'resolved': return <CheckCircle className="w-4 h-4 text-white" />;
+      default: return <AlertTriangle className="w-4 h-4 text-white" />;
     }
   };
 
-  const getActionButton = () => {
+  const getActionButtons = () => {
     if (!alert) return null;
+
     if (alert.status === 'active') {
       return (
         <Button
-          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+          size="sm"
+          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
           onClick={() => onAction('dispatch', alert)}
           disabled={isDispatching}
         >
-          {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           Dispatch Officer
         </Button>
       );
     } else if (alert.status === 'responding') {
       return (
         <Button
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+          size="sm"
+          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
           onClick={() => onAction('resolve', alert)}
         >
-          <CheckCircle className="w-4 h-4" />
+          <CheckCircle className="w-3.5 h-3.5" />
           Mark as Resolved
         </Button>
       );
     } else if (alert.status === 'resolved') {
       return (
-        <div className="flex gap-2 flex-wrap">
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-8 text-xs dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                Revert
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-lg min-w-[170px] p-1">
+              <DropdownMenuItem
+                onClick={() => onAction('revertToResponding', alert)}
+                className="gap-2 text-amber-600 text-xs cursor-pointer rounded-md"
+                disabled={isReverting}
+              >
+                <Undo2 className="w-3.5 h-3.5" /> To Responding
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onAction('revertToActive', alert)}
+                className="gap-2 text-red-600 text-xs cursor-pointer rounded-md"
+                disabled={isReverting}
+              >
+                <Undo2 className="w-3.5 h-3.5" /> To Active
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
-            className="rounded-xl gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
-            onClick={() => onAction('revertToResponding', alert)}
-            disabled={isReverting}
-          >
-            <Undo2 className="w-4 h-4" />Revert to Responding
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-xl gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-            onClick={() => onAction('revertToActive', alert)}
-            disabled={isReverting}
-          >
-            <Undo2 className="w-4 h-4" />Revert to Active
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+            size="sm"
+            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-8 text-xs dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
             onClick={() => onDelete(alert)}
           >
-            <Trash2 className="w-4 h-4" />Delete Record
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
           </Button>
-        </div>
+          <Button
+            size="sm"
+            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
+            onClick={() => onAction('createReport', alert)}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Create Report
+          </Button>
+        </>
       );
     }
     return null;
@@ -378,92 +404,79 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        <div className={`p-5 ${getHeaderColor()}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+      <DialogContent className="sm:max-w-[480px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        {/* Compact Header */}
+        <div className={`px-5 py-3 ${getHeaderColor()} flex items-center justify-between`}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
               {getStatusIcon()}
             </div>
-            <div className="flex-1">
-              <DialogTitle className="text-lg font-bold text-white">Emergency Alert</DialogTitle>
-              <p className="text-white/80 text-xs mt-0.5">Critical incident requiring attention</p>
+            <div>
+              <DialogTitle className="text-sm font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/70 text-[10px]">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
             </div>
-            <StatusBadge status={alert.status} />
           </div>
+          <StatusBadge status={alert.status} />
         </div>
 
-        <div className="p-6 space-y-4">
-          {/* Reporter Information */}
-          <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
-                <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Reporter Information - Compact Grid */}
+          <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-1.5 mb-2">
+              <User className="w-3.5 h-3.5 text-amber-500" />
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter</p>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5 col-span-2">
                 <span className="text-gray-500 dark:text-gray-400">Name:</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
               </div>
               {alert.student?.matrixNumber && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="text-gray-500 dark:text-gray-400">Matrix:</span>
-                  <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
+                  <span className="font-mono text-gray-700 dark:text-gray-300 text-[11px]">{alert.student.matrixNumber}</span>
                 </div>
               )}
               {alert.student?.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-500 dark:text-gray-400">Phone:</span>
-                  <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
+                <div className="flex items-center gap-1.5">
+                  <Phone className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300 text-[11px]">{alert.student.phone}</span>
                 </div>
               )}
               {alert.student?.email && (
-                <div className="flex items-center gap-2 col-span-2">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                  <span className="text-gray-700 dark:text-gray-300 break-all">{alert.student.email}</span>
+                <div className="flex items-center gap-1.5 col-span-2">
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300 text-[11px] truncate">{alert.student.email}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Location & Time */}
-          <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
-                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-              </div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
+          {/* Location & Time - Compact */}
+          <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-1.5 mb-2">
+              <MapPin className="w-3.5 h-3.5 text-red-500" />
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-gray-500 dark:text-gray-400">Location:</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-start gap-1.5">
+                <MapPin className="w-3 h-3 text-red-400 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+                  {alert.address && (
+                    <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">{alert.address}</p>
+                  )}
+                </div>
               </div>
-              {alert.address && alert.determined_location && (
-                <div className="flex items-center gap-2 ml-6">
-                  <span className="text-gray-500 dark:text-gray-400">Address:</span>
-                  <span className="text-gray-700 dark:text-gray-300">{alert.address}</span>
-                </div>
-              )}
-              {alert.location?.building && (
-                <div className="flex items-center gap-2 ml-6">
-                  <span className="text-gray-500 dark:text-gray-400">Building:</span>
-                  <span className="text-gray-700 dark:text-gray-300">{alert.location.building}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-amber-500" />
                 <span className="text-gray-500 dark:text-gray-400">Triggered:</span>
                 <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
-                <span className="text-gray-400 text-xs">({getTimeAgo(alert.triggeredAt)})</span>
+                <span className="text-gray-400 text-[10px]">({getTimeAgo(alert.triggeredAt)})</span>
               </div>
               {alert.resolvedAt && (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="w-3 h-3 text-green-500" />
                   <span className="text-gray-500 dark:text-gray-400">Resolved:</span>
                   <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
                 </div>
@@ -471,32 +484,29 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           </div>
 
-          {/* Assigned Officer */}
+          {/* Assigned Officer - Compact */}
           {alert.assigned_officer_name && (
-            <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
-                  <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
+            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Shield className="w-3.5 h-3.5 text-blue-500" />
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-gray-500 dark:text-gray-400">Officer:</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-blue-500" />
                   <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
                 </div>
                 {alert.dispatched_at && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3 h-3 text-amber-500" />
                     <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>
                     <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
                   </div>
                 )}
                 {alert.dispatch_notes && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
-                    <p className="text-xs text-gray-500 mb-2 dark:text-gray-400">Dispatch Notes:</p>
-                    <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-[10px] text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
+                    <p className="text-xs whitespace-pre-wrap text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 p-2 rounded-md max-h-24 overflow-y-auto">
                       {alert.dispatch_notes}
                     </p>
                   </div>
@@ -505,12 +515,12 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 flex-wrap">
-            <Button variant="outline" className="rounded-xl text-sm h-10 px-5 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+          {/* Action Buttons - Compact Row */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" className="rounded-lg h-8 text-xs px-3 dark:hover:bg-slate-700" onClick={onClose}>
               Close
             </Button>
-            {getActionButton()}
+            {getActionButtons()}
           </div>
         </div>
       </DialogContent>
