@@ -289,24 +289,14 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// Alert Detail Modal - BETTER ORGANIZED
-// Alert Detail Modal - Enhanced & Aesthetic
+// Alert Detail Modal - COMPLETELY REDESIGNED - NO SCROLLING, NO OVERLAP
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
-  const getHeaderGradient = () => {
+  const getHeaderColor = () => {
     switch (alert?.status) {
-      case 'active':     return 'from-red-500 via-red-600 to-red-700';
-      case 'responding': return 'from-amber-500 via-amber-600 to-amber-700';
-      case 'resolved':   return 'from-green-500 via-green-600 to-green-700';
-      default:           return 'from-gray-500 via-gray-600 to-gray-700';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (alert?.status) {
-      case 'active':     return <AlertTriangle className="w-5 h-5" />;
-      case 'responding': return <Radio className="w-5 h-5" />;
-      case 'resolved':   return <CheckCircle className="w-5 h-5" />;
-      default:           return <AlertTriangle className="w-5 h-5" />;
+      case 'active':     return 'bg-red-500';
+      case 'responding': return 'bg-amber-500';
+      case 'resolved':   return 'bg-green-500';
+      default:           return 'bg-gray-500';
     }
   };
 
@@ -316,22 +306,22 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
     if (alert.status === 'active') {
       return (
         <Button
-          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-2 px-5 h-10 shadow-md hover:shadow-lg transition-all duration-300"
+          className="bg-red-500 hover:bg-red-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
           onClick={() => onAction('dispatch', alert)}
           disabled={isDispatching}
         >
           {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          <span className="font-medium">Dispatch Officer</span>
+          Dispatch Officer
         </Button>
       );
     } else if (alert.status === 'responding') {
       return (
         <Button
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl gap-2 px-5 h-10 shadow-md hover:shadow-lg transition-all duration-300"
+          className="bg-green-500 hover:bg-green-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
           onClick={() => onAction('resolve', alert)}
         >
           <CheckCircle className="w-4 h-4" />
-          <span className="font-medium">Mark as Resolved</span>
+          Mark as Resolved
         </Button>
       );
     } else if (alert.status === 'resolved') {
@@ -339,47 +329,42 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="rounded-xl gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 h-10 px-4 transition-all duration-300"
-              >
+              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-9 text-sm">
                 <Undo2 className="w-4 h-4" />
-                <span className="font-medium">Revert</span>
+                Revert
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl p-1 min-w-[180px] shadow-lg">
+            <DropdownMenuContent align="end" className="rounded-lg min-w-[170px] p-1">
               <DropdownMenuItem
                 onClick={() => onAction('revertToResponding', alert)}
-                className="gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-50 cursor-pointer rounded-lg py-2"
+                className="gap-2 text-amber-600 text-sm cursor-pointer rounded-md"
                 disabled={isReverting}
               >
-                <Undo2 className="w-4 h-4" />
-                <span>Revert to Responding</span>
+                <Undo2 className="w-4 h-4" /> To Responding
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onAction('revertToActive', alert)}
-                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer rounded-lg py-2"
+                className="gap-2 text-red-600 text-sm cursor-pointer rounded-md"
                 disabled={isReverting}
               >
-                <Undo2 className="w-4 h-4" />
-                <span>Revert to Active</span>
+                <Undo2 className="w-4 h-4" /> To Active
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
             variant="outline"
-            className="rounded-xl gap-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 h-10 px-4 transition-all duration-300"
+            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-9 text-sm"
             onClick={() => onDelete(alert)}
           >
             <Trash2 className="w-4 h-4" />
-            <span className="font-medium">Delete</span>
+            Delete
           </Button>
           <Button
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl gap-2 px-5 h-10 shadow-md hover:shadow-lg transition-all duration-300"
+            className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg gap-2 px-4 h-9 text-sm"
             onClick={() => onAction('createReport', alert)}
           >
             <FileText className="w-4 h-4" />
-            <span className="font-medium">Create Report</span>
+            Create Report
           </Button>
         </div>
       );
@@ -393,180 +378,127 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
     ? formatLocationName(alert.determined_location)
     : (alert.address || alert.location?.mahallah || alert.location || 'Unknown');
 
-  // Helper Components
-  const SectionCard = ({ icon: Icon, iconColor, title, children }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 dark:from-slate-800/50 dark:to-slate-800/70 dark:border-slate-700">
-      <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-gray-100 dark:border-slate-700">
-        <div className={`w-7 h-7 rounded-lg ${iconColor} flex items-center justify-center shadow-sm`}>
-          <Icon className="w-3.5 h-3.5 text-white" />
-        </div>
-        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider dark:text-gray-400">{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-
-  const DetailRow = ({ label, value, icon: Icon, highlight = false }) => (
-    <div className={`flex items-start gap-2.5 py-1.5 ${highlight ? 'bg-amber-50/50 -mx-1 px-1 rounded-lg' : ''}`}>
-      {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />}
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 min-w-[70px]">{label}:</span>
-      <span className={`text-xs ${highlight ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'} flex-1 break-words`}>
-        {value || '—'}
-      </span>
-    </div>
-  );
-
-  const BadgeTime = ({ date }) => (
-    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-100 rounded-lg dark:bg-slate-700">
-      <Clock className="w-3 h-3 text-gray-400" />
-      <span className="text-[10px] text-gray-500 dark:text-gray-400">{getTimeAgo(date)}</span>
-    </div>
-  );
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700 shadow-2xl">
-        {/* Animated Header with Gradient */}
-        <div className={`relative bg-gradient-to-r ${getHeaderGradient()} px-6 py-4 overflow-hidden`}>
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
-
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                {getStatusIcon()}
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-white tracking-wide">
-                  Emergency Alert
-                </DialogTitle>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-white/70 text-[10px] font-mono">
-                    ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}
-                  </p>
-                  <div className="w-1 h-1 rounded-full bg-white/50"></div>
-                  <BadgeTime date={alert.triggeredAt} />
-                </div>
-              </div>
+      <DialogContent className="sm:max-w-[520px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        {/* Header - Compact */}
+        <div className={`px-5 py-3 ${getHeaderColor()} flex items-center justify-between`}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+              {alert.status === 'active' && <AlertTriangle className="w-3.5 h-3.5 text-white" />}
+              {alert.status === 'responding' && <Radio className="w-3.5 h-3.5 text-white" />}
+              {alert.status === 'resolved' && <CheckCircle className="w-3.5 h-3.5 text-white" />}
             </div>
-            <StatusBadge status={alert.status} />
+            <div>
+              <DialogTitle className="text-sm font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/70 text-[10px]">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
+            </div>
           </div>
+          <StatusBadge status={alert.status} />
         </div>
 
-        {/* Scrollable Content */}
-        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto custom-scrollbar">
+        {/* Content - Fixed height, no scroll */}
+        <div className="p-5">
+          {/* Two Column Layout for Compact Display */}
+          <div className="grid grid-cols-2 gap-4">
 
-          {/* Reporter Information */}
-          <SectionCard icon={User} iconColor="bg-gradient-to-r from-amber-500 to-amber-600" title="Reporter Information">
-            <div className="space-y-1">
-              <DetailRow label="Full Name" value={alert.student?.name || alert.reporterName || 'Unknown'} icon={User} highlight />
-              {alert.student?.matrixNumber && (
-                <DetailRow label="Matrix No" value={alert.student.matrixNumber} />
-              )}
-              <div className="grid grid-cols-2 gap-3 mt-2 pt-1 border-t border-dashed border-gray-100 dark:border-slate-700">
+            {/* Left Column - Reporter Info */}
+            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-1.5 mb-2">
+                <User className="w-3.5 h-3.5 text-amber-500" />
+                <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Reporter</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+                </p>
+                {alert.student?.matrixNumber && (
+                  <p className="text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
+                    <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
+                  </p>
+                )}
                 {alert.student?.phone && (
-                  <DetailRow label="Phone" value={alert.student.phone} icon={Phone} />
+                  <p className="text-xs flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
+                  </p>
                 )}
                 {alert.student?.email && (
-                  <DetailRow label="Email" value={alert.student.email} icon={Mail} />
+                  <p className="text-xs flex items-center gap-1 truncate">
+                    <Mail className="w-3 h-3 text-gray-400 shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300 truncate">{alert.student.email}</span>
+                  </p>
                 )}
               </div>
             </div>
-          </SectionCard>
 
-          {/* Location & Time */}
-          <SectionCard icon={MapPin} iconColor="bg-gradient-to-r from-red-500 to-red-600" title="Location & Time">
-            <div className="space-y-2">
-              <div className="bg-red-50/50 rounded-lg p-2.5 -mx-1 dark:bg-red-950/20">
-                <DetailRow label="Location" value={displayLocation} icon={MapPin} highlight />
-                {alert.address && alert.determined_location && (
-                  <div className="mt-1 ml-6 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <span className="text-gray-400">📍</span> {alert.address}
-                  </div>
+            {/* Right Column - Location & Time */}
+            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-1.5 mb-2">
+                <MapPin className="w-3.5 h-3.5 text-red-500" />
+                <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Location & Time</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+                </p>
+                {alert.address && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
                 )}
                 {alert.location?.building && (
-                  <div className="mt-1 ml-6 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <span className="text-gray-400">🏢</span> {alert.location.building}
-                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
                 )}
-              </div>
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
-                    <Clock className="w-3 h-3 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Triggered</p>
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</p>
-                  </div>
-                </div>
+                <p className="text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">Triggered:</span>{' '}
+                  <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
+                </p>
+                <p className="text-[10px] text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
                 {alert.resolvedAt && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-900/30">
-                      <CheckCircle className="w-3 h-3 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Resolved</p>
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</p>
-                    </div>
-                  </div>
+                  <p className="text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
+                    <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
+                  </p>
                 )}
               </div>
             </div>
-          </SectionCard>
 
-          {/* Assigned Officer - Only if exists */}
-          {alert.assigned_officer_name && (
-            <SectionCard icon={Shield} iconColor="bg-gradient-to-r from-blue-500 to-blue-600" title="Assigned Officer">
-              <div className="space-y-2">
-                <div className="bg-blue-50/50 rounded-lg p-2.5 -mx-1 dark:bg-blue-950/20">
-                  <DetailRow label="Officer Name" value={alert.assigned_officer_name} icon={User} highlight />
+            {/* Assigned Officer - Full Width (if exists) */}
+            {alert.assigned_officer_name && (
+              <div className="col-span-2 bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Shield className="w-3.5 h-3.5 text-blue-500" />
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Assigned Officer</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
+                  </p>
                   {alert.dispatched_at && (
-                    <DetailRow label="Dispatched At" value={formatDate(alert.dispatched_at)} icon={Clock} />
+                    <p className="text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
+                      <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
+                    </p>
+                  )}
+                  {alert.dispatch_notes && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                      <p className="text-[10px] text-gray-500 mb-1 dark:text-gray-400">Dispatch Notes:</p>
+                      <div className="bg-white dark:bg-slate-800 p-2 rounded border border-gray-200 dark:border-slate-700 text-xs text-gray-700 dark:text-gray-300 max-h-24 overflow-y-auto">
+                        {alert.dispatch_notes}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {alert.dispatch_notes && (
-                  <div className="mt-2">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <FileText className="w-3 h-3 text-gray-400" />
-                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                        Dispatch Instructions
-                      </p>
-                    </div>
-                    <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 text-xs text-gray-700 dark:text-gray-300 leading-relaxed max-h-32 overflow-y-auto border border-gray-200 dark:border-slate-700">
-                      {alert.dispatch_notes}
-                    </div>
-                  </div>
-                )}
               </div>
-            </SectionCard>
-          )}
+            )}
+          </div>
 
-          {/* Quick Stats Footer (if resolved) */}
-          {alert.status === 'resolved' && alert.resolvedAt && (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100 dark:from-green-950/20 dark:to-emerald-950/20 dark:border-green-800/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-xs font-medium text-green-700 dark:text-green-400">Resolution Time</span>
-                </div>
-                <span className="text-xs font-semibold text-green-700 dark:text-green-400">
-                  {Math.round((new Date(alert.resolvedAt) - new Date(alert.triggeredAt)) / 60000)} minutes
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
-            <Button
-              variant="ghost"
-              className="rounded-xl h-10 px-5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-700 dark:hover:text-gray-200 transition-all duration-300"
-              onClick={onClose}
-            >
+          {/* Action Buttons - Fixed at bottom */}
+          <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-gray-200 dark:border-slate-700">
+            <Button variant="outline" className="rounded-lg h-9 px-4 text-sm dark:border-slate-700 dark:text-gray-300" onClick={onClose}>
               Close
             </Button>
             {getActionButtons()}
