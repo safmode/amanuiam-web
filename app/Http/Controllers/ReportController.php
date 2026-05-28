@@ -807,13 +807,14 @@ class ReportController extends Controller
                 'studentMatrix' => 'nullable|string',
                 'building' => 'nullable|string',
                 'address' => 'nullable|string',
+                'specificPlace' => 'nullable|string', // Add specific place field
             ]);
 
             if (isset($validated['mahallah'])) {
                 $validated['mahallah'] = $this->capitalizeMahallah($validated['mahallah']);
             }
 
-            // Handle location properly - combine locationArea (mahallah) and building
+            // Handle location properly - combine locationArea (mahallah), building, and specificPlace
             if ($request->has('location') && is_array($request->location)) {
                 $locationData = $request->location;
                 $validated['location'] = $locationData;
@@ -824,26 +825,46 @@ class ReportController extends Controller
                 if (isset($locationData['building'])) {
                     $validated['building'] = $locationData['building'];
                 }
+                if (isset($locationData['specificPlace'])) {
+                    $validated['specificPlace'] = $locationData['specificPlace'];
+                }
                 if (isset($locationData['address'])) {
                     $validated['address'] = $locationData['address'];
                 }
             }
 
-            if ($request->has('mahallah') || $request->has('building') || $request->has('address')) {
+            // Handle individual location fields
+            if ($request->has('mahallah') || $request->has('building') || $request->has('address') || $request->has('specificPlace')) {
                 $existingLocation = $report->location ?? [];
 
                 if ($request->has('mahallah')) {
-                    $existingLocation['mahallah'] = $this->capitalizeMahallah($request->mahallah);
-                    $validated['mahallah'] = $existingLocation['mahallah'];
+                    $existingLocation['locationArea'] = $this->capitalizeMahallah($request->mahallah);
+                    $validated['mahallah'] = $existingLocation['locationArea'];
                 }
                 if ($request->has('building')) {
                     $existingLocation['building'] = $request->building;
                     $validated['building'] = $request->building;
                 }
+                if ($request->has('specificPlace')) {
+                    $existingLocation['specificPlace'] = $request->specificPlace;
+                    $validated['specificPlace'] = $request->specificPlace;
+                }
                 if ($request->has('address')) {
                     $existingLocation['address'] = $request->address;
                     $validated['address'] = $request->address;
                 }
+
+                // Generate full address
+                $fullAddress = '';
+                if (isset($existingLocation['locationArea'])) {
+                    $fullAddress = $existingLocation['locationArea'];
+                    if (isset($existingLocation['specificPlace']) && $existingLocation['specificPlace']) {
+                        $fullAddress .= ', ' . $existingLocation['specificPlace'];
+                    } elseif (isset($existingLocation['building']) && $existingLocation['building']) {
+                        $fullAddress .= ', ' . $existingLocation['building'];
+                    }
+                }
+                $existingLocation['fullAddress'] = $fullAddress;
 
                 $validated['location'] = $existingLocation;
             }
