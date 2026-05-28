@@ -708,32 +708,39 @@ const Alerts = () => {
   // Client-side search + date filtering on the current page
   const filteredAlerts = alerts.filter(alert => {
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const studentName       = alert.student?.name?.toLowerCase() || '';
-      const matrixNumber      = alert.student?.matrixNumber?.toLowerCase() || '';
-      const location          = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || '';
-      const determinedLocation = alert.determined_location?.toLowerCase() || '';
-      if (!studentName.includes(q) && !matrixNumber.includes(q) && !location.includes(q) && !determinedLocation.includes(q)) return false;
+        const q = searchQuery.toLowerCase();
+        const studentName = alert.student?.name?.toLowerCase() || '';
+        const matrixNumber = alert.student?.matrixNumber?.toLowerCase() || '';
+        const location = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || '';
+        const determinedLocation = alert.determined_location?.toLowerCase() || '';
+        if (!studentName.includes(q) && !matrixNumber.includes(q) && !location.includes(q) && !determinedLocation.includes(q)) return false;
     }
 
-    // Status filter is already handled by backend, but we keep it here for client-side safety
+    // Status filter
     if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
 
+    // LOCATION FILTER - ADD THIS
+    if (filters.locations.length > 0) {
+        if (!filters.locations.includes(alert.determined_location)) return false;
+    }
+
+    // Date filter
     const alertDate = new Date(alert.triggeredAt);
     alertDate.setHours(0, 0, 0, 0);
     if (datePreset === 'today') {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      if (alertDate.getTime() !== today.getTime()) return false;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        if (alertDate.getTime() !== today.getTime()) return false;
     } else if (datePreset === 'week') {
-      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0, 0, 0, 0);
-      if (alertDate < weekAgo) return false;
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0, 0, 0, 0);
+        if (alertDate < weekAgo) return false;
     } else if (datePreset === 'month') {
-      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0, 0, 0, 0);
-      if (alertDate < monthAgo) return false;
+        const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0, 0, 0, 0);
+        if (alertDate < monthAgo) return false;
     } else if (customDateFrom || customDateTo) {
-      if (customDateFrom) { const from = new Date(customDateFrom); from.setHours(0,0,0,0); if (alertDate < from) return false; }
-      if (customDateTo)   { const to   = new Date(customDateTo);   to.setHours(23,59,59,999); if (alertDate > to) return false; }
+        if (customDateFrom) { const from = new Date(customDateFrom); from.setHours(0,0,0,0); if (alertDate < from) return false; }
+        if (customDateTo) { const to = new Date(customDateTo); to.setHours(23,59,59,999); if (alertDate > to) return false; }
     }
+
     return true;
   });
 
