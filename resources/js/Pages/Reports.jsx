@@ -89,33 +89,54 @@ export const locationLabels = {
     'IIUM Educare': 'IIUM Educare',
     'Sultan Haji Ahmad Shah Mosque': 'Sultan Haji Ahmad Shah Mosque',
   },
+  'Commercial Areas': {
+    '7 Eleven': '7 Eleven',
+    'Office': 'Office Buildings',
+    'Cafe': 'Cafes & Restaurants',
+    'Library': 'Library',
+    'Gym': 'Sports Complex',
+    'Store': 'Convenience Stores',
+    'Shop': 'Shops',
+    'Restaurant': 'Restaurants',
+    'Food Court': 'Food Court',
+  }
 };
 
 // Helper function to get incident location from report
 const getIncidentLocation = (report) => {
   if (!report) return 'No address specified';
 
-  console.log('getIncidentLocation - full report:', report);
-  console.log('getIncidentLocation - report.location:', report.location);
-
   // DIRECT ACCESS: Your database stores location as a direct object
   if (report.location && typeof report.location === 'object') {
-    // Check for locationArea directly
-    if (report.location.locationArea) {
-      const area = report.location.locationArea;
-      const building = report.location.building || '';
-      if (building && building.trim() !== '') {
-        return `${area}, ${building}`;
+    const parts = [];
+
+    // Add locationArea if exists and not a place name
+    if (report.location.locationArea && report.location.locationArea.trim() !== '') {
+      // Check if locationArea is actually a place name
+      const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
+      const isPlaceName = placeNames.some(place => report.location.locationArea.toLowerCase().includes(place.toLowerCase()));
+
+      if (!isPlaceName) {
+        parts.push(report.location.locationArea);
       }
-      return area;
     }
+
+    // Add specificPlace (business names like "7 Eleven")
+    if (report.location.specificPlace && report.location.specificPlace.trim() !== '') {
+      parts.push(report.location.specificPlace);
+    }
+    // Add building if exists and no specificPlace
+    else if (report.location.building && report.location.building.trim() !== '') {
+      parts.push(report.location.building);
+    }
+
+    if (parts.length > 0) {
+      return parts.join(', ');
+    }
+
     // Fallback to address
     if (report.location.address) {
       return report.location.address;
-    }
-    // Fallback to building
-    if (report.location.building) {
-      return report.location.building;
     }
   }
 
@@ -253,12 +274,24 @@ const Reports = () => {
     // Get the incident location using the improved function
     let incidentLocation = getIncidentLocation(r);
 
-    // Also try to determine location based on proximity (if available from server)
-    // You can add a field 'determinedLocation' from the server
-    const determinedLocation = r.determinedLocation || null;
+    // Extract specific place for editing
+    let specificPlace = '';
+    let buildingDetail = '';
+    let locationArea = '';
 
-    console.log('Extracted incident location:', incidentLocation);
-    console.log('Determined location from proximity:', determinedLocation);
+    if (r.location && typeof r.location === 'object') {
+      specificPlace = r.location.specificPlace || '';
+      buildingDetail = r.location.building || '';
+      locationArea = r.location.locationArea || '';
+
+      // If locationArea contains a place name, move it to specificPlace for display
+      const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
+      const isPlaceName = placeNames.some(place => locationArea.toLowerCase().includes(place.toLowerCase()));
+      if (isPlaceName && !specificPlace) {
+        specificPlace = locationArea;
+        locationArea = '';
+      }
+    }
 
     return {
         id: r.reportId ?? r._id,
@@ -271,10 +304,11 @@ const Reports = () => {
         category: r.incidentCategory,
         categoryDisplay: categoryLabels[r.incidentCategory] || r.incidentCategory,
         mahallah: r.mahallah,
-        locationArea: r.locationArea,
-        location: incidentLocation, // Use determined location if available
+        locationArea: locationArea,
+        building: buildingDetail,
+        specificPlace: specificPlace,
+        location: incidentLocation,
         address: r.address,
-        building: r.building,
         locationRaw: r.location,
         description: r.description,
         date: r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString('en-MY') : '—',
@@ -1219,7 +1253,7 @@ const Reports = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <EditableCell value={r.category} reportId={r.id} field="incidentCategory" options={categoryLabels} optionLabels={categoryLabels} onUpdate={handleCellUpdate} />
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         {hasLocation ? (
                           <div className="flex items-start gap-1.5">
@@ -1234,20 +1268,20 @@ const Reports = () => {
                             <span className="text-xs text-gray-400 dark:text-gray-500 italic">No location</span>
                           </div>
                         )}
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <p className="text-sm text-gray-900 dark:text-gray-200">{r.date}</p>
                         {r.time && <p className="text-xs text-gray-500 dark:text-gray-400">{r.time}</p>}
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.urgency} reportId={r.id} field="urgency" options={urgencyLabels} optionLabels={urgencyLabels} onUpdate={handleCellUpdate} />
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.status} reportId={r.id} field="status" options={statusLabels} optionLabels={statusLabels} onUpdate={handleCellUpdate} />
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.assignedOfficer ? r.officerName : 'Not Assigned'} reportId={r.id} field="assignedOfficer" options={officerOptions} optionLabels={officerOptions} onUpdate={handleOfficerUpdate} />
-                      </td>
+                       </td>
                       <td className="px-4 py-3 text-center">
                         <div onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
@@ -1266,12 +1300,12 @@ const Reports = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </td>
+                       </td>
                       <td className="px-4 py-3">
                         <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); handleDeleteReport(raw); }}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                      </td>
+                       </td>
                     </tr>
                   );
                 })
@@ -1281,7 +1315,7 @@ const Reports = () => {
                 </tr>
               )}
             </tbody>
-          </table>
+           </table>
         </div>
       </div>
     );

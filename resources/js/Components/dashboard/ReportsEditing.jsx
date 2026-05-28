@@ -89,6 +89,22 @@ const extractLocationData = (report) => {
     console.log('Found specificPlace in _raw:', specificPlace);
   }
 
+  // NEW: ONLY move to specificPlace if locationArea is EXACTLY a place name, not containing it
+  // This prevents "Dar al-Hikmah Library" from being moved just because it contains "library"
+  const exactPlaceNames = ['7 Eleven', 'Seven Eleven', 'Office', 'Cafe', 'Cafeteria', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
+  const isExactPlaceName = exactPlaceNames.some(place =>
+    locationArea.toLowerCase() === place.toLowerCase() ||
+    locationArea.toLowerCase().includes(place.toLowerCase()) && locationArea.toLowerCase().split(' ').length <= 2
+  );
+
+  // Only move if it's a short name (2 words or less) and matches place names
+  // This prevents "Dar al-Hikmah Library" from being moved
+  if (isExactPlaceName && !specificPlace && locationArea) {
+    specificPlace = locationArea;
+    locationArea = '';
+    console.log('Moved place name from locationArea to specificPlace:', specificPlace);
+  }
+
   // MATCH locationArea to predefined labels
   if (locationArea) {
     const matchedLabel = matchLocationAreaToLabel(locationArea);
@@ -98,9 +114,11 @@ const extractLocationData = (report) => {
     }
   }
 
-  // Build full address
+  // Build full address - prioritize specificPlace over building
   const addressParts = [];
-  if (locationArea) addressParts.push(locationArea);
+  if (locationArea && locationArea.trim() !== '') {
+    addressParts.push(locationArea);
+  }
   if (specificPlace && specificPlace.trim() !== '') {
     addressParts.push(specificPlace);
   } else if (building && building.trim() !== '') {
@@ -456,6 +474,10 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const handleBuildingChange = (value) => {
+    // Clear specificPlace if we're setting a building (mutually exclusive for clarity)
+    if (value && editedReport.specificPlace) {
+      setEditedReport(prev => ({ ...prev, specificPlace: '' }));
+    }
     const newFullAddress = updateFullAddress(editedReport.locationArea, value, editedReport.specificPlace);
     setEditedReport(prev => ({
       ...prev,
@@ -465,6 +487,10 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const handleSpecificPlaceChange = (value) => {
+    // Clear building if we're setting a specific place (mutually exclusive)
+    if (value && editedReport.building) {
+      setEditedReport(prev => ({ ...prev, building: '' }));
+    }
     const newFullAddress = updateFullAddress(editedReport.locationArea, editedReport.building, value);
     setEditedReport(prev => ({
       ...prev,
@@ -472,6 +498,34 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       fullAddress: newFullAddress
     }));
   };
+
+  // Handle the combined address input (intelligently determines if it's a building or specific place)
+    const handleCombinedAddressChange = (value) => {
+    if (!value || value.trim() === '') {
+        handleBuildingChange('');
+        handleSpecificPlaceChange('');
+        return;
+    }
+
+    // List of exact place names (short names, not descriptive ones)
+    const exactPlaceNames = ['7 Eleven', 'Seven Eleven', 'Office', 'Cafe', 'Cafeteria', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
+
+    // Check if the value is EXACTLY or predominantly a place name
+    // This prevents "Dar al-Hikmah Library" from being treated as just "Library"
+    const isShortPlaceName = value.split(' ').length <= 2;
+    const isExactPlace = exactPlaceNames.some(place =>
+        value.toLowerCase() === place ||
+        (value.toLowerCase().includes(place) && isShortPlaceName)
+    );
+
+    if (isExactPlace) {
+        // It's a specific place/business - store in specificPlace
+        handleSpecificPlaceChange(value);
+    } else {
+        // It's a building/block/room or detailed location - store in building
+        handleBuildingChange(value);
+    }
+    };
 
   // Upload pending files to Cloudinary
   const uploadPendingFiles = async () => {
@@ -582,7 +636,9 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
       // Build full address from components
       const addressParts = [];
-      if (editedReport.locationArea) addressParts.push(editedReport.locationArea);
+      if (editedReport.locationArea && editedReport.locationArea.trim() !== '') {
+        addressParts.push(editedReport.locationArea);
+      }
       if (editedReport.specificPlace && editedReport.specificPlace.trim() !== '') {
         addressParts.push(editedReport.specificPlace);
       } else if (editedReport.building && editedReport.building.trim() !== '') {
@@ -594,7 +650,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       const locationObj = {
         locationArea: editedReport.locationArea || '',
         building: editedReport.building || '',
-        specificPlace: editedReport.specificPlace || '', // Add specificPlace
+        specificPlace: editedReport.specificPlace || '',
         address: combinedAddress,
         timestamp: new Date().toISOString()
       };
@@ -617,7 +673,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         attachmentUrls: allUrls,
         attachmentPublicIds: allPublicIds,
         location: locationObj,
-        // Include individual fields as fallback
+        // Include individual fields as fallback for backward compatibility
         mahallah: editedReport.locationArea || '',
         building: editedReport.building || '',
         specificPlace: editedReport.specificPlace || '',
@@ -1014,20 +1070,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       </div>
                       <Textarea
                         value={editedReport.specificPlace || editedReport.building || ''}
-                        onChange={(e) => {
-                          // Try to detect if it's a place name vs building detail
-                          const value = e.target.value;
-                          const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
-                          const isPlaceName = placeNames.some(place => value.toLowerCase().includes(place.toLowerCase()));
-
-                          if (isPlaceName) {
-                            handleSpecificPlaceChange(value);
-                            handleBuildingChange(''); // Clear building if it's a specific place
-                          } else {
-                            handleBuildingChange(value);
-                            handleSpecificPlaceChange(''); // Clear specificPlace if it's building detail
-                          }
-                        }}
+                        onChange={(e) => handleCombinedAddressChange(e.target.value)}
                         className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, 7 Eleven, Office, etc."
                         rows={2}

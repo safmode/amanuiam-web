@@ -72,7 +72,17 @@ class Report extends Model
         $location = $this->location;
 
         if (is_array($location) && isset($location['locationArea'])) {
-            return $location['locationArea'];
+            $locationArea = $location['locationArea'];
+
+            // If locationArea contains a place name, return empty (it should be in specificPlace)
+            $placeNames = ['7 Eleven', 'Office', 'Cafe', 'Cafeteria', 'Library', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
+            foreach ($placeNames as $place) {
+                if (stripos($locationArea, $place) !== false) {
+                    return '';
+                }
+            }
+
+            return $locationArea;
         }
 
         return $this->mahallah ?? '';
@@ -85,13 +95,15 @@ class Report extends Model
     {
         $location = $this->location;
 
-        if (is_array($location) && isset($location['building'])) {
-            return $location['building'];
-        }
+        if (is_array($location)) {
+            // Check for specificPlace first (business names)
+            if (isset($location['specificPlace']) && $location['specificPlace']) {
+                return '';
+            }
 
-        // Check for specific place name (like "7 Eleven", "Office", "Cafe")
-        if (is_array($location) && isset($location['specificPlace'])) {
-            return $location['specificPlace'];
+            if (isset($location['building'])) {
+                return $location['building'];
+            }
         }
 
         return $this->building ?? '';
@@ -103,21 +115,19 @@ class Report extends Model
     public function getFullAddress()
     {
         $locationArea = $this->getLocationArea();
-        $building = $this->getBuildingDetail();
         $specificPlace = $this->getSpecificPlace();
+        $building = $this->getBuildingDetail();
 
         $parts = [];
 
-        if ($locationArea) {
+        if ($locationArea && $locationArea !== '') {
             $parts[] = $locationArea;
         }
 
-        // If there's a specific place (like "7 Eleven", "Office"), add it
+        // Prioritize specificPlace (business names like "7 Eleven") over building
         if ($specificPlace && $specificPlace !== '') {
             $parts[] = $specificPlace;
-        }
-        // Otherwise add building if available
-        elseif ($building && $building !== '') {
+        } elseif ($building && $building !== '') {
             $parts[] = $building;
         }
 
@@ -141,13 +151,24 @@ class Report extends Model
         $location = $this->location;
 
         if (is_array($location)) {
-            // Check for specificPlace field
+            // Check for specificPlace field first
             if (isset($location['specificPlace']) && $location['specificPlace']) {
                 return $location['specificPlace'];
             }
 
-            // Check if building contains a known place name
-            if (isset($location['building']) && $location['building']) {
+            // Check if locationArea contains a known place name
+            if (isset($location['locationArea'])) {
+                $locationArea = $location['locationArea'];
+                $knownPlaces = ['7 Eleven', 'Office', 'Cafe', 'Cafeteria', 'Library', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
+                foreach ($knownPlaces as $place) {
+                    if (stripos($locationArea, $place) !== false) {
+                        return $locationArea; // Return the place name
+                    }
+                }
+            }
+
+            // Check building for place names
+            if (isset($location['building'])) {
                 $building = $location['building'];
                 $knownPlaces = ['7 Eleven', 'Office', 'Cafe', 'Cafeteria', 'Library', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
                 foreach ($knownPlaces as $place) {
