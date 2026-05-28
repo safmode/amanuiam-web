@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,22 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import {
-  AlertTriangle, Clock, CheckCircle, Radio, Send, Calendar, MapPin, ChevronDown,
-  FileText, User, Phone, Loader2, Mail, Undo2, X, Search, Filter, Shield, Trash2,
-  ChevronLeft, ChevronRight, TrendingUp, Activity, Zap, Globe, Building2, School,
-  Home, Library, HelpCircle, Sparkles, Bell, BellRing
-} from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle, Radio, Send, Calendar, MapPin, ChevronDown, FileText, User, Phone, Loader2, Mail, Undo2, X, Search, Filter, Shield, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DispatchOfficerModal } from '@/Components/dashboard/DispatchOfficerModal';
 import { AddEmergencyReport } from '@/Components/dashboard/AddEmergencyReport';
 import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// ============================================================
-// CONSTANTS & HELPERS
-// ============================================================
-
+// Location labels matching LocationMatchingTrait keys exactly
 const locationLabels = {
   'Mahallahs': {
     'Asiah': 'Mahallah Asiah',
@@ -74,28 +66,7 @@ const formatLocationName = (locationKey) => {
   return locationKey;
 };
 
-const statusConfig = {
-  active: { label: 'Active', color: 'red', icon: AlertTriangle, bgClass: 'bg-red-50 dark:bg-red-950/30', borderClass: 'border-red-500' },
-  responding: { label: 'Responding', color: 'amber', icon: Radio, bgClass: 'bg-amber-50 dark:bg-amber-950/30', borderClass: 'border-amber-500' },
-  resolved: { label: 'Resolved', color: 'green', icon: CheckCircle, bgClass: 'bg-green-50 dark:bg-green-950/30', borderClass: 'border-green-500' },
-};
-
-const showToast = (message, type = 'success') => {
-  const toast = document.createElement('div');
-  toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 backdrop-blur-sm ${
-    type === 'success' ? 'bg-gradient-to-r from-green-500 to-green-600' :
-    type === 'error' ? 'bg-gradient-to-r from-red-500 to-red-600' :
-    'bg-gradient-to-r from-blue-500 to-blue-600'
-  }`;
-  toast.innerHTML = `<div class="flex items-center gap-2">${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}<span>${message}</span></div>`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-};
-
-// ============================================================
-// UI COMPONENTS
-// ============================================================
-
+// Simple Dropdown Component - FIXED: removed max-height to prevent nested scroll
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -113,84 +84,110 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 min-w-[320px] max-h-[480px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200`}>
-          <div className="p-1">{children}</div>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[300px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+          {children}
         </div>
       )}
     </div>
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, trend, color }) => {
-  const colorClasses = {
-    red: { bg: 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/40 dark:to-red-900/30', iconBg: 'bg-red-500', iconColor: 'text-white', valueColor: 'text-red-600 dark:text-red-400' },
-    amber: { bg: 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30', iconBg: 'bg-amber-500', iconColor: 'text-white', valueColor: 'text-amber-600 dark:text-amber-400' },
-    green: { bg: 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30', iconBg: 'bg-green-500', iconColor: 'text-white', valueColor: 'text-green-600 dark:text-green-400' },
-    blue: { bg: 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30', iconBg: 'bg-blue-500', iconColor: 'text-white', valueColor: 'text-blue-600 dark:text-blue-400' },
+// Toast Notification
+const showToast = (message, type = 'success') => {
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 ${
+    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+  }`;
+  toast.innerHTML = `<div class="flex items-center gap-2">${type === 'success' ? '✓' : '✗'}<span>${message}</span></div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+};
+
+// Stat Card Component
+const StatCard = ({ icon: Icon, label, value, color }) => {
+  const getColorClasses = () => {
+    switch (color) {
+      case 'red':    return { card: 'bg-white border-red-500/30 dark:bg-red-900/20 dark:border-red-700',    iconBg: 'bg-red-100 dark:bg-red-900/50',    iconColor: 'text-red-600 dark:text-red-400',    valueColor: 'text-red-600 dark:text-red-400' };
+      case 'amber':  return { card: 'bg-white border-amber-500/30 dark:bg-amber-900/20 dark:border-amber-700', iconBg: 'bg-amber-100 dark:bg-amber-900/50', iconColor: 'text-amber-600 dark:text-amber-400', valueColor: 'text-amber-600 dark:text-amber-400' };
+      case 'green':  return { card: 'bg-white border-green-500/30 dark:bg-green-900/20 dark:border-green-700', iconBg: 'bg-green-100 dark:bg-green-900/50', iconColor: 'text-green-600 dark:text-green-400', valueColor: 'text-green-600 dark:text-green-400' };
+      case 'blue':   return { card: 'bg-white border-blue-500/30 dark:bg-blue-900/20 dark:border-blue-700',   iconBg: 'bg-blue-100 dark:bg-blue-900/50',   iconColor: 'text-blue-600 dark:text-blue-400',   valueColor: 'text-blue-600 dark:text-blue-400' };
+      default:       return { card: 'bg-white border-gray-500/30 dark:bg-gray-900/20 dark:border-gray-700',   iconBg: 'bg-gray-100 dark:bg-gray-900/50',   iconColor: 'text-gray-600 dark:text-gray-400',   valueColor: 'text-gray-600 dark:text-gray-400' };
+    }
   };
-
-  const classes = colorClasses[color] || colorClasses.blue;
-
+  const classes = getColorClasses();
   return (
-    <Card className={`${classes.bg} rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border-0 overflow-hidden group`}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</p>
-            <p className={`text-3xl font-bold ${classes.valueColor}`}>{value}</p>
-            {trend && (
-              <div className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3 text-green-500" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{trend}</span>
-              </div>
-            )}
-          </div>
-          <div className={`w-12 h-12 rounded-xl ${classes.iconBg} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`w-6 h-6 ${classes.iconColor}`} />
-          </div>
+    <Card className={`${classes.card} rounded-2xl shadow-sm hover:shadow-md transition-shadow`}>
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className={`w-12 h-12 rounded-xl ${classes.iconBg} flex items-center justify-center`}>
+          <Icon className={`w-6 h-6 ${classes.iconColor}`} />
+        </div>
+        <div>
+          <p className={`text-2xl font-bold ${classes.valueColor}`}>{value}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</p>
         </div>
       </CardContent>
     </Card>
   );
 };
 
+// Status Badge Component
 const StatusBadge = ({ status }) => {
-  const config = statusConfig[status] || statusConfig.active;
-  const Icon = config.icon;
-  return (
-    <Badge className={`${config.bgClass} text-${config.color}-700 dark:text-${config.color}-300 border-0 gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full`}>
-      <Icon className="w-3 h-3" />
-      {config.label}
-    </Badge>
-  );
+  const config = {
+    active:     { label: 'Active',     className: 'bg-red-500 dark:bg-red-600' },
+    responding: { label: 'Responding', className: 'bg-amber-500 dark:bg-amber-600' },
+    resolved:   { label: 'Resolved',   className: 'bg-green-500 dark:bg-green-600' },
+  };
+  const { label, className } = config[status] || config.active;
+  return <Badge className={`${className} text-white text-[11px]`}>{label}</Badge>;
 };
 
+// Alert Card Component
 const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTimeAgo, formatDate, onDelete }) => {
-  const config = statusConfig[alert.status] || statusConfig.active;
-  const StatusIcon = config.icon;
+  const getAlertCardStyle = (status) => {
+    switch (status) {
+      case 'active':     return 'border-l-red-500 bg-red-50/30 dark:bg-red-950/20 hover:border-l-red-600';
+      case 'responding': return 'border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/20 hover:border-l-amber-600';
+      case 'resolved':   return 'border-l-green-500 bg-green-50/30 dark:bg-green-950/20 hover:border-l-green-600';
+      default:           return '';
+    }
+  };
 
-  const displayLocation = alert.determined_location
-    ? formatLocationName(alert.determined_location)
-    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown Location');
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'active':     return <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400" />;
+      case 'responding': return <Radio className="w-5 h-5 text-amber-500 dark:text-amber-400" />;
+      case 'resolved':   return <CheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />;
+      default:           return <AlertTriangle className="w-5 h-5" />;
+    }
+  };
+
+  const getStatusBg = (status) => {
+    switch (status) {
+      case 'active':     return 'bg-red-100 dark:bg-red-900/30';
+      case 'responding': return 'bg-amber-100 dark:bg-amber-900/30';
+      case 'resolved':   return 'bg-green-100 dark:bg-green-900/30';
+      default:           return 'bg-gray-100';
+    }
+  };
 
   const getActionButton = () => {
     if (alert.status === 'active') {
       return (
         <Button
-          size="sm"
-          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-1.5 px-4 h-9 shadow-sm hover:shadow transition-all"
+          variant="ghost" size="sm"
+          className="bg-red-500 text-white hover:bg-red-600 rounded-lg gap-1.5 px-3 h-8"
           onClick={(e) => { e.stopPropagation(); onAction('dispatch', alert); }}
           disabled={isDispatching}
         >
-          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3 h-3" />}
           <span className="text-xs font-medium">Dispatch</span>
         </Button>
       );
     } else if (alert.status === 'responding') {
       return (
         <Button
-          size="sm"
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl gap-1.5 px-4 h-9 shadow-sm hover:shadow transition-all"
+          variant="ghost" size="sm"
+          className="bg-green-500 text-white hover:bg-green-600 rounded-lg gap-1.5 px-3 h-8"
           onClick={(e) => { e.stopPropagation(); onAction('resolve', alert); }}
         >
           <CheckCircle className="w-3.5 h-3.5" />
@@ -199,29 +196,28 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
       );
     } else if (alert.status === 'resolved') {
       return (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl px-3 h-9 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-slate-700"
+                variant="ghost" size="sm"
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-3 h-8 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-slate-700"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2 className="w-3.5 h-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl min-w-[180px] p-1 dark:bg-slate-800 dark:border-slate-700">
+            <DropdownMenuContent align="end" className="rounded-xl min-w-[160px] dark:bg-slate-800 dark:border-slate-700">
               <DropdownMenuItem
                 onClick={(e) => { e.stopPropagation(); onAction('revertToResponding', alert); }}
-                className="gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-50 cursor-pointer rounded-lg dark:text-amber-400 dark:focus:bg-amber-950/30"
+                className="gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-50 cursor-pointer text-sm dark:text-amber-400 dark:focus:bg-amber-950/30"
                 disabled={isReverting}
               >
                 <Undo2 className="w-3.5 h-3.5" /><span>Revert to Responding</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => { e.stopPropagation(); onAction('revertToActive', alert); }}
-                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer rounded-lg dark:text-red-400 dark:focus:bg-red-950/30"
+                className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer text-sm dark:text-red-400 dark:focus:bg-red-950/30"
                 disabled={isReverting}
               >
                 <Undo2 className="w-3.5 h-3.5" /><span>Revert to Active</span>
@@ -230,17 +226,16 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
           </DropdownMenu>
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="bg-transparent hover:bg-red-50 rounded-xl px-3 h-9 dark:hover:bg-red-950/30 transition-colors"
+            variant="ghost" size="sm"
+            className="bg-transparent hover:bg-gray-100 rounded-lg px-3 h-8 dark:hover:bg-slate-700"
             onClick={(e) => { e.stopPropagation(); onDelete(alert); }}
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
           </Button>
 
           <Button
-            size="sm"
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl gap-1.5 px-4 h-9 shadow-sm hover:shadow transition-all"
+            variant="ghost" size="sm"
+            className="bg-amber-500 text-white hover:bg-amber-600 rounded-lg gap-1.5 px-4 h-8"
             onClick={(e) => { e.stopPropagation(); onAction('createReport', alert); }}
           >
             <FileText className="w-4 h-4" />
@@ -252,30 +247,31 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
     return null;
   };
 
+  const displayLocation = alert.determined_location
+    ? formatLocationName(alert.determined_location)
+    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown Location');
+
   return (
     <Card
-      className={`border-l-4 ${config.borderClass} rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800/90 hover:scale-[1.01] group`}
+      className={`border-l-4 ${getAlertCardStyle(alert.status)} rounded-xl cursor-pointer hover:shadow-md transition-all duration-200 dark:bg-slate-800`}
       onClick={() => onClick(alert)}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`w-10 h-10 rounded-xl ${config.bgClass} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-              <StatusIcon className={`w-5 h-5 text-${config.color}-500 dark:text-${config.color}-400`} />
+            <div className={`w-9 h-9 rounded-full ${getStatusBg(alert.status)} flex items-center justify-center shrink-0`}>
+              {getStatusIcon(alert.status)}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="font-semibold text-sm dark:text-gray-200">Emergency Alert</span>
                 <StatusBadge status={alert.status} />
-                <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                  <Clock className="w-3 h-3" />
-                  <span>{getTimeAgo(alert.triggeredAt)}</span>
-                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{getTimeAgo(alert.triggeredAt)}</span>
               </div>
               {alert.student && (
-                <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-1 dark:text-gray-400">
+                <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-0.5 dark:text-gray-400">
                   <User className="w-3 h-3" />
-                  <span className="font-medium">{alert.student.name}</span>
+                  <span>{alert.student.name}</span>
                   <span className="text-gray-300 dark:text-gray-600">•</span>
                   <span className="text-xs">{alert.student.matrixNumber}</span>
                 </p>
@@ -293,104 +289,66 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// ============================================================
-// ALERT DETAIL MODAL COMPONENT
-// ============================================================
-
+// Alert Detail Modal
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
   const getHeaderColor = () => {
     switch (alert?.status) {
-      case 'active': return 'bg-gradient-to-r from-red-500 to-red-600';
-      case 'responding': return 'bg-gradient-to-r from-amber-500 to-amber-600';
-      case 'resolved': return 'bg-gradient-to-r from-green-500 to-green-600';
-      default: return 'bg-gradient-to-r from-gray-500 to-gray-600';
+      case 'active':     return 'bg-red-500';
+      case 'responding': return 'bg-amber-500';
+      case 'resolved':   return 'bg-green-500';
+      default:           return 'bg-gray-500';
     }
   };
 
-  const getStatusIcon = () => {
-    switch (alert?.status) {
-      case 'active': return <AlertTriangle className="w-4 h-4 text-white" />;
-      case 'responding': return <Radio className="w-4 h-4 text-white" />;
-      case 'resolved': return <CheckCircle className="w-4 h-4 text-white" />;
-      default: return <AlertTriangle className="w-4 h-4 text-white" />;
-    }
-  };
-
-  const getActionButtons = () => {
+  const getActionButton = () => {
     if (!alert) return null;
-
     if (alert.status === 'active') {
       return (
         <Button
-          size="sm"
-          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
+          className="bg-red-500 hover:bg-red-600 text-white rounded-xl gap-2 shadow-sm hover:shadow-md transition-all"
           onClick={() => onAction('dispatch', alert)}
           disabled={isDispatching}
         >
-          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           Dispatch Officer
         </Button>
       );
     } else if (alert.status === 'responding') {
       return (
         <Button
-          size="sm"
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
+          className="bg-green-500 hover:bg-green-600 text-white rounded-xl gap-2 shadow-sm hover:shadow-md transition-all"
           onClick={() => onAction('resolve', alert)}
         >
-          <CheckCircle className="w-3.5 h-3.5" />
+          <CheckCircle className="w-4 h-4" />
           Mark as Resolved
         </Button>
       );
     } else if (alert.status === 'resolved') {
       return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-8 text-xs dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-                Revert
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-lg min-w-[170px] p-1">
-              <DropdownMenuItem
-                onClick={() => onAction('revertToResponding', alert)}
-                className="gap-2 text-amber-600 text-xs cursor-pointer rounded-md"
-                disabled={isReverting}
-              >
-                <Undo2 className="w-3.5 h-3.5" /> To Responding
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onAction('revertToActive', alert)}
-                className="gap-2 text-red-600 text-xs cursor-pointer rounded-md"
-                disabled={isReverting}
-              >
-                <Undo2 className="w-3.5 h-3.5" /> To Active
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
-            size="sm"
-            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-8 text-xs dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-            onClick={() => onDelete(alert)}
+            className="rounded-xl gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
+            onClick={() => onAction('revertToResponding', alert)}
+            disabled={isReverting}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            Delete
+            <Undo2 className="w-4 h-4" />Revert to Responding
           </Button>
           <Button
-            size="sm"
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg gap-1.5 px-4 h-8 text-xs shadow-sm"
-            onClick={() => onAction('createReport', alert)}
+            variant="outline"
+            className="rounded-xl gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+            onClick={() => onAction('revertToActive', alert)}
+            disabled={isReverting}
           >
-            <FileText className="w-3.5 h-3.5" />
-            Create Report
+            <Undo2 className="w-4 h-4" />Revert to Active
           </Button>
-        </>
+          <Button
+            className="bg-red-500 hover:bg-red-600 text-white rounded-xl gap-2 shadow-sm hover:shadow-md transition-all"
+            onClick={() => onDelete(alert)}
+          >
+            <Trash2 className="w-4 h-4" />Delete Record
+          </Button>
+        </div>
       );
     }
     return null;
@@ -404,70 +362,81 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        {/* Compact Header */}
-        <div className={`px-5 py-3 ${getHeaderColor()} flex items-center justify-between`}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-              {getStatusIcon()}
+      <DialogContent className="sm:max-w-[550px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        <div className={`p-4 ${getHeaderColor()}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              {alert.status === 'active'     && <AlertTriangle className="w-4 h-4 text-white" />}
+              {alert.status === 'responding' && <Radio className="w-4 h-4 text-white" />}
+              {alert.status === 'resolved'   && <CheckCircle className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <DialogTitle className="text-sm font-bold text-white">Emergency Alert</DialogTitle>
-              <p className="text-white/70 text-[10px]">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
+              <DialogTitle className="text-base font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/70 text-[11px]">Critical incident requiring attention</p>
             </div>
+            <StatusBadge status={alert.status} />
           </div>
-          <StatusBadge status={alert.status} />
         </div>
 
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Reporter Information - Compact Grid */}
+        <div className="p-5 space-y-4">
+          {/* Reporter Information */}
           <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
             <div className="flex items-center gap-1.5 mb-2">
               <User className="w-3.5 h-3.5 text-amber-500" />
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter</p>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
             </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-              <div className="flex items-center gap-1.5 col-span-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5">
                 <span className="text-gray-500 dark:text-gray-400">Name:</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
               </div>
               {alert.student?.matrixNumber && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-gray-500 dark:text-gray-400">Matrix:</span>
-                  <span className="font-mono text-gray-700 dark:text-gray-300 text-[11px]">{alert.student.matrixNumber}</span>
+                  <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
                 </div>
               )}
               {alert.student?.phone && (
                 <div className="flex items-center gap-1.5">
                   <Phone className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-700 dark:text-gray-300 text-[11px]">{alert.student.phone}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
                 </div>
               )}
               {alert.student?.email && (
                 <div className="flex items-center gap-1.5 col-span-2">
                   <Mail className="w-3 h-3 text-gray-400" />
-                  <span className="text-gray-700 dark:text-gray-300 text-[11px] truncate">{alert.student.email}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                  <span className="text-gray-700 dark:text-gray-300 break-all">{alert.student.email}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Location & Time - Compact */}
+          {/* Location & Time */}
           <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
             <div className="flex items-center gap-1.5 mb-2">
               <MapPin className="w-3.5 h-3.5 text-red-500" />
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
             </div>
             <div className="space-y-1.5 text-xs">
-              <div className="flex items-start gap-1.5">
-                <MapPin className="w-3 h-3 text-red-400 mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
-                  {alert.address && (
-                    <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">{alert.address}</p>
-                  )}
-                </div>
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-red-400" />
+                <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
               </div>
+              {alert.address && alert.determined_location && (
+                <div className="flex items-center gap-1.5 ml-5">
+                  <span className="text-gray-500 dark:text-gray-400">Address:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.address}</span>
+                </div>
+              )}
+              {alert.location?.building && (
+                <div className="flex items-center gap-1.5 ml-5">
+                  <span className="text-gray-500 dark:text-gray-400">Building:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.location.building}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-amber-500" />
                 <span className="text-gray-500 dark:text-gray-400">Triggered:</span>
@@ -484,7 +453,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           </div>
 
-          {/* Assigned Officer - Compact */}
+          {/* Assigned Officer */}
           {alert.assigned_officer_name && (
             <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
               <div className="flex items-center gap-1.5 mb-2">
@@ -494,6 +463,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-1.5">
                   <User className="w-3 h-3 text-blue-500" />
+                  <span className="text-gray-500 dark:text-gray-400">Officer:</span>
                   <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
                 </div>
                 {alert.dispatched_at && (
@@ -504,9 +474,9 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
                   </div>
                 )}
                 {alert.dispatch_notes && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                    <p className="text-[10px] text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
-                    <p className="text-xs whitespace-pre-wrap text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 p-2 rounded-md max-h-24 overflow-y-auto">
+                  <div className="mt-2 pt-1.5 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-[10px] text-gray-500 mb-1 dark:text-gray-400">Dispatch Notes:</p>
+                    <p className="text-xs whitespace-pre-wrap text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 p-2 rounded-md">
                       {alert.dispatch_notes}
                     </p>
                   </div>
@@ -515,12 +485,12 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           )}
 
-          {/* Action Buttons - Compact Row */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" className="rounded-lg h-8 text-xs px-3 dark:hover:bg-slate-700" onClick={onClose}>
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2 flex-wrap">
+            <Button variant="outline" className="rounded-xl text-sm h-9 px-4 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
               Close
             </Button>
-            {getActionButtons()}
+            {getActionButton()}
           </div>
         </div>
       </DialogContent>
@@ -538,6 +508,7 @@ const Alerts = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedAlertForDispatch, setSelectedAlertForDispatch] = useState(null);
+
   const [globalStats, setGlobalStats] = useState({ active: 0, responding: 0, resolved: 0, total: 0 });
 
   const [showDispatchModal, setShowDispatchModal] = useState(false);
@@ -567,21 +538,21 @@ const Alerts = () => {
     last_page: 1, from: null, to: null,
   });
 
-  const searchTimeoutRef = useRef(null);
-
   const statusOptions = [
-    { value: 'active', label: 'Active', icon: AlertTriangle, color: 'red' },
-    { value: 'responding', label: 'Responding', icon: Radio, color: 'amber' },
-    { value: 'resolved', label: 'Resolved', icon: CheckCircle, color: 'green' },
+    { value: 'active',     label: 'Active' },
+    { value: 'responding', label: 'Responding' },
+    { value: 'resolved',   label: 'Resolved' },
   ];
 
-  // Memoized helpers
-  const formatDate = useCallback((dateString) => {
+  const searchTimeoutRef = useRef(null);
+
+  // Helpers
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-MY', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-  }, []);
+  };
 
-  const getTimeAgo = useCallback((dateString) => {
+  const getTimeAgo = (dateString) => {
     const diffMs = new Date() - new Date(dateString);
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
@@ -589,11 +560,11 @@ const Alerts = () => {
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     return `${Math.floor(diffHours / 24)} days ago`;
-  }, []);
+  };
 
-  const getFilterCount = useMemo(() => filters.status.length + filters.locations.length, [filters]);
+  const getFilterCount = () => filters.status.length + filters.locations.length;
 
-  const getDateFilterLabel = useCallback(() => {
+  const getDateFilterLabel = () => {
     if (datePreset === 'today') return 'Today';
     if (datePreset === 'week') return 'This Week';
     if (datePreset === 'month') return 'This Month';
@@ -601,11 +572,11 @@ const Alerts = () => {
     if (customDateFrom) return `From ${customDateFrom}`;
     if (customDateTo) return `Until ${customDateTo}`;
     return 'Date Range';
-  }, [datePreset, customDateFrom, customDateTo]);
+  };
 
-  const hasActiveFilters = getFilterCount > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
+  const hasActiveFilters = getFilterCount() > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
 
-  const getPageNumbers = useCallback(() => {
+  const getPageNumbers = () => {
     const { last_page: totalPages, current_page: currentPage } = pagination;
     const pages = [];
     if (totalPages <= 5) {
@@ -618,50 +589,50 @@ const Alerts = () => {
       pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
     }
     return pages;
-  }, [pagination]);
+  };
 
-  const buildQueryParams = useCallback((page = 1, perPage = pagination.per_page) => {
+  const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('per_page', perPage);
     if (filters.status.length > 0) params.append('status', filters.status.join(','));
     if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
     return params;
-  }, [filters, pagination.per_page]);
+  };
 
   // API calls
-  const fetchGlobalStats = useCallback(async () => {
+  const fetchGlobalStats = async () => {
     try {
       const response = await axios.get('/api/emergencies/counts');
       setGlobalStats({
-        active: response.data.active || 0,
+        active:    response.data.active    || 0,
         responding: response.data.responding || 0,
-        resolved: response.data.resolved || 0,
+        resolved:  response.data.resolved  || 0,
         total: (response.data.active || 0) + (response.data.responding || 0) + (response.data.resolved || 0),
       });
     } catch (error) {
       console.error('Failed to fetch global stats:', error);
     }
-  }, []);
+  };
 
-  const fetchEmergencies = useCallback(async (page = 1, perPage = pagination.per_page) => {
+  const fetchEmergencies = async (page = 1, perPage = pagination.per_page) => {
     setLoading(true);
     try {
-      const params = buildQueryParams(page, perPage);
-      const response = await axios.get(`/api/emergencies?${params.toString()}`);
-      const data = response.data;
-      setAlerts(data.data || []);
-      setPagination(data.pagination);
-      window.dispatchEvent(new CustomEvent('emergency-updated'));
+        const params = buildQueryParams(page, perPage);
+        const response = await axios.get(`/api/emergencies?${params.toString()}`);
+        const data = response.data;
+        setAlerts(data.data || []);
+        setPagination(data.pagination);
+        window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
-      console.error('Failed to fetch emergencies:', error);
-      showToast('Failed to load emergencies', 'error');
+        console.error('Failed to fetch emergencies:', error);
+        showToast('Failed to load emergencies', 'error');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [buildQueryParams, pagination.per_page]);
+  };
 
-  const handleDeleteEmergency = useCallback(async (alert) => {
+  const handleDeleteEmergency = async (alert) => {
     const alertId = alert._id || alert.id;
     if (confirm('Are you sure you want to delete this emergency record? This action cannot be undone.')) {
       setIsDeleting(true);
@@ -681,20 +652,20 @@ const Alerts = () => {
         setIsDeleting(false);
       }
     }
-  }, [fetchEmergencies, fetchGlobalStats, pagination.current_page, pagination.per_page]);
+  };
 
-  const handlePageChange = useCallback((newPage) => {
+  const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.last_page) {
       fetchEmergencies(newPage, pagination.per_page);
     }
-  }, [fetchEmergencies, pagination.last_page, pagination.per_page]);
+  };
 
-  const handlePerPageChange = useCallback((newPerPage) => {
+  const handlePerPageChange = (newPerPage) => {
     setPagination(prev => ({ ...prev, per_page: newPerPage }));
     fetchEmergencies(1, newPerPage);
-  }, [fetchEmergencies]);
+  };
 
-  const toggleFilter = useCallback((filterType, value) => {
+  const toggleFilter = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
       [filterType]: prev[filterType].includes(value)
@@ -702,67 +673,71 @@ const Alerts = () => {
         : [...prev[filterType], value],
     }));
     setPagination(prev => ({ ...prev, current_page: 1 }));
-  }, []);
+  };
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     setSearchQuery('');
     setDatePreset('all');
     setCustomDateFrom('');
     setCustomDateTo('');
     setFilters({ status: [], locations: [] });
     setPagination(prev => ({ ...prev, current_page: 1 }));
-  }, []);
+  };
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       fetchEmergencies(1, pagination.per_page);
+      fetchGlobalStats();
     }, 300);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-  }, [filters.status, filters.locations, pagination.per_page, fetchEmergencies]);
+  }, [filters.status, filters.locations, pagination.per_page]);
 
-  // Client-side filtering
-  const filteredAlerts = useMemo(() => {
-    return alerts.filter(alert => {
-      if (searchQuery) {
+  // Client-side search + date filtering on the current page
+  const filteredAlerts = alerts.filter(alert => {
+    if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const studentName = alert.student?.name?.toLowerCase() || '';
         const matrixNumber = alert.student?.matrixNumber?.toLowerCase() || '';
         const location = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || '';
         const determinedLocation = alert.determined_location?.toLowerCase() || '';
         if (!studentName.includes(q) && !matrixNumber.includes(q) && !location.includes(q) && !determinedLocation.includes(q)) return false;
-      }
-      if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
-      if (filters.locations.length > 0 && !filters.locations.includes(alert.determined_location)) return false;
+    }
 
-      const alertDate = new Date(alert.triggeredAt);
-      alertDate.setHours(0, 0, 0, 0);
-      if (datePreset === 'today') {
+    if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
+
+    if (filters.locations.length > 0) {
+        if (!filters.locations.includes(alert.determined_location)) return false;
+    }
+
+    const alertDate = new Date(alert.triggeredAt);
+    alertDate.setHours(0, 0, 0, 0);
+    if (datePreset === 'today') {
         const today = new Date(); today.setHours(0, 0, 0, 0);
         if (alertDate.getTime() !== today.getTime()) return false;
-      } else if (datePreset === 'week') {
+    } else if (datePreset === 'week') {
         const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0, 0, 0, 0);
         if (alertDate < weekAgo) return false;
-      } else if (datePreset === 'month') {
+    } else if (datePreset === 'month') {
         const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0, 0, 0, 0);
         if (alertDate < monthAgo) return false;
-      } else if (customDateFrom || customDateTo) {
+    } else if (customDateFrom || customDateTo) {
         if (customDateFrom) { const from = new Date(customDateFrom); from.setHours(0,0,0,0); if (alertDate < from) return false; }
         if (customDateTo) { const to = new Date(customDateTo); to.setHours(23,59,59,999); if (alertDate > to) return false; }
-      }
-      return true;
-    });
-  }, [alerts, searchQuery, filters, datePreset, customDateFrom, customDateTo]);
+    }
+
+    return true;
+  });
 
   // Action handlers
-  const updateLocalAlertStatus = useCallback((alertId, newStatus) => {
+  const updateLocalAlertStatus = (alertId, newStatus) => {
     setAlerts(prev => prev.map(a => (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a));
     if (selectedAlert && (selectedAlert._id === alertId || selectedAlert.id === alertId)) {
       setSelectedAlert({ ...selectedAlert, status: newStatus });
     }
-  }, [selectedAlert]);
+  };
 
-  const handleRevertStatus = useCallback(async (alert, newStatus) => {
+  const handleRevertStatus = async (alert, newStatus) => {
     const alertId = alert._id || alert.id;
     setIsReverting(true);
     updateLocalAlertStatus(alertId, newStatus);
@@ -777,9 +752,9 @@ const Alerts = () => {
     } finally {
       setIsReverting(false);
     }
-  }, [fetchEmergencies, fetchGlobalStats, pagination.current_page, pagination.per_page, updateLocalAlertStatus]);
+  };
 
-  const handleDispatchOfficer = useCallback(async (dispatchData) => {
+  const handleDispatchOfficer = async (dispatchData) => {
     if (!selectedAlertForDispatch) return;
     const alertId = selectedAlertForDispatch._id || selectedAlertForDispatch.id;
     setIsDispatching(true);
@@ -797,14 +772,14 @@ const Alerts = () => {
     } finally {
       setIsDispatching(false);
     }
-  }, [selectedAlertForDispatch, fetchEmergencies, fetchGlobalStats, pagination.current_page, pagination.per_page]);
+  };
 
-  const handleResolveClick = useCallback((alert) => {
+  const handleResolveClick = (alert) => {
     setAlertToResolve(alert);
     setShowConfirmationModal(true);
-  }, []);
+  };
 
-  const handleConfirmResolve = useCallback(async () => {
+  const handleConfirmResolve = async () => {
     if (!alertToResolve) return;
     const alertId = alertToResolve._id || alertToResolve.id;
     setIsResolving(true);
@@ -821,20 +796,12 @@ const Alerts = () => {
     } finally {
       setIsResolving(false);
     }
-  }, [alertToResolve, fetchEmergencies, fetchGlobalStats, pagination.current_page, pagination.per_page]);
+  };
 
-  const handleDecisionYes = useCallback(() => {
-    setShowDecisionModal(false);
-    setShowAddReportModal(true);
-  }, []);
+  const handleDecisionYes = () => { setShowDecisionModal(false); setShowAddReportModal(true); };
+  const handleDecisionNo  = () => { setShowDecisionModal(false); setAlertForReport(null); showToast('Report creation skipped', 'success'); };
 
-  const handleDecisionNo = useCallback(() => {
-    setShowDecisionModal(false);
-    setAlertForReport(null);
-    showToast('Report creation skipped', 'success');
-  }, []);
-
-  const handleSaveReport = useCallback(async (reportData) => {
+  const handleSaveReport = async (reportData) => {
     setIsSubmitting(true);
     try {
       const response = await axios.post('/Reports', reportData, {
@@ -850,17 +817,17 @@ const Alerts = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  };
 
-  const handleAction = useCallback(async (action, alert) => {
+  const handleAction = async (action, alert) => {
     switch (action) {
-      case 'dispatch': setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
-      case 'resolve': handleResolveClick(alert); setSelectedAlert(null); break;
-      case 'createReport': setAlertForReport(alert); setShowAddReportModal(true); break;
+      case 'dispatch':          setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
+      case 'resolve':           handleResolveClick(alert); setSelectedAlert(null); break;
+      case 'createReport':      setAlertForReport(alert); setShowAddReportModal(true); break;
       case 'revertToResponding': await handleRevertStatus(alert, 'responding'); break;
-      case 'revertToActive': await handleRevertStatus(alert, 'active'); break;
+      case 'revertToActive':    await handleRevertStatus(alert, 'active'); break;
     }
-  }, [handleResolveClick, handleRevertStatus]);
+  };
 
   useEffect(() => {
     fetchEmergencies();
@@ -870,427 +837,343 @@ const Alerts = () => {
       fetchGlobalStats();
     }, 30000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
+  // Render
   return (
     <DashboardLayout title="Emergency Alerts" subtitle="Monitor and respond to emergency situations">
-      {/* Animated Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center shadow-lg">
-            <BellRing className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Emergency Response Center</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Real-time monitoring and dispatch management</p>
-          </div>
-        </div>
-      </div>
-
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <StatCard icon={AlertTriangle} label="Active Emergencies" value={globalStats.active} color="red" trend="Requires immediate attention" />
-        <StatCard icon={Radio} label="In Progress" value={globalStats.responding} color="amber" trend="Officers en route" />
-        <StatCard icon={CheckCircle} label="Resolved" value={globalStats.resolved} color="green" trend="Successfully handled" />
-        <StatCard icon={Activity} label="Total Incidents" value={globalStats.total} color="blue" trend="Last 30 days" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard icon={AlertTriangle} label="Active"       value={globalStats.active}    color="red"   />
+        <StatCard icon={Radio}         label="Responding"   value={globalStats.responding} color="amber" />
+        <StatCard icon={CheckCircle}   label="Resolved"     value={globalStats.resolved}   color="green" />
+        <StatCard icon={Clock}         label="Total Alerts" value={globalStats.total}      color="blue"  />
       </div>
 
-      {/* Main Content Card */}
-      <Card className="bg-white dark:bg-slate-800/90 rounded-2xl shadow-xl border-0 overflow-hidden">
-        <CardContent className="p-0">
+      <Card className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border-border">
+        <CardContent className="p-6">
 
-          {/* Filter Bar - Sticky */}
-          <div className="sticky top-0 z-10 bg-white dark:bg-slate-800/95 backdrop-blur-sm border-b border-gray-100 dark:border-slate-700 p-5">
-            <div className="flex flex-wrap gap-3">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[240px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-                <Input
-                  placeholder="Search by name, matrix, or location..."
-                  className="pl-10 bg-gray-50 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#D4A853]/20 focus:border-[#D4A853] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-3 mb-4">
 
-              {/* Filters Dropdown */}
-              <SimpleDropdown
-                isOpen={showFilterDropdown}
-                onClose={() => setShowFilterDropdown(false)}
-                align="left"
-                trigger={
-                  <Button
-                    variant={getFilterCount > 0 ? 'default' : 'outline'}
-                    className={`gap-2 rounded-xl relative ${
-                      getFilterCount > 0
-                        ? 'bg-gradient-to-r from-[#D4A853] to-[#C49A48] hover:from-[#C49A48] hover:to-[#B48A38] text-white shadow-md'
-                        : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700'
-                    }`}
-                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  >
-                    <Filter className="w-4 h-4" />
-                    Filters
-                    {getFilterCount > 0 && (
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-800">
-                        {getFilterCount}
-                      </span>
-                    )}
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                }
-              >
-                <div className="p-4 space-y-5">
-                  {/* Status Section */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</Label>
-                      {filters.status.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-600 font-medium">
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {statusOptions.map(option => {
-                        const Icon = option.icon;
-                        return (
-                          <label key={option.value} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors dark:hover:bg-slate-700">
-                            <input
-                              type="checkbox"
-                              checked={filters.status.includes(option.value)}
-                              onChange={() => toggleFilter('status', option.value)}
-                              className="rounded-md border-gray-300 text-[#D4A853] focus:ring-[#D4A853] dark:border-slate-600 dark:bg-slate-700"
-                            />
-                            <Icon className={`w-4 h-4 text-${option.color}-500`} />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 dark:border-slate-700" />
-
-                  {/* Locations Section */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Locations</Label>
-                      {filters.locations.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-600 font-medium">
-                          Clear all
-                        </button>
-                      )}
-                    </div>
-                    <div className="space-y-4 max-h-56 overflow-y-auto pr-2">
-                      {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
-                        <div key={groupName}>
-                          <div className="flex items-center gap-2 mb-2">
-                            {groupName === 'Mahallahs' && <Home className="w-3 h-3 text-blue-500" />}
-                            {groupName === 'Kulliyyahs' && <School className="w-3 h-3 text-green-500" />}
-                            {groupName === 'Facilities' && <Building2 className="w-3 h-3 text-purple-500" />}
-                            <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{groupName}</Label>
-                          </div>
-                          <div className="space-y-1.5 pl-2">
-                            {Object.entries(locationsGroup).map(([key, label]) => (
-                              <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors dark:hover:bg-slate-700">
-                                <input
-                                  type="checkbox"
-                                  checked={filters.locations.includes(key)}
-                                  onChange={() => toggleFilter('locations', key)}
-                                  className="rounded-md border-gray-300 text-[#D4A853] focus:ring-[#D4A853] dark:border-slate-600 dark:bg-slate-700"
-                                />
-                                <MapPin className="w-3 h-3 text-gray-400" />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setFilters({ status: [], locations: [] }); setShowFilterDropdown(false); }}
-                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
-                    >
-                      Clear All Filters
-                    </Button>
-                  </div>
-                </div>
-              </SimpleDropdown>
-
-              {/* Date Range Dropdown */}
-              <SimpleDropdown
-                isOpen={showDateDropdown}
-                onClose={() => setShowDateDropdown(false)}
-                align="right"
-                trigger={
-                  <Button
-                    variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? 'default' : 'outline'}
-                    className={`gap-2 rounded-xl ${
-                      (datePreset !== 'all' || customDateFrom || customDateTo)
-                        ? 'bg-gradient-to-r from-[#D4A853] to-[#C49A48] hover:from-[#C49A48] hover:to-[#B48A38] text-white shadow-md'
-                        : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700'
-                    }`}
-                    onClick={() => setShowDateDropdown(!showDateDropdown)}
-                  >
-                    <Calendar className="w-4 h-4" />
-                    {getDateFilterLabel()}
-                    {(datePreset !== 'all' || customDateFrom || customDateTo) && (
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-800">1</span>
-                    )}
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                }
-              >
-                <div className="p-4 min-w-[280px] space-y-4">
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Quick Select</Label>
-                    <div className="space-y-1">
-                      {[
-                        { value: 'today', label: 'Today', icon: Zap },
-                        { value: 'week', label: 'This Week', icon: Calendar },
-                        { value: 'month', label: 'This Month', icon: Calendar },
-                        { value: 'all', label: 'All Time', icon: Globe },
-                      ].map(({ value, label, icon: Icon }) => (
-                        <button
-                          key={value}
-                          onClick={() => {
-                            const today = new Date();
-                            if (value === 'today') {
-                              const d = today.toISOString().split('T')[0];
-                              setCustomDateFrom(d); setCustomDateTo(d);
-                            } else if (value === 'week') {
-                              const start = new Date(today); start.setDate(today.getDate() - today.getDay());
-                              const end = new Date(today); end.setDate(today.getDate() + (6 - today.getDay()));
-                              setCustomDateFrom(start.toISOString().split('T')[0]);
-                              setCustomDateTo(end.toISOString().split('T')[0]);
-                            } else if (value === 'month') {
-                              const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                              const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                              setCustomDateFrom(start.toISOString().split('T')[0]);
-                              setCustomDateTo(end.toISOString().split('T')[0]);
-                            } else {
-                              setCustomDateFrom(''); setCustomDateTo('');
-                            }
-                            setDatePreset(value);
-                            setShowDateDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center gap-3 ${
-                            datePreset === value
-                              ? 'bg-gradient-to-r from-[#D4A853]/10 to-[#C49A48]/10 text-[#D4A853] font-medium border border-[#D4A853]/30'
-                              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 dark:border-slate-700" />
-
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Custom Range</Label>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
-                        <Input
-                          type="date"
-                          value={customDateFrom}
-                          onChange={(e) => { setCustomDateFrom(e.target.value); setDatePreset('custom'); }}
-                          className="bg-gray-50 border-gray-200 rounded-xl text-sm h-10 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
-                        <Input
-                          type="date"
-                          value={customDateTo}
-                          onChange={(e) => { setCustomDateTo(e.target.value); setDatePreset('custom'); }}
-                          className="bg-gray-50 border-gray-200 rounded-xl text-sm h-10 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-1">
-                        <Button variant="outline" className="flex-1 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
-                        <Button className="flex-1 bg-gradient-to-r from-[#D4A853] to-[#C49A48] hover:from-[#C49A48] hover:to-[#B48A38] rounded-xl text-white shadow-md" onClick={() => setShowDateDropdown(false)}>Apply</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </SimpleDropdown>
-
-              {hasActiveFilters && (
-                <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={clearAllFilters}>
-                  <X className="w-4 h-4" />Clear All
-                </Button>
-              )}
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <Input
+                placeholder="Search alerts..."
+                className="pl-10 bg-gray-50 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
 
-            {/* Active Filter Tags */}
-            {hasActiveFilters && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {filters.status.map(s => {
-                  const config = statusConfig[s];
-                  return (
-                    <Badge key={s} className={`gap-1.5 px-3 py-1.5 ${config.bgClass} text-${config.color}-700 border-0 rounded-full text-xs`}>
-                      <config.icon className="w-3 h-3" />
-                      {config.label}
-                      <X className="w-3 h-3 cursor-pointer hover:opacity-70 ml-1" onClick={() => toggleFilter('status', s)} />
-                    </Badge>
-                  );
-                })}
-                {filters.locations.map(l => {
-                  let displayName = l;
-                  let groupIcon = <MapPin className="w-3 h-3" />;
-                  for (const [group, locations] of Object.entries(locationLabels)) {
-                    if (locations[l]) {
-                      displayName = locations[l];
-                      if (group === 'Mahallahs') groupIcon = <Home className="w-3 h-3" />;
-                      if (group === 'Kulliyyahs') groupIcon = <School className="w-3 h-3" />;
-                      if (group === 'Facilities') groupIcon = <Building2 className="w-3 h-3" />;
-                      break;
-                    }
-                  }
-                  return (
-                    <Badge key={l} className="gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border-0 rounded-full text-xs dark:bg-blue-950/30 dark:text-blue-300">
-                      {groupIcon}
-                      {displayName}
-                      <X className="w-3 h-3 cursor-pointer hover:opacity-70 ml-1" onClick={() => toggleFilter('locations', l)} />
-                    </Badge>
-                  );
-                })}
-                {(datePreset !== 'all' || customDateFrom || customDateTo) && (
-                  <Badge className="gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 border-0 rounded-full text-xs dark:bg-purple-950/30 dark:text-purple-300">
-                    <Calendar className="w-3 h-3" />{getDateFilterLabel()}
-                    <X className="w-3 h-3 cursor-pointer hover:opacity-70 ml-1" onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); }} />
-                  </Badge>
-                )}
-                {searchQuery && (
-                  <Badge className="gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 border-0 rounded-full text-xs dark:bg-slate-700 dark:text-gray-300">
-                    <Search className="w-3 h-3" />Search: {searchQuery}
-                    <X className="w-3 h-3 cursor-pointer hover:opacity-70 ml-1" onClick={() => setSearchQuery('')} />
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Alerts List */}
-          <div className="p-5">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="w-12 h-12 animate-spin text-[#D4A853] mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">Loading emergency alerts...</p>
-              </div>
-            ) : filteredAlerts.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4 dark:bg-green-900/30">
-                  <CheckCircle className="w-10 h-10 text-green-500 dark:text-green-400" />
+            {/* Filters Dropdown — FIXED: Single scroll container */}
+            <SimpleDropdown
+              isOpen={showFilterDropdown}
+              onClose={() => setShowFilterDropdown(false)}
+              align="left"
+              trigger={
+                <Button
+                  variant={getFilterCount() > 0 ? 'default' : 'outline'}
+                  className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  {getFilterCount() > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {getFilterCount()}
+                    </span>
+                  )}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              }
+            >
+              {/* Single scroll container for entire filter content */}
+              <div className="p-4 space-y-4 max-h-[450px] overflow-y-auto">
+                {/* Status Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
+                    {filters.status.length > 0 && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, status: [] }))}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {statusOptions.map(option => (
+                      <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={filters.status.includes(option.value)}
+                          onChange={() => toggleFilter('status', option.value)}
+                          className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">No alerts match your filters</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Try adjusting your search criteria</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredAlerts.map(alert => (
-                  <AlertCard
-                    key={alert._id || alert.id}
-                    alert={alert}
-                    onClick={setSelectedAlert}
-                    onAction={handleAction}
-                    onDelete={handleDeleteEmergency}
-                    isDispatching={isDispatching}
-                    isReverting={isReverting}
-                    getTimeAgo={getTimeAgo}
-                    formatDate={formatDate}
-                  />
-                ))}
-              </div>
-            )}
 
-            {/* Pagination */}
-            {pagination.total > 0 && (
-              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing <span className="font-medium text-gray-700 dark:text-gray-300">{pagination.from}</span> to{' '}
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{pagination.to}</span> of{' '}
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{pagination.total}</span> alerts
-                </p>
-                {pagination.last_page > 1 && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Rows:</span>
-                      <select
-                        value={pagination.per_page}
-                        onChange={(e) => handlePerPageChange(parseInt(e.target.value))}
-                        className="px-2 py-1.5 border border-gray-200 rounded-xl bg-white dark:bg-slate-800 dark:border-slate-700 text-gray-700 dark:text-gray-300 text-sm focus:ring-2 focus:ring-[#D4A853]/20 focus:border-[#D4A853]"
-                      >
-                        <option value={10}>10</option>
-                        <option value={15}>15</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                      </select>
-                    </div>
+                <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(pagination.current_page - 1)}
-                        disabled={pagination.current_page === 1 || loading}
-                        className="rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-
-                      <div className="flex gap-1">
-                        {getPageNumbers().map((page, idx) =>
-                          page === '...' ? (
-                            <span key={idx} className="px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500">...</span>
-                          ) : (
-                            <Button
-                              key={page}
-                              variant={pagination.current_page === page ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handlePageChange(page)}
-                              disabled={loading}
-                              className={`rounded-xl min-w-[36px] ${
-                                pagination.current_page === page
-                                  ? 'bg-gradient-to-r from-[#D4A853] to-[#C49A48] hover:from-[#C49A48] hover:to-[#B48A38] text-white shadow-md'
-                                  : 'border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {page}
-                            </Button>
-                          )
-                        )}
+                {/* Locations Section - NO internal scrollbar */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                    {filters.locations.length > 0 && (
+                      <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
+                      <div key={groupName}>
+                        <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
+                        <div className="space-y-2 pl-2">
+                          {Object.entries(locationsGroup).map(([key, label]) => (
+                            <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={filters.locations.includes(key)}
+                                onChange={() => toggleFilter('locations', key)}
+                                className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(pagination.current_page + 1)}
-                        disabled={pagination.current_page === pagination.last_page || loading}
-                        className="rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300"
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={() => { setFilters({ status: [], locations: [] }); setShowFilterDropdown(false); }}
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              </div>
+            </SimpleDropdown>
+
+            {/* Date Range Dropdown */}
+            <SimpleDropdown
+              isOpen={showDateDropdown}
+              onClose={() => setShowDateDropdown(false)}
+              align="right"
+              trigger={
+                <Button
+                  variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? 'default' : 'outline'}
+                  className={`gap-2 rounded-xl relative ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  onClick={() => setShowDateDropdown(!showDateDropdown)}
+                >
+                  <Calendar className="w-4 h-4" />
+                  {getDateFilterLabel()}
+                  {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">1</span>
+                  )}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              }
+            >
+              <div className="p-4 min-w-[260px] space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
+                    {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                      <button onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400">Clear</button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'today', label: 'Today' },
+                      { value: 'week',  label: 'This Week' },
+                      { value: 'month', label: 'This Month' },
+                      { value: 'all',   label: 'All Time' },
+                    ].map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => {
+                          const today = new Date();
+                          if (value === 'today') {
+                            const d = today.toISOString().split('T')[0];
+                            setCustomDateFrom(d); setCustomDateTo(d);
+                          } else if (value === 'week') {
+                            const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+                            const end   = new Date(today); end.setDate(today.getDate() + (6 - today.getDay()));
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else if (value === 'month') {
+                            const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                            const end   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else {
+                            setCustomDateFrom(''); setCustomDateTo('');
+                          }
+                          setDatePreset(value);
+                          setShowDateDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === value ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
                       >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                <div>
+                  <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-200">Custom Range</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
+                      <Input type="date" value={customDateFrom} onChange={(e) => { setCustomDateFrom(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
+                      <Input type="date" value={customDateTo} onChange={(e) => { setCustomDateTo(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
+                      <Button className="flex-1 bg-[#D4A853] hover:bg-[#C49A48] rounded-lg text-white" onClick={() => setShowDateDropdown(false)}>Apply</Button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
+            </SimpleDropdown>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={clearAllFilters}>
+                <X className="w-4 h-4" />Clear All
+              </Button>
             )}
           </div>
+
+          {/* Active Filter Tags */}
+          {hasActiveFilters && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {filters.status.map(s => (
+                <Badge key={s} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  {s === 'active' ? 'Active' : s === 'responding' ? 'Responding' : 'Resolved'}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('status', s)} />
+                </Badge>
+              ))}
+              {filters.locations.map(l => {
+                let displayName = l;
+                for (const group of Object.values(locationLabels)) {
+                  if (group[l]) { displayName = group[l]; break; }
+                }
+                return (
+                  <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                    <MapPin className="w-3 h-3" />
+                    {displayName}
+                    <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
+                  </Badge>
+                );
+              })}
+              {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  <Calendar className="w-3 h-3" />{getDateFilterLabel()}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); }} />
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  Search: {searchQuery}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchQuery('')} />
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Alerts List */}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#D4A853]" />
+            </div>
+          ) : filteredAlerts.length === 0 ? (
+            <div className="text-center py-12">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4 dark:text-green-400" />
+              <p className="text-gray-500 dark:text-gray-400">No alerts match your filters</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredAlerts.map(alert => (
+                <AlertCard
+                  key={alert._id || alert.id}
+                  alert={alert}
+                  onClick={setSelectedAlert}
+                  onAction={handleAction}
+                  onDelete={handleDeleteEmergency}
+                  isDispatching={isDispatching}
+                  isReverting={isReverting}
+                  getTimeAgo={getTimeAgo}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.total > 0 && (
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {pagination.from} to {pagination.to} of {pagination.total} alerts
+              </p>
+              {pagination.last_page > 1 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mr-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
+                    <select
+                      value={pagination.per_page}
+                      onChange={(e) => handlePerPageChange(parseInt(e.target.value))}
+                      className="px-2 py-1 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 text-gray-700 dark:text-gray-300 text-sm"
+                    >
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1 || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="flex gap-1">
+                    {getPageNumbers().map((page, idx) =>
+                      page === '...' ? (
+                        <span key={idx} className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">...</span>
+                      ) : (
+                        <Button
+                          key={page}
+                          variant={pagination.current_page === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          disabled={loading}
+                          className={`rounded-lg min-w-[36px] ${pagination.current_page === page ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300'}`}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === pagination.last_page || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
