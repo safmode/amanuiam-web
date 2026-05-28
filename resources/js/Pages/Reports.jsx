@@ -272,6 +272,7 @@ const Reports = () => {
         categoryDisplay: categoryLabels[r.incidentCategory] || r.incidentCategory,
         mahallah: r.mahallah,
         locationArea: r.locationArea,
+        location: incidentLocation, // Use determined location if available
         address: r.address,
         building: r.building,
         locationRaw: r.location,
