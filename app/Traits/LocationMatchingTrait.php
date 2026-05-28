@@ -65,6 +65,95 @@ trait LocationMatchingTrait
         }
     }
 
+    // ============================================
+    // SHARED METHODS
+    // ============================================
+
+    /**
+     * Calculate distance between two points in meters (Haversine formula)
+     */
+    protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371000; // meters
+
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Get the short key for a location (for frontend filtering)
+     */
+    protected function getLocationKey($locationName)
+    {
+        foreach ($this->mainLocations as $fullName => $config) {
+            if ($fullName === $locationName) {
+                return $config['key'];
+            }
+        }
+        return $locationName;
+    }
+
+    /**
+     * Match locationArea to main location using keywords
+     */
+    protected function matchLocationToMainLocation($locationArea)
+    {
+        if (empty($locationArea)) return null;
+
+        $locationAreaLower = strtolower($locationArea);
+
+        foreach ($this->mainLocations as $mainLocationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                    return $mainLocationName;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find closest location by proximity
+     */
+    protected function findClosestLocationByProximity($coords)
+    {
+        if (!$coords || empty($this->mainLocationCoordinates)) {
+            return null;
+        }
+
+        $bestMatch = null;
+        $bestDistance = PHP_FLOAT_MAX;
+
+        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+            $distance = $this->calculateDistance(
+                $coords['lat'], $coords['lng'],
+                $locationCoords['lat'], $locationCoords['lng']
+            );
+
+            if ($distance <= $radius && $distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestMatch = $locationName;
+            }
+        }
+
+        return $bestMatch;
+    }
+
+    // ============================================
+    // REPORT METHODS
+    // ============================================
+
     /**
      * Get locationArea from report
      */
@@ -130,89 +219,6 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Calculate distance between two points in meters (Haversine formula)
-     */
-    protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
-    {
-        $earthRadius = 6371000; // meters
-
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lngDelta = deg2rad($lng2 - $lng1);
-
-        $a = sin($latDelta / 2) * sin($latDelta / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($lngDelta / 2) * sin($lngDelta / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
-    }
-
-    /**
-     * Match locationArea to main location using keywords
-     */
-    protected function matchLocationToMainLocation($locationArea)
-    {
-        if (empty($locationArea)) return null;
-
-        $locationAreaLower = strtolower($locationArea);
-
-        foreach ($this->mainLocations as $mainLocationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
-                    return $mainLocationName;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Find closest location by proximity
-     */
-    protected function findClosestLocationByProximity($reportCoords)
-    {
-        if (!$reportCoords || empty($this->mainLocationCoordinates)) {
-            return null;
-        }
-
-        $bestMatch = null;
-        $bestDistance = PHP_FLOAT_MAX;
-
-        foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
-            $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
-
-            $distance = $this->calculateDistance(
-                $reportCoords['lat'], $reportCoords['lng'],
-                $locationCoords['lat'], $locationCoords['lng']
-            );
-
-            if ($distance <= $radius && $distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch = $locationName;
-            }
-        }
-
-        return $bestMatch;
-    }
-
-    /**
-     * Get the short key for a location (for frontend filtering)
-     */
-    protected function getLocationKey($locationName)
-    {
-        foreach ($this->mainLocations as $fullName => $config) {
-            if ($fullName === $locationName) {
-                return $config['key'];
-            }
-        }
-
-        // If not found, return the original
-        return $locationName;
-    }
-
-    /**
      * Determine report location using keyword matching first, then proximity
      */
     protected function determineReportLocation($report, $returnKey = true)
@@ -252,7 +258,9 @@ trait LocationMatchingTrait
         return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
     }
 
-    // ============ EMERGENCY METHODS (ADD THESE) ============
+    // ============================================
+    // EMERGENCY METHODS
+    // ============================================
 
     /**
      * Get locationArea from emergency
@@ -269,11 +277,6 @@ trait LocationMatchingTrait
             return $location->locationArea;
         }
 
-        // Check mahallah field
-        if (isset($emergency->mahallah)) {
-            return $emergency->mahallah;
-        }
-
         return '';
     }
 
@@ -282,14 +285,12 @@ trait LocationMatchingTrait
      */
     protected function getEmergencyCoordinates($emergency)
     {
-        // Check direct latitude/longitude fields (emergencies have these)
         if (isset($emergency->latitude) && isset($emergency->longitude)
             && is_numeric($emergency->latitude) && is_numeric($emergency->longitude)
             && $emergency->latitude != 0 && $emergency->longitude != 0) {
             return ['lat' => (float)$emergency->latitude, 'lng' => (float)$emergency->longitude];
         }
 
-        // Check nested location object
         $location = $emergency->location;
         if (is_array($location)) {
             if (isset($location['latitude']) && isset($location['longitude'])
@@ -303,50 +304,69 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine emergency location using keyword matching first, then proximity
+     * Determine emergency location using keyword matching on address
      */
     protected function determineEmergencyLocation($emergency)
     {
-        // METHOD 1: Try keyword matching using locationArea
-        $locationArea = $this->getLocationAreaFromEmergency($emergency);
-        if (!empty($locationArea)) {
-            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
-            if ($matchedLocation) {
-                return $this->getLocationKey($matchedLocation);
-            }
-        }
-
-        // METHOD 2: Try proximity matching using coordinates
-        $emergencyCoords = $this->getEmergencyCoordinates($emergency);
-        if ($emergencyCoords) {
-            $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
-            if ($matchedLocation) {
-                return $this->getLocationKey($matchedLocation);
-            }
-        }
-
-        // METHOD 3: Try matching by address
+        // Check address field directly (emergencies store location here)
         $address = strtolower($emergency->address ?? '');
-        foreach ($this->mainLocations as $locationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($address, strtolower($keyword)) !== false) {
-                    return $this->getLocationKey($locationName);
-                }
+
+        if (empty($address)) {
+            return null;
+        }
+
+        // Direct keyword mapping for emergencies
+        $locationMap = [
+            'aminah' => 'Aminah',
+            'asiah' => 'Asiah',
+            'safiyyah' => 'Safiyyah',
+            'maryam' => 'Maryam',
+            'ruqayyah' => 'Ruqayyah',
+            'ali' => 'Ali',
+            'faruq' => 'Faruq',
+            'bilal' => 'Bilal',
+            'asma' => 'Asma',
+            'hafsah' => 'Hafsah',
+            'halimah' => 'Halimah',
+            'siddiq' => 'Siddiq',
+            'salahuddin' => 'Salahuddin',
+            'uthman' => 'Uthman',
+            'nusaibah' => 'Nusaibah',
+            'zubair' => 'Zubair Al-Awwam',
+            'sumayyah' => 'Sumayyah',
+            'kirkhs' => 'KIRKHS',
+            'kict' => 'KICT',
+            'koe' => 'KOE',
+            'kaed' => 'KAED',
+            'kenms' => 'KENMS',
+            'aikol' => 'AIKOL',
+            'koed' => 'KOED',
+            'library' => 'Dar al-Hikmah Library',
+            'stadium' => 'Saidina Hamzah Stadium',
+            'archery' => 'IIUM Archery Range',
+            'football' => 'UIA Football Turf',
+            'cricket' => 'IIUM Cricket Ground',
+            'rugby' => 'IIUM Rugby Field',
+            'educare' => 'IIUM Educare',
+            'mosque' => 'Sultan Haji Ahmad Shah Mosque',
+            'engineering' => 'KOE',
+        ];
+
+        foreach ($locationMap as $keyword => $locationKey) {
+            if (strpos($address, $keyword) !== false) {
+                Log::info('Emergency location matched: ' . $locationKey . ' from address: ' . $address);
+                return $locationKey;
             }
         }
 
-        // METHOD 4: Try matching by mahallah field
-        $mahallah = strtolower($emergency->mahallah ?? '');
-        if (!empty($mahallah)) {
-            foreach ($this->mainLocations as $locationName => $config) {
-                foreach ($config['keywords'] as $keyword) {
-                    if (strpos($mahallah, strtolower($keyword)) !== false) {
-                        return $this->getLocationKey($locationName);
-                    }
-                }
-            }
+        // Try regex for "Mahallah X" pattern
+        if (preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
+            $found = ucfirst(strtolower($matches[1]));
+            Log::info('Emergency location matched by regex: ' . $found);
+            return $found;
         }
 
+        Log::warning('No location match for emergency - Address: ' . $address);
         return null;
     }
 }
