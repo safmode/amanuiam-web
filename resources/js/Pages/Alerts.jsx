@@ -591,6 +591,7 @@ const Alerts = () => {
     return pages;
   };
 
+  // IMPORTANT: This function MUST include locations parameter
   const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
     const params = new URLSearchParams();
     params.append('page', page);
@@ -703,6 +704,9 @@ const Alerts = () => {
       const determinedLocation = alert.determined_location?.toLowerCase() || '';
       if (!studentName.includes(q) && !matrixNumber.includes(q) && !location.includes(q) && !determinedLocation.includes(q)) return false;
     }
+
+    // Status filter is already handled by backend, but we keep it here for client-side safety
+    if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
 
     const alertDate = new Date(alert.triggeredAt);
     alertDate.setHours(0, 0, 0, 0);
