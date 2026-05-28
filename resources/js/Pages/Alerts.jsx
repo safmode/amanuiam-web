@@ -14,7 +14,7 @@ import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 import axios from 'axios';
 
-// COPY THE LOCATION LABELS FROM REPORTS.JSX
+// Location labels matching LocationMatchingTrait keys exactly
 const locationLabels = {
   'Mahallahs': {
     'Asiah': 'Mahallah Asiah',
@@ -76,21 +76,15 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
         onClose();
       }
     };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
   return (
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] max-h-[400px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[300px] max-h-[450px] overflow-y-auto ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
           {children}
         </div>
       )}
@@ -112,47 +106,15 @@ const showToast = (message, type = 'success') => {
 // Stat Card Component
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const getColorClasses = () => {
-    switch(color) {
-      case 'red':
-        return {
-          card: 'bg-white border-red-500/30 dark:bg-red-900/20 dark:border-red-700',
-          iconBg: 'bg-red-100 dark:bg-red-900/50',
-          iconColor: 'text-red-600 dark:text-red-400',
-          valueColor: 'text-red-600 dark:text-red-400'
-        };
-      case 'amber':
-        return {
-          card: 'bg-white border-amber-500/30 dark:bg-amber-900/20 dark:border-amber-700',
-          iconBg: 'bg-amber-100 dark:bg-amber-900/50',
-          iconColor: 'text-amber-600 dark:text-amber-400',
-          valueColor: 'text-amber-600 dark:text-amber-400'
-        };
-      case 'green':
-        return {
-          card: 'bg-white border-green-500/30 dark:bg-green-900/20 dark:border-green-700',
-          iconBg: 'bg-green-100 dark:bg-green-900/50',
-          iconColor: 'text-green-600 dark:text-green-400',
-          valueColor: 'text-green-600 dark:text-green-400'
-        };
-      case 'blue':
-        return {
-          card: 'bg-white border-blue-500/30 dark:bg-blue-900/20 dark:border-blue-700',
-          iconBg: 'bg-blue-100 dark:bg-blue-900/50',
-          iconColor: 'text-blue-600 dark:text-blue-400',
-          valueColor: 'text-blue-600 dark:text-blue-400'
-        };
-      default:
-        return {
-          card: 'bg-white border-gray-500/30 dark:bg-gray-900/20 dark:border-gray-700',
-          iconBg: 'bg-gray-100 dark:bg-gray-900/50',
-          iconColor: 'text-gray-600 dark:text-gray-400',
-          valueColor: 'text-gray-600 dark:text-gray-400'
-        };
+    switch (color) {
+      case 'red':    return { card: 'bg-white border-red-500/30 dark:bg-red-900/20 dark:border-red-700',    iconBg: 'bg-red-100 dark:bg-red-900/50',    iconColor: 'text-red-600 dark:text-red-400',    valueColor: 'text-red-600 dark:text-red-400' };
+      case 'amber':  return { card: 'bg-white border-amber-500/30 dark:bg-amber-900/20 dark:border-amber-700', iconBg: 'bg-amber-100 dark:bg-amber-900/50', iconColor: 'text-amber-600 dark:text-amber-400', valueColor: 'text-amber-600 dark:text-amber-400' };
+      case 'green':  return { card: 'bg-white border-green-500/30 dark:bg-green-900/20 dark:border-green-700', iconBg: 'bg-green-100 dark:bg-green-900/50', iconColor: 'text-green-600 dark:text-green-400', valueColor: 'text-green-600 dark:text-green-400' };
+      case 'blue':   return { card: 'bg-white border-blue-500/30 dark:bg-blue-900/20 dark:border-blue-700',   iconBg: 'bg-blue-100 dark:bg-blue-900/50',   iconColor: 'text-blue-600 dark:text-blue-400',   valueColor: 'text-blue-600 dark:text-blue-400' };
+      default:       return { card: 'bg-white border-gray-500/30 dark:bg-gray-900/20 dark:border-gray-700',   iconBg: 'bg-gray-100 dark:bg-gray-900/50',   iconColor: 'text-gray-600 dark:text-gray-400',   valueColor: 'text-gray-600 dark:text-gray-400' };
     }
   };
-
   const classes = getColorClasses();
-
   return (
     <Card className={`${classes.card} rounded-2xl shadow-sm hover:shadow-md transition-shadow`}>
       <CardContent className="p-4 flex items-center gap-3">
@@ -171,9 +133,9 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
 // Status Badge Component
 const StatusBadge = ({ status }) => {
   const config = {
-    active: { label: 'Active', className: 'bg-red-500 dark:bg-red-600' },
+    active:     { label: 'Active',     className: 'bg-red-500 dark:bg-red-600' },
     responding: { label: 'Responding', className: 'bg-amber-500 dark:bg-amber-600' },
-    resolved: { label: 'Resolved', className: 'bg-green-500 dark:bg-green-600' }
+    resolved:   { label: 'Resolved',   className: 'bg-green-500 dark:bg-green-600' },
   };
   const { label, className } = config[status] || config.active;
   return <Badge className={`${className} text-white text-[11px]`}>{label}</Badge>;
@@ -182,29 +144,29 @@ const StatusBadge = ({ status }) => {
 // Alert Card Component
 const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTimeAgo, formatDate, onDelete }) => {
   const getAlertCardStyle = (status) => {
-    switch(status) {
-      case 'active': return 'border-l-red-500 bg-red-50/30 dark:bg-red-950/20 hover:border-l-red-600';
+    switch (status) {
+      case 'active':     return 'border-l-red-500 bg-red-50/30 dark:bg-red-950/20 hover:border-l-red-600';
       case 'responding': return 'border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/20 hover:border-l-amber-600';
-      case 'resolved': return 'border-l-green-500 bg-green-50/30 dark:bg-green-950/20 hover:border-l-green-600';
-      default: return '';
+      case 'resolved':   return 'border-l-green-500 bg-green-50/30 dark:bg-green-950/20 hover:border-l-green-600';
+      default:           return '';
     }
   };
 
   const getStatusIcon = (status) => {
-    switch(status) {
-      case 'active': return <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400" />;
+    switch (status) {
+      case 'active':     return <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400" />;
       case 'responding': return <Radio className="w-5 h-5 text-amber-500 dark:text-amber-400" />;
-      case 'resolved': return <CheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />;
-      default: return <AlertTriangle className="w-5 h-5" />;
+      case 'resolved':   return <CheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />;
+      default:           return <AlertTriangle className="w-5 h-5" />;
     }
   };
 
   const getStatusBg = (status) => {
-    switch(status) {
-      case 'active': return 'bg-red-100 dark:bg-red-900/30';
+    switch (status) {
+      case 'active':     return 'bg-red-100 dark:bg-red-900/30';
       case 'responding': return 'bg-amber-100 dark:bg-amber-900/30';
-      case 'resolved': return 'bg-green-100 dark:bg-green-900/30';
-      default: return 'bg-gray-100';
+      case 'resolved':   return 'bg-green-100 dark:bg-green-900/30';
+      default:           return 'bg-gray-100';
     }
   };
 
@@ -212,21 +174,19 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
     if (alert.status === 'active') {
       return (
         <Button
-          variant="ghost"
-          size="sm"
+          variant="ghost" size="sm"
           className="bg-red-500 text-white hover:bg-red-600 rounded-lg gap-1.5 px-3 h-8"
           onClick={(e) => { e.stopPropagation(); onAction('dispatch', alert); }}
           disabled={isDispatching}
         >
-          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3 h-2.8" />}
+          {isDispatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3 h-3" />}
           <span className="text-xs font-medium">Dispatch</span>
         </Button>
       );
     } else if (alert.status === 'responding') {
       return (
         <Button
-          variant="ghost"
-          size="sm"
+          variant="ghost" size="sm"
           className="bg-green-500 text-white hover:bg-green-600 rounded-lg gap-1.5 px-3 h-8"
           onClick={(e) => { e.stopPropagation(); onAction('resolve', alert); }}
         >
@@ -240,8 +200,7 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="ghost" size="sm"
                 className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-3 h-8 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-slate-700"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -250,47 +209,37 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl min-w-[160px] dark:bg-slate-800 dark:border-slate-700">
               <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAction('revertToResponding', alert);
-                }}
+                onClick={(e) => { e.stopPropagation(); onAction('revertToResponding', alert); }}
                 className="gap-2 text-amber-600 focus:text-amber-600 focus:bg-amber-50 cursor-pointer text-sm dark:text-amber-400 dark:focus:bg-amber-950/30"
                 disabled={isReverting}
               >
-                <Undo2 className="w-3.5 h-3.5" />
-                <span>Revert to Responding</span>
+                <Undo2 className="w-3.5 h-3.5" /><span>Revert to Responding</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAction('revertToActive', alert);
-                }}
+                onClick={(e) => { e.stopPropagation(); onAction('revertToActive', alert); }}
                 className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer text-sm dark:text-red-400 dark:focus:bg-red-950/30"
                 disabled={isReverting}
               >
-                <Undo2 className="w-3.5 h-3.5" />
-                <span>Revert to Active</span>
+                <Undo2 className="w-3.5 h-3.5" /><span>Revert to Active</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="bg-transparent text-white hover:bg-gray-700 rounded-lg px-3 h-8"
+            variant="ghost" size="sm"
+            className="bg-transparent hover:bg-gray-100 rounded-lg px-3 h-8 dark:hover:bg-slate-700"
             onClick={(e) => { e.stopPropagation(); onDelete(alert); }}
           >
             <Trash2 className="w-3.5 h-3.5 text-red-500" />
           </Button>
 
           <Button
-            variant="ghost"
-            size="sm"
+            variant="ghost" size="sm"
             className="bg-amber-500 text-white hover:bg-amber-600 rounded-lg gap-1.5 px-4 h-8"
             onClick={(e) => { e.stopPropagation(); onAction('createReport', alert); }}
           >
             <FileText className="w-4 h-4" />
-            <span className="text-xs font-medium"> Report </span>
+            <span className="text-xs font-medium">Report</span>
           </Button>
         </div>
       );
@@ -343,17 +292,16 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
 // Alert Detail Modal
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
   const getHeaderColor = () => {
-    switch(alert?.status) {
-      case 'active': return 'bg-red-500';
+    switch (alert?.status) {
+      case 'active':     return 'bg-red-500';
       case 'responding': return 'bg-amber-500';
-      case 'resolved': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'resolved':   return 'bg-green-500';
+      default:           return 'bg-gray-500';
     }
   };
 
   const getActionButton = () => {
     if (!alert) return null;
-
     if (alert.status === 'active') {
       return (
         <Button
@@ -377,15 +325,14 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
       );
     } else if (alert.status === 'resolved') {
       return (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
             className="rounded-xl gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
             onClick={() => onAction('revertToResponding', alert)}
             disabled={isReverting}
           >
-            <Undo2 className="w-4 h-4" />
-            Revert to Responding
+            <Undo2 className="w-4 h-4" />Revert to Responding
           </Button>
           <Button
             variant="outline"
@@ -393,15 +340,13 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             onClick={() => onAction('revertToActive', alert)}
             disabled={isReverting}
           >
-            <Undo2 className="w-4 h-4" />
-            Revert to Active
+            <Undo2 className="w-4 h-4" />Revert to Active
           </Button>
           <Button
             className="bg-red-500 hover:bg-red-600 text-white rounded-xl gap-2 shadow-sm hover:shadow-md transition-all"
             onClick={() => onDelete(alert)}
           >
-            <Trash2 className="w-4 h-4" />
-            Delete Record
+            <Trash2 className="w-4 h-4" />Delete Record
           </Button>
         </div>
       );
@@ -421,9 +366,9 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
         <div className={`p-4 ${getHeaderColor()}`}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-              {alert.status === 'active' && <AlertTriangle className="w-4 h-4 text-white" />}
+              {alert.status === 'active'     && <AlertTriangle className="w-4 h-4 text-white" />}
               {alert.status === 'responding' && <Radio className="w-4 h-4 text-white" />}
-              {alert.status === 'resolved' && <CheckCircle className="w-4 h-4 text-white" />}
+              {alert.status === 'resolved'   && <CheckCircle className="w-4 h-4 text-white" />}
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-white">Emergency Alert</DialogTitle>
@@ -541,7 +486,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2 flex-wrap">
             <Button variant="outline" className="rounded-xl text-sm h-9 px-4 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
               Close
             </Button>
@@ -558,83 +503,59 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 // ============================================================
 
 const Alerts = () => {
-  // ---------------------- STATE MANAGEMENT ----------------------
+  // State
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedAlertForDispatch, setSelectedAlertForDispatch] = useState(null);
 
-  // Global stats
-  const [globalStats, setGlobalStats] = useState({
-    active: 0,
-    responding: 0,
-    resolved: 0,
-    total: 0
-  });
+  const [globalStats, setGlobalStats] = useState({ active: 0, responding: 0, resolved: 0, total: 0 });
 
-  // Modal states
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [showAddReportModal, setShowAddReportModal] = useState(false);
 
-  // Modal data
   const [alertToResolve, setAlertToResolve] = useState(null);
   const [alertForReport, setAlertForReport] = useState(null);
 
-  // Loading states
   const [isDispatching, setIsDispatching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Filter states
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [datePreset, setDatePreset] = useState('all');
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
-  const [filters, setFilters] = useState({
-    status: [],
-    locations: [],
-  });
+  const [filters, setFilters] = useState({ status: [], locations: [] });
 
-  // Pagination states
   const [pagination, setPagination] = useState({
-    current_page: 1,
-    per_page: 10,
-    total: 0,
-    last_page: 1,
-    from: null,
-    to: null
+    current_page: 1, per_page: 10, total: 0,
+    last_page: 1, from: null, to: null,
   });
 
   const statusOptions = [
-    { value: 'active', label: 'Active' },
+    { value: 'active',     label: 'Active' },
     { value: 'responding', label: 'Responding' },
-    { value: 'resolved', label: 'Resolved' }
+    { value: 'resolved',   label: 'Resolved' },
   ];
 
   const searchTimeoutRef = useRef(null);
 
-  // Helper functions
+  // Helpers
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-MY', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
+    return date.toLocaleString('en-MY', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
+    const diffMs = new Date() - new Date(dateString);
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
@@ -656,10 +577,8 @@ const Alerts = () => {
   const hasActiveFilters = getFilterCount() > 0 || datePreset !== 'all' || customDateFrom || customDateTo || searchQuery;
 
   const getPageNumbers = () => {
-    const totalPages = pagination.last_page;
-    const currentPage = pagination.current_page;
+    const { last_page: totalPages, current_page: currentPage } = pagination;
     const pages = [];
-
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else if (currentPage <= 3) {
@@ -672,20 +591,12 @@ const Alerts = () => {
     return pages;
   };
 
-  // Build query parameters for API
   const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('per_page', perPage);
-
-    if (filters.status.length > 0) {
-      params.append('status', filters.status.join(','));
-    }
-
-    if (filters.locations.length > 0) {
-      params.append('locations', filters.locations.join(','));
-    }
-
+    if (filters.status.length > 0) params.append('status', filters.status.join(','));
+    if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
     return params;
   };
 
@@ -694,10 +605,10 @@ const Alerts = () => {
     try {
       const response = await axios.get('/api/emergencies/counts');
       setGlobalStats({
-        active: response.data.active || 0,
+        active:    response.data.active    || 0,
         responding: response.data.responding || 0,
-        resolved: response.data.resolved || 0,
-        total: (response.data.active || 0) + (response.data.responding || 0) + (response.data.resolved || 0)
+        resolved:  response.data.resolved  || 0,
+        total: (response.data.active || 0) + (response.data.responding || 0) + (response.data.resolved || 0),
       });
     } catch (error) {
       console.error('Failed to fetch global stats:', error);
@@ -708,10 +619,8 @@ const Alerts = () => {
     setLoading(true);
     try {
       const params = buildQueryParams(page, perPage);
-      const url = `/api/emergencies?${params.toString()}`;
-      const response = await axios.get(url);
+      const response = await axios.get(`/api/emergencies?${params.toString()}`);
       const data = response.data;
-
       setAlerts(data.data);
       setPagination(data.pagination);
       window.dispatchEvent(new CustomEvent('emergency-updated'));
@@ -728,11 +637,8 @@ const Alerts = () => {
       setIsDeleting(true);
       try {
         const response = await axios.delete(`/api/emergencies/${alertId}`, {
-          headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-          }
+          headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
         });
-
         if (response.data.success) {
           showToast('Emergency record deleted successfully', 'success');
           setSelectedAlert(null);
@@ -740,7 +646,6 @@ const Alerts = () => {
           await fetchGlobalStats();
         }
       } catch (error) {
-        console.error('Delete failed:', error);
         showToast(error.response?.data?.error || 'Failed to delete emergency', 'error');
       } finally {
         setIsDeleting(false);
@@ -761,16 +666,12 @@ const Alerts = () => {
 
   // Filter functions
   const toggleFilter = (filterType, value) => {
-    setFilters(prev => {
-      const current = prev[filterType];
-      const newFilters = {
-        ...prev,
-        [filterType]: current.includes(value)
-          ? current.filter(v => v !== value)
-          : [...current, value],
-      };
-      return newFilters;
-    });
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: prev[filterType].includes(value)
+        ? prev[filterType].filter(v => v !== value)
+        : [...prev[filterType], value],
+    }));
     setPagination(prev => ({ ...prev, current_page: 1 }));
   };
 
@@ -784,75 +685,46 @@ const Alerts = () => {
   };
 
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       fetchEmergencies(1, pagination.per_page);
       fetchGlobalStats();
     }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [filters.status, filters.locations, pagination.per_page]);
 
+  // Client-side search + date filtering on the current page
   const filteredAlerts = alerts.filter(alert => {
     if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const studentName = alert.student?.name?.toLowerCase() || '';
-      const matrixNumber = alert.student?.matrixNumber?.toLowerCase() || '';
-      const location = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || alert.location?.toLowerCase() || '';
+      const q = searchQuery.toLowerCase();
+      const studentName       = alert.student?.name?.toLowerCase() || '';
+      const matrixNumber      = alert.student?.matrixNumber?.toLowerCase() || '';
+      const location          = alert.address?.toLowerCase() || alert.location?.mahallah?.toLowerCase() || '';
       const determinedLocation = alert.determined_location?.toLowerCase() || '';
-      if (!studentName.includes(searchLower) && !matrixNumber.includes(searchLower) && !location.includes(searchLower) && !determinedLocation.includes(searchLower)) {
-        return false;
-      }
+      if (!studentName.includes(q) && !matrixNumber.includes(q) && !location.includes(q) && !determinedLocation.includes(q)) return false;
     }
-    if (filters.status.length > 0 && !filters.status.includes(alert.status)) return false;
 
     const alertDate = new Date(alert.triggeredAt);
     alertDate.setHours(0, 0, 0, 0);
     if (datePreset === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
       if (alertDate.getTime() !== today.getTime()) return false;
     } else if (datePreset === 'week') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const weekAgo = new Date();
-      weekAgo.setDate(today.getDate() - 7);
-      weekAgo.setHours(0, 0, 0, 0);
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0, 0, 0, 0);
       if (alertDate < weekAgo) return false;
     } else if (datePreset === 'month') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const monthAgo = new Date();
-      monthAgo.setMonth(today.getMonth() - 1);
-      monthAgo.setHours(0, 0, 0, 0);
+      const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0, 0, 0, 0);
       if (alertDate < monthAgo) return false;
     } else if (customDateFrom || customDateTo) {
-      if (customDateFrom) {
-        const fromDate = new Date(customDateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (alertDate < fromDate) return false;
-      }
-      if (customDateTo) {
-        const toDate = new Date(customDateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (alertDate > toDate) return false;
-      }
+      if (customDateFrom) { const from = new Date(customDateFrom); from.setHours(0,0,0,0); if (alertDate < from) return false; }
+      if (customDateTo)   { const to   = new Date(customDateTo);   to.setHours(23,59,59,999); if (alertDate > to) return false; }
     }
     return true;
   });
 
   // Action handlers
   const updateLocalAlertStatus = (alertId, newStatus) => {
-    setAlerts(prev => prev.map(a =>
-      (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a
-    ));
+    setAlerts(prev => prev.map(a => (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a));
     if (selectedAlert && (selectedAlert._id === alertId || selectedAlert.id === alertId)) {
       setSelectedAlert({ ...selectedAlert, status: newStatus });
     }
@@ -889,7 +761,6 @@ const Alerts = () => {
         setSelectedAlertForDispatch(null);
       }
     } catch (error) {
-      console.error('Failed to dispatch officer:', error);
       showToast(error.response?.data?.error || 'Failed to dispatch officer', 'error');
     } finally {
       setIsDispatching(false);
@@ -909,87 +780,55 @@ const Alerts = () => {
       await axios.put(`/api/emergencies/${alertId}/resolve`);
       await fetchEmergencies(pagination.current_page, pagination.per_page);
       await fetchGlobalStats();
-
       setShowConfirmationModal(false);
       setAlertForReport(alertToResolve);
       setAlertToResolve(null);
       setShowDecisionModal(true);
     } catch (error) {
-      console.error('Failed to mark as resolved:', error);
       showToast('Failed to mark as resolved', 'error');
     } finally {
       setIsResolving(false);
     }
   };
 
-  const handleDecisionYes = () => {
-    setShowDecisionModal(false);
-    setShowAddReportModal(true);
-  };
-
-  const handleDecisionNo = () => {
-    setShowDecisionModal(false);
-    setAlertForReport(null);
-    showToast('Report creation skipped', 'success');
-  };
+  const handleDecisionYes = () => { setShowDecisionModal(false); setShowAddReportModal(true); };
+  const handleDecisionNo  = () => { setShowDecisionModal(false); setAlertForReport(null); showToast('Report creation skipped', 'success'); };
 
   const handleSaveReport = async (reportData) => {
     setIsSubmitting(true);
     try {
       const response = await axios.post('/Reports', reportData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-        }
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
       });
-
       if (response.data.success || response.status === 200 || response.status === 201) {
         showToast('Report created successfully!', 'success');
         setShowAddReportModal(false);
         setAlertForReport(null);
       }
     } catch (error) {
-      console.error('Failed to create report:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create report';
-      showToast(errorMessage, 'error');
+      showToast(error.response?.data?.message || error.response?.data?.error || 'Failed to create report', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleAction = async (action, alert) => {
-    switch(action) {
-      case 'dispatch':
-        setSelectedAlertForDispatch(alert);
-        setShowDispatchModal(true);
-        break;
-      case 'resolve':
-        handleResolveClick(alert);
-        setSelectedAlert(null);
-        break;
-      case 'createReport':
-        setAlertForReport(alert);
-        setShowAddReportModal(true);
-        break;
-      case 'revertToResponding':
-        await handleRevertStatus(alert, 'responding');
-        break;
-      case 'revertToActive':
-        await handleRevertStatus(alert, 'active');
-        break;
+    switch (action) {
+      case 'dispatch':          setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
+      case 'resolve':           handleResolveClick(alert); setSelectedAlert(null); break;
+      case 'createReport':      setAlertForReport(alert); setShowAddReportModal(true); break;
+      case 'revertToResponding': await handleRevertStatus(alert, 'responding'); break;
+      case 'revertToActive':    await handleRevertStatus(alert, 'active'); break;
     }
   };
 
-  // Effects
   useEffect(() => {
     fetchEmergencies();
     fetchGlobalStats();
-
     const interval = setInterval(() => {
       fetchEmergencies(pagination.current_page, pagination.per_page);
       fetchGlobalStats();
     }, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -998,16 +837,19 @@ const Alerts = () => {
     <DashboardLayout title="Emergency Alerts" subtitle="Monitor and respond to emergency situations">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={AlertTriangle} label="Active" value={globalStats.active} color="red" />
-        <StatCard icon={Radio} label="Responding" value={globalStats.responding} color="amber" />
-        <StatCard icon={CheckCircle} label="Resolved" value={globalStats.resolved} color="green" />
-        <StatCard icon={Clock} label="Total Alerts" value={globalStats.total} color="blue" />
+        <StatCard icon={AlertTriangle} label="Active"       value={globalStats.active}    color="red"   />
+        <StatCard icon={Radio}         label="Responding"   value={globalStats.responding} color="amber" />
+        <StatCard icon={CheckCircle}   label="Resolved"     value={globalStats.resolved}   color="green" />
+        <StatCard icon={Clock}         label="Total Alerts" value={globalStats.total}      color="blue"  />
       </div>
 
       <Card className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border-border">
         <CardContent className="p-6">
+
           {/* Filter Bar */}
           <div className="flex flex-wrap gap-3 mb-4">
+
+            {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
               <Input
@@ -1018,14 +860,14 @@ const Alerts = () => {
               />
             </div>
 
-            {/* FILTER DROPDOWN */}
+            {/* Filters Dropdown — Status + Locations (grouped) */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
               align="left"
               trigger={
                 <Button
-                  variant={getFilterCount() > 0 ? "default" : "outline"}
+                  variant={getFilterCount() > 0 ? 'default' : 'outline'}
                   className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
@@ -1040,74 +882,79 @@ const Alerts = () => {
                 </Button>
               }
             >
-              <div className="bg-white p-4 dark:bg-slate-800 rounded-xl min-w-[280px]">
-                <div className="space-y-4">
-                  {/* Status Section */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
-                      {filters.status.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {statusOptions.map((option) => (
-                        <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={filters.status.includes(option.value)}
-                            onChange={() => toggleFilter('status', option.value)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
+              <div className="p-4 space-y-4">
+
+                {/* Status */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
+                    {filters.status.length > 0 && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, status: [] }))}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-
-                  <div className="border-t border-gray-200 dark:border-slate-700" />
-
-                  {/* Locations Section - SAME AS REPORTS.JSX */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
-                      {filters.locations.length > 0 && (
-                        <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                          Clear all
-                        </button>
-                      )}
-                    </div>
-                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-                      {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
-                        <div key={groupName}>
-                          <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
-                          <div className="space-y-2 pl-2">
-                            {Object.entries(locationsGroup).map(([key, label]) => (
-                              <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                                <input
-                                  type="checkbox"
-                                  checked={filters.locations.includes(key)}
-                                  onChange={() => toggleFilter('locations', key)}
-                                  className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="space-y-2">
+                    {statusOptions.map(option => (
+                      <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={filters.status.includes(option.value)}
+                          onChange={() => toggleFilter('status', option.value)}
+                          className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
-                {/* Clear All button at bottom */}
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+                <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                {/* Locations — grouped, keys match LocationMatchingTrait */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                    {filters.locations.length > 0 && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, locations: [] }))}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                    {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
+                      <div key={groupName}>
+                        <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">
+                          {groupName}
+                        </Label>
+                        <div className="space-y-2 pl-2">
+                          {Object.entries(locationsGroup).map(([key, label]) => (
+                            <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={filters.locations.includes(key)}
+                                onChange={() => toggleFilter('locations', key)}
+                                className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setFilters(prev => ({ ...prev, status: [], locations: [] })); setShowFilterDropdown(false); }}
+                    variant="ghost" size="sm"
+                    onClick={() => { setFilters({ status: [], locations: [] }); setShowFilterDropdown(false); }}
                     className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
                   >
                     Clear All Filters
@@ -1116,15 +963,15 @@ const Alerts = () => {
               </div>
             </SimpleDropdown>
 
-            {/* DATE DROPDOWN */}
+            {/* Date Range Dropdown */}
             <SimpleDropdown
               isOpen={showDateDropdown}
               onClose={() => setShowDateDropdown(false)}
               align="right"
               trigger={
                 <Button
-                  variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? "default" : "outline"}
-                  className={`gap-2 rounded-xl ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? 'default' : 'outline'}
+                  className={`gap-2 rounded-xl relative ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
                   onClick={() => setShowDateDropdown(!showDateDropdown)}
                 >
                   <Calendar className="w-4 h-4" />
@@ -1136,85 +983,68 @@ const Alerts = () => {
                 </Button>
               }
             >
-              <div className="bg-white p-4 rounded-xl min-w-[260px] dark:bg-slate-800">
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
-                      {(datePreset !== 'all' || customDateFrom || customDateTo) && (
-                        <button onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {['today', 'week', 'month'].map((period) => (
-                        <button
-                          key={period}
-                          onClick={() => {
-                            const today = new Date();
-                            if (period === 'today') {
-                              const dateStr = today.toISOString().split('T')[0];
-                              setCustomDateFrom(dateStr);
-                              setCustomDateTo(dateStr);
-                            } else if (period === 'week') {
-                              const startOfWeek = new Date(today);
-                              startOfWeek.setDate(today.getDate() - today.getDay());
-                              const endOfWeek = new Date(today);
-                              endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
-                              setCustomDateFrom(startOfWeek.toISOString().split('T')[0]);
-                              setCustomDateTo(endOfWeek.toISOString().split('T')[0]);
-                            } else if (period === 'month') {
-                              const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                              const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                              setCustomDateFrom(startOfMonth.toISOString().split('T')[0]);
-                              setCustomDateTo(endOfMonth.toISOString().split('T')[0]);
-                            }
-                            setDatePreset(period);
-                            setShowDateDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === period ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
-                        >
-                          {period === 'today' ? 'Today' : period === 'week' ? 'This Week' : 'This Month'}
-                        </button>
-                      ))}
+              <div className="p-4 min-w-[260px] space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
+                    {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                      <button onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400">Clear</button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'today', label: 'Today' },
+                      { value: 'week',  label: 'This Week' },
+                      { value: 'month', label: 'This Month' },
+                      { value: 'all',   label: 'All Time' },
+                    ].map(({ value, label }) => (
                       <button
+                        key={value}
                         onClick={() => {
-                          setDatePreset('all');
-                          setCustomDateFrom('');
-                          setCustomDateTo('');
+                          const today = new Date();
+                          if (value === 'today') {
+                            const d = today.toISOString().split('T')[0];
+                            setCustomDateFrom(d); setCustomDateTo(d);
+                          } else if (value === 'week') {
+                            const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+                            const end   = new Date(today); end.setDate(today.getDate() + (6 - today.getDay()));
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else if (value === 'month') {
+                            const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                            const end   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else {
+                            setCustomDateFrom(''); setCustomDateTo('');
+                          }
+                          setDatePreset(value);
                           setShowDateDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === 'all' && !customDateFrom && !customDateTo ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === value ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
                       >
-                        All Time
+                        {label}
                       </button>
-                    </div>
+                    ))}
                   </div>
-                  <div className="border-t border-gray-200 dark:border-slate-700" />
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-200">Custom Range</Label>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
-                        <Input
-                          type="date"
-                          value={customDateFrom}
-                          onChange={(e) => { setCustomDateFrom(e.target.value); setDatePreset('custom'); }}
-                          className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
-                        <Input
-                          type="date"
-                          value={customDateTo}
-                          onChange={(e) => { setCustomDateTo(e.target.value); setDatePreset('custom'); }}
-                          className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
-                        <Button className="flex-1 bg-[#D4A853] hover:bg-[#C49A48] rounded-lg text-white" onClick={() => setShowDateDropdown(false)}>Apply</Button>
-                      </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                <div>
+                  <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-200">Custom Range</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
+                      <Input type="date" value={customDateFrom} onChange={(e) => { setCustomDateFrom(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
+                      <Input type="date" value={customDateTo} onChange={(e) => { setCustomDateTo(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
+                      <Button className="flex-1 bg-[#D4A853] hover:bg-[#C49A48] rounded-lg text-white" onClick={() => setShowDateDropdown(false)}>Apply</Button>
                     </div>
                   </div>
                 </div>
@@ -1223,13 +1053,12 @@ const Alerts = () => {
 
             {hasActiveFilters && (
               <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={clearAllFilters}>
-                <X className="w-4 h-4" />
-                Clear All
+                <X className="w-4 h-4" />Clear All
               </Button>
             )}
           </div>
 
-          {/* Active Filters Display */}
+          {/* Active Filter Tags */}
           {hasActiveFilters && (
             <div className="mb-4 flex flex-wrap gap-2">
               {filters.status.map(s => (
@@ -1241,10 +1070,7 @@ const Alerts = () => {
               {filters.locations.map(l => {
                 let displayName = l;
                 for (const group of Object.values(locationLabels)) {
-                  if (group[l]) {
-                    displayName = group[l];
-                    break;
-                  }
+                  if (group[l]) { displayName = group[l]; break; }
                 }
                 return (
                   <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
@@ -1256,7 +1082,7 @@ const Alerts = () => {
               })}
               {(datePreset !== 'all' || customDateFrom || customDateTo) && (
                 <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
-                  <Calendar className="w-3 h-3" /> {getDateFilterLabel()}
+                  <Calendar className="w-3 h-3" />{getDateFilterLabel()}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); }} />
                 </Badge>
               )}
@@ -1281,7 +1107,7 @@ const Alerts = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredAlerts.map((alert) => (
+              {filteredAlerts.map(alert => (
                 <AlertCard
                   key={alert._id || alert.id}
                   alert={alert}
@@ -1318,13 +1144,7 @@ const Alerts = () => {
                       <option value={50}>50</option>
                     </select>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.current_page - 1)}
-                    disabled={pagination.current_page === 1 || loading}
-                    className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1 || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <div className="flex gap-1">
@@ -1338,24 +1158,14 @@ const Alerts = () => {
                           size="sm"
                           onClick={() => handlePageChange(page)}
                           disabled={loading}
-                          className={`rounded-lg min-w-[36px] ${
-                            pagination.current_page === page
-                              ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white'
-                              : 'border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300'
-                          }`}
+                          className={`rounded-lg min-w-[36px] ${pagination.current_page === page ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300'}`}
                         >
                           {page}
                         </Button>
                       )
                     )}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.current_page + 1)}
-                    disabled={pagination.current_page === pagination.last_page || loading}
-                    className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === pagination.last_page || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -1365,7 +1175,7 @@ const Alerts = () => {
         </CardContent>
       </Card>
 
-      {/* MODALS */}
+      {/* Modals */}
       <AlertDetailModal
         alert={selectedAlert}
         open={!!selectedAlert}
@@ -1380,10 +1190,7 @@ const Alerts = () => {
 
       <ConfirmationModal
         open={showConfirmationModal}
-        onClose={() => {
-          setShowConfirmationModal(false);
-          setAlertToResolve(null);
-        }}
+        onClose={() => { setShowConfirmationModal(false); setAlertToResolve(null); }}
         onConfirm={handleConfirmResolve}
         title="Confirm Resolution"
         description="Are you sure you want to mark this emergency alert as resolved?"
@@ -1395,10 +1202,7 @@ const Alerts = () => {
 
       <DecisionModal
         open={showDecisionModal}
-        onClose={() => {
-          setShowDecisionModal(false);
-          setAlertForReport(null);
-        }}
+        onClose={() => { setShowDecisionModal(false); setAlertForReport(null); }}
         onYes={handleDecisionYes}
         onNo={handleDecisionNo}
         alert={alertForReport}
@@ -1407,20 +1211,14 @@ const Alerts = () => {
 
       <AddEmergencyReport
         isOpen={showAddReportModal}
-        onClose={() => {
-          setShowAddReportModal(false);
-          setAlertForReport(null);
-        }}
+        onClose={() => { setShowAddReportModal(false); setAlertForReport(null); }}
         onSave={handleSaveReport}
         emergencyData={alertForReport}
       />
 
       <DispatchOfficerModal
         open={showDispatchModal}
-        onClose={() => {
-          setShowDispatchModal(false);
-          setSelectedAlertForDispatch(null);
-        }}
+        onClose={() => { setShowDispatchModal(false); setSelectedAlertForDispatch(null); }}
         onDispatch={handleDispatchOfficer}
         alert={selectedAlertForDispatch}
       />
