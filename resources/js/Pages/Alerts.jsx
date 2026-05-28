@@ -380,7 +380,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[560px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[500px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
         {/* Header */}
         <div className={`px-6 py-4 ${getHeaderColor()} flex items-center justify-between`}>
           <div className="flex items-center gap-3">
@@ -397,113 +397,112 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           <StatusBadge status={alert.status} />
         </div>
 
-        {/* Content - No Scroll */}
-        <div className="p-6">
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-2 gap-5">
+        {/* Content - Stacked Layout */}
+        <div className="p-6 space-y-4">
 
-            {/* Left Column - Reporter Info */}
-            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
-                  <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter</p>
+          {/* Reporter Information - Full Width */}
+          <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
+                <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               </div>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
-                </p>
-                {alert.student?.matrixNumber && (
-                  <p className="text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
-                    <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
-                  </p>
-                )}
-                {alert.student?.phone && (
-                  <p className="text-sm flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
-                  </p>
-                )}
-                {alert.student?.email && (
-                  <p className="text-sm flex items-center gap-1.5 truncate">
-                    <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300 truncate">{alert.student.email}</span>
-                  </p>
-                )}
-              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
             </div>
-
-            {/* Right Column - Location & Time */}
-            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
-                  <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                </div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
-              </div>
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <p className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
+                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+              </p>
+              {alert.student?.matrixNumber && (
                 <p className="text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
+                  <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
                 </p>
-                {alert.address && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
-                )}
-                {alert.location?.building && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
-                )}
+              )}
+              {alert.student?.phone && (
+                <p className="text-sm flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
+                </p>
+              )}
+              {alert.student?.email && (
+                <p className="text-sm flex items-center gap-1.5 col-span-2">
+                  <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span className="text-gray-700 dark:text-gray-300 truncate">{alert.student.email}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Location & Time - Full Width */}
+          <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
+                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
+                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+              </p>
+              {alert.address && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
+              )}
+              {alert.location?.building && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
                 <p className="text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Triggered:</span>{' '}
                   <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
                 </p>
                 <p className="text-xs text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
-                {alert.resolvedAt && (
+              </div>
+              {alert.resolvedAt && (
+                <p className="text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
+                  <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Assigned Officer - Full Width (if exists) */}
+          {alert.assigned_officer_name && (
+            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
+                  <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
+                </p>
+                {alert.dispatched_at && (
                   <p className="text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
-                    <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
+                    <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
                   </p>
+                )}
+                {alert.dispatch_notes && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-28 overflow-y-auto whitespace-pre-wrap">
+                      {alert.dispatch_notes}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-
-            {/* Assigned Officer - Full Width */}
-            {alert.assigned_officer_name && (
-              <div className="col-span-2 bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
-                    <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
-                  </p>
-                  {alert.dispatched_at && (
-                    <p className="text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
-                      <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
-                    </p>
-                  )}
-                  {alert.dispatch_notes && (
-                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                      <p className="text-xs text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
-                      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                        {alert.dispatch_notes}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+          <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-slate-700 mt-2">
             <Button variant="outline" className="rounded-lg h-10 px-5 text-sm dark:border-slate-700 dark:text-gray-300" onClick={onClose}>
               Close
             </Button>
