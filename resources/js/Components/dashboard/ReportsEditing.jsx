@@ -14,13 +14,14 @@ import { Badge } from '@/components/ui/badge';
 
 // Helper function to extract location data from report
 const extractLocationData = (report) => {
-  if (!report) return { locationArea: '', building: '', fullAddress: '' };
+  if (!report) return { locationArea: '', building: '', specificPlace: '', fullAddress: '' };
 
   console.log('FULL REPORT OBJECT:', report);
   console.log('REPORT LOCATION:', report.location);
 
   let locationArea = '';
   let building = '';
+  let specificPlace = '';
   let fullAddress = '';
 
   // Try multiple ways to get the data
@@ -33,6 +34,10 @@ const extractLocationData = (report) => {
     if (report.location.building) {
       building = report.location.building;
       console.log('Found building in report.location:', building);
+    }
+    if (report.location.specificPlace) {
+      specificPlace = report.location.specificPlace;
+      console.log('Found specificPlace in report.location:', specificPlace);
     }
     if (report.location.address) {
       fullAddress = report.location.address;
@@ -50,9 +55,9 @@ const extractLocationData = (report) => {
       building = report.location[0].building;
       console.log('Found building in location[0]:', building);
     }
-    if (report.location[0].address) {
-      fullAddress = report.location[0].address;
-      console.log('Found address in location[0]:', fullAddress);
+    if (report.location[0].specificPlace) {
+      specificPlace = report.location[0].specificPlace;
+      console.log('Found specificPlace in location[0]:', specificPlace);
     }
   }
 
@@ -65,9 +70,9 @@ const extractLocationData = (report) => {
     building = report.building;
     console.log('Found building on report:', building);
   }
-  if (!fullAddress && report.address) {
-    fullAddress = report.address;
-    console.log('Found address on report:', fullAddress);
+  if (!specificPlace && report.specificPlace) {
+    specificPlace = report.specificPlace;
+    console.log('Found specificPlace on report:', specificPlace);
   }
 
   // Method 4: Check _raw property (Inertia sometimes wraps data)
@@ -79,6 +84,10 @@ const extractLocationData = (report) => {
     building = report._raw.location.building;
     console.log('Found building in _raw:', building);
   }
+  if (!specificPlace && report._raw?.location?.specificPlace) {
+    specificPlace = report._raw.location.specificPlace;
+    console.log('Found specificPlace in _raw:', specificPlace);
+  }
 
   // MATCH locationArea to predefined labels
   if (locationArea) {
@@ -89,18 +98,20 @@ const extractLocationData = (report) => {
     }
   }
 
-  // If no fullAddress exists, create it from locationArea and building
-  if (!fullAddress && locationArea) {
-    if (building && building.trim() !== '') {
-      fullAddress = `${locationArea}, ${building}`;
-    } else {
-      fullAddress = locationArea;
-    }
+  // Build full address
+  const addressParts = [];
+  if (locationArea) addressParts.push(locationArea);
+  if (specificPlace && specificPlace.trim() !== '') {
+    addressParts.push(specificPlace);
+  } else if (building && building.trim() !== '') {
+    addressParts.push(building);
   }
 
-  console.log('FINAL EXTRACTED DATA:', { locationArea, building, fullAddress });
+  fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No address specified';
 
-  return { locationArea, building, fullAddress };
+  console.log('FINAL EXTRACTED DATA:', { locationArea, building, specificPlace, fullAddress });
+
+  return { locationArea, building, specificPlace, fullAddress };
 };
 
 // Helper function to match locationArea to predefined labels
@@ -248,9 +259,9 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     if (report && isOpen) {
       // Extract location data properly
       console.log('RAW REPORT FROM PROPS:', report);
-      const { locationArea, building, fullAddress } = extractLocationData(report);
+      const { locationArea, building, specificPlace, fullAddress } = extractLocationData(report);
 
-      console.log('Extracted location data:', { locationArea, building, fullAddress });
+      console.log('Extracted location data:', { locationArea, building, specificPlace, fullAddress });
 
       let formattedDate = '';
       let formattedTime = '';
@@ -275,6 +286,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         incidentTime: formattedTime,
         locationArea: locationArea || '',
         building: building || '',
+        specificPlace: specificPlace || '', // Add specificPlace field
         fullAddress: fullAddress || '',
         injuries: report.injuries || '',
         damages: report.damages || '',
@@ -419,17 +431,23 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Update full address when locationArea or building changes
-  const updateFullAddress = (locationAreaVal, buildingVal) => {
-    let full = locationAreaVal || '';
-    if (buildingVal && buildingVal.trim() !== '') {
-      full = `${locationAreaVal}, ${buildingVal}`;
+  // Update full address when locationArea, building, or specificPlace changes
+  const updateFullAddress = (locationAreaVal, buildingVal, specificPlaceVal) => {
+    const parts = [];
+    if (locationAreaVal && locationAreaVal.trim() !== '') {
+      parts.push(locationAreaVal);
     }
-    return full;
+    // Prioritize specificPlace over building for place names
+    if (specificPlaceVal && specificPlaceVal.trim() !== '') {
+      parts.push(specificPlaceVal);
+    } else if (buildingVal && buildingVal.trim() !== '') {
+      parts.push(buildingVal);
+    }
+    return parts.length > 0 ? parts.join(', ') : 'No address specified';
   };
 
   const handleLocationAreaChange = (value) => {
-    const newFullAddress = updateFullAddress(value, editedReport.building);
+    const newFullAddress = updateFullAddress(value, editedReport.building, editedReport.specificPlace);
     setEditedReport(prev => ({
       ...prev,
       locationArea: value,
@@ -438,10 +456,19 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const handleBuildingChange = (value) => {
-    const newFullAddress = updateFullAddress(editedReport.locationArea, value);
+    const newFullAddress = updateFullAddress(editedReport.locationArea, value, editedReport.specificPlace);
     setEditedReport(prev => ({
       ...prev,
       building: value,
+      fullAddress: newFullAddress
+    }));
+  };
+
+  const handleSpecificPlaceChange = (value) => {
+    const newFullAddress = updateFullAddress(editedReport.locationArea, editedReport.building, value);
+    setEditedReport(prev => ({
+      ...prev,
+      specificPlace: value,
       fullAddress: newFullAddress
     }));
   };
@@ -553,15 +580,21 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       const allUrls = [...existingUrls, ...finalAttachmentUrls];
       const allPublicIds = [...existingPublicIds, ...finalAttachmentPublicIds];
 
-      // ALWAYS rebuild combined address from locationArea and building
-      const combinedAddress = (editedReport.locationArea && editedReport.building)
-        ? `${editedReport.locationArea}, ${editedReport.building}`
-        : (editedReport.locationArea || '');
+      // Build full address from components
+      const addressParts = [];
+      if (editedReport.locationArea) addressParts.push(editedReport.locationArea);
+      if (editedReport.specificPlace && editedReport.specificPlace.trim() !== '') {
+        addressParts.push(editedReport.specificPlace);
+      } else if (editedReport.building && editedReport.building.trim() !== '') {
+        addressParts.push(editedReport.building);
+      }
+      const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
 
-      // Build location object with locationArea, building, and combined address
+      // Build location object with all three fields
       const locationObj = {
         locationArea: editedReport.locationArea || '',
         building: editedReport.building || '',
+        specificPlace: editedReport.specificPlace || '', // Add specificPlace
         address: combinedAddress,
         timestamp: new Date().toISOString()
       };
@@ -584,6 +617,11 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         attachmentUrls: allUrls,
         attachmentPublicIds: allPublicIds,
         location: locationObj,
+        // Include individual fields as fallback
+        mahallah: editedReport.locationArea || '',
+        building: editedReport.building || '',
+        specificPlace: editedReport.specificPlace || '',
+        address: combinedAddress,
       };
 
       const reportId = editedReport.reportId;
@@ -966,19 +1004,32 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       </Select>
                     </div>
 
-                    {/* Specific Address (Building/Room/Block) */}
+                    {/* Specific Address (Building/Room/Block/Specific Place) */}
                     <div>
-                      <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block/Specific Place)</Label>
                       <div className="flex items-start gap-1.5 mt-1 mb-1">
                         <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                          Enter the specific location where the incident happened (building name/number, room/block, landmarks)
+                          Enter the specific location where the incident happened (building name/number, room/block, landmarks, or specific place like '7 Eleven', 'Office')
                         </p>
                       </div>
                       <Textarea
-                        value={editedReport.building || ''}
-                        onChange={(e) => handleBuildingChange(e.target.value)}
+                        value={editedReport.specificPlace || editedReport.building || ''}
+                        onChange={(e) => {
+                          // Try to detect if it's a place name vs building detail
+                          const value = e.target.value;
+                          const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
+                          const isPlaceName = placeNames.some(place => value.toLowerCase().includes(place.toLowerCase()));
+
+                          if (isPlaceName) {
+                            handleSpecificPlaceChange(value);
+                            handleBuildingChange(''); // Clear building if it's a specific place
+                          } else {
+                            handleBuildingChange(value);
+                            handleSpecificPlaceChange(''); // Clear specificPlace if it's building detail
+                          }
+                        }}
                         className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                        placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
+                        placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, 7 Eleven, Office, etc."
                         rows={2}
                       />
                       <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
