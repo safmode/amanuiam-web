@@ -307,46 +307,66 @@ trait LocationMatchingTrait
      */
     protected function determineEmergencyLocation($emergency)
     {
-        // METHOD 1: Try keyword matching using locationArea
-        $locationArea = $this->getLocationAreaFromEmergency($emergency);
-        if (!empty($locationArea)) {
-            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
-            if ($matchedLocation) {
-                return $this->getLocationKey($matchedLocation);
-            }
-        }
-
-        // METHOD 2: Try proximity matching using coordinates
-        $emergencyCoords = $this->getEmergencyCoordinates($emergency);
-        if ($emergencyCoords) {
-            $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
-            if ($matchedLocation) {
-                return $this->getLocationKey($matchedLocation);
-            }
-        }
-
-        // METHOD 3: Try matching by address
+        // METHOD 1: Check address field directly
         $address = strtolower($emergency->address ?? '');
-        foreach ($this->mainLocations as $locationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($address, strtolower($keyword)) !== false) {
-                    return $this->getLocationKey($locationName);
-                }
-            }
-        }
-
-        // METHOD 4: Try matching by mahallah field
-        $mahallah = strtolower($emergency->mahallah ?? '');
-        if (!empty($mahallah)) {
+        if (!empty($address)) {
             foreach ($this->mainLocations as $locationName => $config) {
                 foreach ($config['keywords'] as $keyword) {
-                    if (strpos($mahallah, strtolower($keyword)) !== false) {
-                        return $this->getLocationKey($locationName);
+                    if (strpos($address, strtolower($keyword)) !== false) {
+                        Log::info('Location matched by address: ' . $config['key'] . ' from address: ' . $address);
+                        return $config['key'];
                     }
                 }
             }
         }
 
+        // METHOD 2: Check location array
+        $location = $emergency->location;
+        if (is_array($location)) {
+            $mahallah = strtolower($location['mahallah'] ?? '');
+            $building = strtolower($location['building'] ?? '');
+            $locationArea = strtolower($location['locationArea'] ?? '');
+            $searchText = $mahallah . ' ' . $building . ' ' . $locationArea;
+
+            if (!empty($searchText)) {
+                foreach ($this->mainLocations as $locationName => $config) {
+                    foreach ($config['keywords'] as $keyword) {
+                        if (strpos($searchText, strtolower($keyword)) !== false) {
+                            Log::info('Location matched by location array: ' . $config['key'] . ' from: ' . $searchText);
+                            return $config['key'];
+                        }
+                    }
+                }
+            }
+        }
+
+        // METHOD 3: Check if address contains any mahallah name
+        $mahallahNames = ['asiah', 'aminah', 'safiyyah', 'maryam', 'ruqayyah', 'ali', 'faruq', 'bilal', 'asma', 'hafsah', 'halimah', 'siddiq', 'salahuddin', 'uthman', 'nusaibah', 'zubair', 'sumayyah'];
+
+        foreach ($mahallahNames as $mahallah) {
+            if (strpos($address, $mahallah) !== false) {
+                // Find the matching key
+                foreach ($this->mainLocations as $locationName => $config) {
+                    if (strpos($locationName, strtolower($mahallah)) !== false || strpos(strtolower($config['key']), $mahallah) !== false) {
+                        Log::info('Location matched by mahallah name: ' . $config['key']);
+                        return $config['key'];
+                    }
+                }
+            }
+        }
+
+        // METHOD 4: Try to extract from address - look for "Mahallah X"
+        if (preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
+            $foundMahallah = strtolower($matches[1]);
+            foreach ($this->mainLocations as $locationName => $config) {
+                if (strpos(strtolower($config['key']), $foundMahallah) !== false) {
+                    Log::info('Location matched by regex: ' . $config['key']);
+                    return $config['key'];
+                }
+            }
+        }
+
+        Log::warning('No location match found for emergency: ' . ($emergency->_id ?? 'unknown') . ' Address: ' . ($emergency->address ?? 'no address'));
         return null;
     }
 }
