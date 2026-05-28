@@ -251,4 +251,102 @@ trait LocationMatchingTrait
         // Fallback: return the original locationArea
         return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
     }
+
+    // ============ EMERGENCY METHODS (ADD THESE) ============
+
+    /**
+     * Get locationArea from emergency
+     */
+    protected function getLocationAreaFromEmergency($emergency)
+    {
+        $location = $emergency->location;
+
+        if (is_array($location)) {
+            return $location['locationArea'] ?? '';
+        }
+
+        if (is_object($location) && isset($location->locationArea)) {
+            return $location->locationArea;
+        }
+
+        // Check mahallah field
+        if (isset($emergency->mahallah)) {
+            return $emergency->mahallah;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get coordinates from emergency
+     */
+    protected function getEmergencyCoordinates($emergency)
+    {
+        // Check direct latitude/longitude fields (emergencies have these)
+        if (isset($emergency->latitude) && isset($emergency->longitude)
+            && is_numeric($emergency->latitude) && is_numeric($emergency->longitude)
+            && $emergency->latitude != 0 && $emergency->longitude != 0) {
+            return ['lat' => (float)$emergency->latitude, 'lng' => (float)$emergency->longitude];
+        }
+
+        // Check nested location object
+        $location = $emergency->location;
+        if (is_array($location)) {
+            if (isset($location['latitude']) && isset($location['longitude'])
+                && is_numeric($location['latitude']) && is_numeric($location['longitude'])
+                && $location['latitude'] != 0 && $location['longitude'] != 0) {
+                return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine emergency location using keyword matching first, then proximity
+     */
+    protected function determineEmergencyLocation($emergency)
+    {
+        // METHOD 1: Try keyword matching using locationArea
+        $locationArea = $this->getLocationAreaFromEmergency($emergency);
+        if (!empty($locationArea)) {
+            $matchedLocation = $this->matchLocationToMainLocation($locationArea);
+            if ($matchedLocation) {
+                return $this->getLocationKey($matchedLocation);
+            }
+        }
+
+        // METHOD 2: Try proximity matching using coordinates
+        $emergencyCoords = $this->getEmergencyCoordinates($emergency);
+        if ($emergencyCoords) {
+            $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
+            if ($matchedLocation) {
+                return $this->getLocationKey($matchedLocation);
+            }
+        }
+
+        // METHOD 3: Try matching by address
+        $address = strtolower($emergency->address ?? '');
+        foreach ($this->mainLocations as $locationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($address, strtolower($keyword)) !== false) {
+                    return $this->getLocationKey($locationName);
+                }
+            }
+        }
+
+        // METHOD 4: Try matching by mahallah field
+        $mahallah = strtolower($emergency->mahallah ?? '');
+        if (!empty($mahallah)) {
+            foreach ($this->mainLocations as $locationName => $config) {
+                foreach ($config['keywords'] as $keyword) {
+                    if (strpos($mahallah, strtolower($keyword)) !== false) {
+                        return $this->getLocationKey($locationName);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
 }

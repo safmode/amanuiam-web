@@ -6,12 +6,20 @@ use App\Models\Emergencies;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Http\Controllers\NotificationController;
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmergencyController extends Controller
 {
+    use LocationMatchingTrait;
+
+    public function __construct()
+    {
+        $this->initLocationMatching();
+    }
+
     // Helper function to send Telegram messages directly
     private function sendTelegramMessage($chatId, $message)
     {
@@ -115,7 +123,7 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get all emergencies with pagination - OPTIMIZED VERSION
+     * Get all emergencies with pagination - WITH LOCATION MATCHING
      */
     public function index(Request $request)
     {
@@ -123,6 +131,7 @@ class EmergencyController extends Controller
             $perPage = (int) $request->get('per_page', 15);
             $page = (int) $request->get('page', 1);
             $status = $request->get('status');
+            $locations = $request->get('locations');
 
             // Build query with eager loading and indexing
             $query = Emergencies::orderBy('triggeredAt', 'desc');
@@ -184,11 +193,26 @@ class EmergencyController extends Controller
                 $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
                 $emergency->dispatched_at = $emergency->dispatched_at ?? null;
 
+                // Determine location using the trait
+                $emergency->determined_location = $this->determineEmergencyLocation($emergency);
+
                 // Remove large fields that aren't needed for list view
                 unset($emergency->location);
 
                 return $emergency;
             });
+
+            // Apply location filter if provided
+            if ($locations) {
+                $locationArray = explode(',', $locations);
+                $filteredItems = $emergencies->getCollection()->filter(function ($emergency) use ($locationArray) {
+                    return in_array($emergency->determined_location, $locationArray);
+                });
+                $emergencies->setCollection($filteredItems);
+                $totalItems = $filteredItems->count();
+                $emergencies->total = $totalItems;
+                $emergencies->lastPage = ceil($totalItems / $perPage);
+            }
 
             return response()->json([
                 'success' => true,
@@ -211,13 +235,11 @@ class EmergencyController extends Controller
     }
 
     /**
-     * Get emergency counts - CACHED VERSION (optional)
-     * Add caching to reduce database queries
+     * Get emergency counts - CACHED VERSION
      */
     public function getActiveCount()
     {
         try {
-            // Use cache to reduce database hits (cache for 30 seconds)
             $cacheKey = 'emergency_counts';
 
             $counts = cache()->remember($cacheKey, 30, function () {
@@ -270,6 +292,8 @@ class EmergencyController extends Controller
                 $emergency->reporterMatric = null;
                 $emergency->student = null;
             }
+
+            $emergency->determined_location = $this->determineEmergencyLocation($emergency);
 
             return response()->json(['success' => true, 'data' => $emergency]);
         } catch (\Exception $e) {
