@@ -294,6 +294,231 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
 };
 
 // ============================================================
+// ALERT DETAIL MODAL COMPONENT
+// ============================================================
+
+const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
+  const getHeaderColor = () => {
+    switch (alert?.status) {
+      case 'active': return 'bg-gradient-to-r from-red-500 to-red-600';
+      case 'responding': return 'bg-gradient-to-r from-amber-500 to-amber-600';
+      case 'resolved': return 'bg-gradient-to-r from-green-500 to-green-600';
+      default: return 'bg-gradient-to-r from-gray-500 to-gray-600';
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (alert?.status) {
+      case 'active': return <AlertTriangle className="w-5 h-5 text-white" />;
+      case 'responding': return <Radio className="w-5 h-5 text-white" />;
+      case 'resolved': return <CheckCircle className="w-5 h-5 text-white" />;
+      default: return <AlertTriangle className="w-5 h-5 text-white" />;
+    }
+  };
+
+  const getActionButton = () => {
+    if (!alert) return null;
+    if (alert.status === 'active') {
+      return (
+        <Button
+          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+          onClick={() => onAction('dispatch', alert)}
+          disabled={isDispatching}
+        >
+          {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          Dispatch Officer
+        </Button>
+      );
+    } else if (alert.status === 'responding') {
+      return (
+        <Button
+          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+          onClick={() => onAction('resolve', alert)}
+        >
+          <CheckCircle className="w-4 h-4" />
+          Mark as Resolved
+        </Button>
+      );
+    } else if (alert.status === 'resolved') {
+      return (
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            className="rounded-xl gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
+            onClick={() => onAction('revertToResponding', alert)}
+            disabled={isReverting}
+          >
+            <Undo2 className="w-4 h-4" />Revert to Responding
+          </Button>
+          <Button
+            variant="outline"
+            className="rounded-xl gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+            onClick={() => onAction('revertToActive', alert)}
+            disabled={isReverting}
+          >
+            <Undo2 className="w-4 h-4" />Revert to Active
+          </Button>
+          <Button
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl gap-2 shadow-md hover:shadow-lg transition-all"
+            onClick={() => onDelete(alert)}
+          >
+            <Trash2 className="w-4 h-4" />Delete Record
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (!alert) return null;
+
+  const displayLocation = alert.determined_location
+    ? formatLocationName(alert.determined_location)
+    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown');
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[550px] rounded-2xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        <div className={`p-5 ${getHeaderColor()}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+              {getStatusIcon()}
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-lg font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/80 text-xs mt-0.5">Critical incident requiring attention</p>
+            </div>
+            <StatusBadge status={alert.status} />
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Reporter Information */}
+          <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
+                <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+              </div>
+              {alert.student?.matrixNumber && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 dark:text-gray-400">Matrix:</span>
+                  <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
+                </div>
+              )}
+              {alert.student?.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
+                </div>
+              )}
+              {alert.student?.email && (
+                <div className="flex items-center gap-2 col-span-2">
+                  <Mail className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                  <span className="text-gray-700 dark:text-gray-300 break-all">{alert.student.email}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Location & Time */}
+          <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
+                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+              </div>
+              {alert.address && alert.determined_location && (
+                <div className="flex items-center gap-2 ml-6">
+                  <span className="text-gray-500 dark:text-gray-400">Address:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.address}</span>
+                </div>
+              )}
+              {alert.location?.building && (
+                <div className="flex items-center gap-2 ml-6">
+                  <span className="text-gray-500 dark:text-gray-400">Building:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{alert.location.building}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-gray-500 dark:text-gray-400">Triggered:</span>
+                <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
+                <span className="text-gray-400 text-xs">({getTimeAgo(alert.triggeredAt)})</span>
+              </div>
+              {alert.resolvedAt && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-gray-500 dark:text-gray-400">Resolved:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Assigned Officer */}
+          {alert.assigned_officer_name && (
+            <div className="bg-gray-50 rounded-xl p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
+                  <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="text-gray-500 dark:text-gray-400">Officer:</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
+                </div>
+                {alert.dispatched_at && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>
+                    <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
+                  </div>
+                )}
+                {alert.dispatch_notes && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 mb-2 dark:text-gray-400">Dispatch Notes:</p>
+                    <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                      {alert.dispatch_notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 flex-wrap">
+            <Button variant="outline" className="rounded-xl text-sm h-10 px-5 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+              Close
+            </Button>
+            {getActionButton()}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ============================================================
 // MAIN ALERTS COMPONENT
 // ============================================================
 
@@ -635,7 +860,8 @@ const Alerts = () => {
       fetchGlobalStats();
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchEmergencies, fetchGlobalStats, pagination.current_page, pagination.per_page]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================
   // RENDER
