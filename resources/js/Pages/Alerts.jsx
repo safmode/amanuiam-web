@@ -619,18 +619,29 @@ const Alerts = () => {
   const fetchEmergencies = async (page = 1, perPage = pagination.per_page) => {
     setLoading(true);
     try {
-      const params = buildQueryParams(page, perPage);
-      const response = await axios.get(`/api/emergencies?${params.toString()}`);
-      const data = response.data;
-      setAlerts(data.data);
-      setPagination(data.pagination);
-      window.dispatchEvent(new CustomEvent('emergency-updated'));
+        const params = buildQueryParams(page, perPage);
+        const url = `/api/emergencies?${params.toString()}`;
+        console.log('Fetching emergencies from:', url); // ADD THIS
+        const response = await axios.get(url);
+        console.log('API Response:', response.data); // ADD THIS
+        const data = response.data;
+
+        if (data.data && data.data.length > 0) {
+        console.log('First emergency:', data.data[0]); // ADD THIS
+        console.log('Determined location:', data.data[0].determined_location); // ADD THIS
+        }
+
+        setAlerts(data.data || []);
+        setPagination(data.pagination);
+        window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
-      console.error('Failed to fetch emergencies:', error);
+        console.error('Failed to fetch emergencies:', error);
+        console.error('Error details:', error.response); // ADD THIS
+        showToast('Failed to load emergencies', 'error'); // ADD THIS
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+    };
 
   const handleDeleteEmergency = async (alert) => {
     const alertId = alert._id || alert.id;
