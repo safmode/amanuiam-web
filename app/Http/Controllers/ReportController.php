@@ -447,8 +447,11 @@ class ReportController extends Controller
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
-            // Add determined location from proximity matching
+            // Get proximity-matched location for FILTERING only (don't change original)
             $report->determinedLocation = $this->determineReportLocation($report);
+
+            // Keep the original location for DISPLAY
+            // The original location is already in $report->location['locationArea'] or $report->mahallah
 
             // Get student info
             if (isset($students[$studentId])) {
