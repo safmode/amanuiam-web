@@ -10,7 +10,7 @@ const statusColors = {
   pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700',
   in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700',
   resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700',
-  // nfa removed - if existing reports have nfa, fallback to resolved style
+  nfa: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
 };
 
 const urgencyColors = {
@@ -75,37 +75,26 @@ const getLocationDetails = (report) => {
 };
 
 export const RecentReports = ({ reports, onViewReport, loading = false }) => {
-  const getStatusBadge = (status) => {
-    // If status is nfa, treat it as resolved for display
-    let displayStatus = status;
-    let displayLabel = statusLabels[status];
-
-    if (status === 'nfa') {
-      displayStatus = 'resolved';
-      displayLabel = 'Resolved (Previous NFA)';
-    }
-
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge variant="outline" className={`${statusColors[displayStatus] || statusColors.pending} text-xs font-medium cursor-help`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-              {displayLabel}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              {status === 'pending' && 'Report awaiting review'}
-              {status === 'in_progress' && 'Officer is handling this case'}
-              {status === 'resolved' && 'Case has been resolved'}
-              {status === 'nfa' && 'Case resolved - No further action required'}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
+  const getStatusBadge = (status) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={`${statusColors[status]} text-xs font-medium cursor-help`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+            {statusLabels[status]}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs">
+            {status === 'pending' && 'Report awaiting review'}
+            {status === 'in_progress' && 'Officer is handling this case'}
+            {status === 'resolved' && 'Case has been resolved'}
+            {status === 'nfa' && 'No further action required'}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 
   const getUrgencyBadge = (urgency) => (
     <TooltipProvider>
