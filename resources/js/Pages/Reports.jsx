@@ -38,7 +38,6 @@ export const statusLabels = {
   pending: 'Pending',
   inProgress: 'In Progress',
   resolved: 'Resolved',
-  nfa: 'No Further Action',
 };
 
 export const urgencyLabels = {
@@ -220,7 +219,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
 // MAIN COMPONENT
 // ============================================
 const Reports = () => {
-  const { reports = { data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 }, statusCounts: initialStatusCounts = { pending: 0, in_progress: 0, resolved: 0, nfa: 0 }, uniqueLocations = [], filters: serverFilters = {} } = usePage().props;
+  const { reports = { data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 }, statusCounts: initialStatusCounts = { pending: 0, in_progress: 0, resolved: 0 }, uniqueLocations = [], filters: serverFilters = {} } = usePage().props;
 
   // ============================================
   // STATE MANAGEMENT
@@ -700,7 +699,7 @@ const Reports = () => {
             bVal = urgencyOrder[b.urgency] || 999;
             break;
         case 'status':
-            const statusOrder = { pending: 1, in_progress: 2, resolved: 3, nfa: 4 };
+            const statusOrder = { pending: 1, in_progress: 2, resolved: 3 };
             aVal = statusOrder[a.status] || 999;
             bVal = statusOrder[b.status] || 999;
             break;
@@ -862,19 +861,6 @@ const Reports = () => {
             <div>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{localStatusCounts?.resolved ?? 0}</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Resolved</p>
-            </div>
-        </CardContent>
-        </Card>
-
-        {/* NFA Card */}
-        <Card className="bg-[#E9E9E9] border-[#5F6368] dark:bg-slate-700 dark:border-slate-600">
-        <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#5F6368] dark:bg-gray-600 flex items-center justify-center">
-            <XCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-            <p className="text-2xl font-bold text-[#5F6368] dark:text-gray-300">{localStatusCounts?.nfa ?? 0}</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">No Further Action</p>
             </div>
         </CardContent>
         </Card>

@@ -10,7 +10,6 @@ const statusColors = {
   pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700',
   in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700',
   resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700',
-  nfa: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
 };
 
 const urgencyColors = {
@@ -89,7 +88,6 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
             {status === 'pending' && 'Report awaiting review'}
             {status === 'in_progress' && 'Officer is handling this case'}
             {status === 'resolved' && 'Case has been resolved'}
-            {status === 'nfa' && 'No further action required'}
           </p>
         </TooltipContent>
       </Tooltip>

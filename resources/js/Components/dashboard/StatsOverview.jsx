@@ -60,17 +60,6 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
       hoverLine: 'bg-[#41A52B]',
     },
     {
-      label: 'NFA',
-      value: stats.nfaReports,
-      key: 'nfaReports',
-      icon: XCircle,
-      color: 'text-[#5F6368] dark:text-gray-300',
-      bgColor: 'bg-[#E9E9E9] dark:bg-slate-700',
-      iconBg: 'bg-[#5F6368]',
-      borderColor: 'border-[#5F6368] dark:border-slate-600',
-      hoverLine: 'bg-[#5F6368]',
-    },
-    {
       label: 'Active Emergencies',
       value: stats.emergencyAlerts,
       key: 'emergencyAlerts',

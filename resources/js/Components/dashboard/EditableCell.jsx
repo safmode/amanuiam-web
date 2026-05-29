@@ -18,7 +18,6 @@ const EditableCell = ({ value, reportId, field, options, optionLabels, onUpdate 
         pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
         in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
         resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
-        nfa: 'bg-gray-700 text-white border-gray-700 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-600',
       };
       return styles[selectedValue] || styles.pending;
     }
