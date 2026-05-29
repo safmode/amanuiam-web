@@ -869,53 +869,53 @@ const Reports = () => {
   // RENDER COMPONENTS
   // ============================================
   const renderStatsCards = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {/* Pending Card */}
-      <Card className="bg-[#F6EBCA] border-[#D5A642] dark:bg-amber-900/20 dark:border-amber-700">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-[#D5A642] dark:bg-amber-700 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-              {localStatusCounts?.pending ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Pending</p>
-          </div>
-        </CardContent>
-      </Card>
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    {/* Pending Card */}
+    <Card className="bg-[#F6EBCA] border-[#D5A642] dark:bg-amber-900/20 dark:border-amber-700">
+      <CardContent className="p-6 flex items-center justify-between">
+        <div>
+          <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+            {localStatusCounts?.pending ?? 0}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-[#D5A642] dark:bg-amber-700 flex items-center justify-center">
+          <Clock className="w-6 h-6 text-white" />
+        </div>
+      </CardContent>
+    </Card>
 
-      {/* In Progress Card */}
-      <Card className="bg-[#DAEEFE] border-[#60A8FA] dark:bg-blue-900/20 dark:border-blue-700">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-[#60A8FA] dark:bg-blue-600 flex items-center justify-center">
-            <RefreshCw className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-[#60A8FA] dark:text-blue-400">
-              {localStatusCounts?.in_progress ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
-          </div>
-        </CardContent>
-      </Card>
+    {/* In Progress Card */}
+    <Card className="bg-[#DAEEFE] border-[#60A8FA] dark:bg-blue-900/20 dark:border-blue-700">
+      <CardContent className="p-6 flex items-center justify-between">
+        <div>
+          <p className="text-3xl font-bold text-[#60A8FA] dark:text-blue-400">
+            {localStatusCounts?.in_progress ?? 0}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-[#60A8FA] dark:bg-blue-600 flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 text-white" />
+        </div>
+      </CardContent>
+    </Card>
 
-      {/* Resolved Card */}
-      <Card className="bg-[#CFE7C4] border-[#41A52B] dark:bg-green-900/20 dark:border-green-700">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-[#41A52B] dark:bg-green-700 flex items-center justify-center">
-            <CheckCircle className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {localStatusCounts?.resolved ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Resolved</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    {/* Resolved Card */}
+    <Card className="bg-[#CFE7C4] border-[#41A52B] dark:bg-green-900/20 dark:border-green-700">
+      <CardContent className="p-6 flex items-center justify-between">
+        <div>
+          <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+            {localStatusCounts?.resolved ?? 0}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Resolved</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-[#41A52B] dark:bg-green-700 flex items-center justify-center">
+          <CheckCircle className="w-6 h-6 text-white" />
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 
   const renderFilterBar = () => (
     <div className="flex flex-wrap gap-3 mb-4">
