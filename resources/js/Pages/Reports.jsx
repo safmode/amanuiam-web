@@ -36,7 +36,7 @@ export const categoryLabels = {
 
 export const statusLabels = {
   pending: 'Pending',
-  in_progress: 'In Progress',
+  inProgress: 'In Progress',
   resolved: 'Resolved',
   nfa: 'No Further Action',
 };
