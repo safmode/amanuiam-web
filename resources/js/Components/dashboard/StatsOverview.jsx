@@ -1,13 +1,4 @@
-import {
-  FileText,
-  Clock,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown
-} from 'lucide-react';
+import { FileText, Clock, RefreshCw, CheckCircle, XCircle, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -92,7 +83,8 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
         Quick Statistics
       </h2>
 
-      <div className="grid grid-cols-6 gap-4">
+      {/* Changed from grid-cols-6 to grid-cols-5 for 5 items */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {statsConfig.map((stat, index) => {
           const trend = calculateTrend(stat.value, previousStats, stat.key);
           const Icon = stat.icon;
@@ -109,14 +101,14 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between mb-2">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex-1">
-                    <p className="text-sm text-muted-foreground font-medium mb-1">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">
                       {stat.label}
                     </p>
                     <p className={cn(
-                      "text-2xl font-bold",
+                      "text-xl md:text-2xl font-bold",
                       stat.color,
                       stat.pulse && "animate-pulse"
                     )}>
@@ -134,7 +126,7 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
 
                 {trend && trend.rawDiff !== 0 && (
                   <div className={cn(
-                    "flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full w-fit",
+                    "flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full w-fit mt-1",
                     trend.isUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                   )}>
                     {trend.isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
