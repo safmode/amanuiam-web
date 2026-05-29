@@ -207,7 +207,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
     <div className="relative" ref={dropdownRef}>
       {trigger}
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} dark:bg-slate-800 dark:border-slate-700`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[280px] ${align === 'right' ? 'right-0' : 'left-0'}`}>
           {children}
         </div>
       )}
@@ -825,68 +825,68 @@ const Reports = () => {
   // RENDER COMPONENTS
   // ============================================
   const renderStatsCards = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-    {/* Pending Card */}
-    <Card className="bg-[#F6EBCA] border-[#D5A642] dark:bg-amber-900/20 dark:border-amber-700">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-              {localStatusCounts?.pending ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Pending</p>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      {/* Pending Card */}
+      <Card className="bg-[#F6EBCA] border-[#D5A642]">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-amber-600">
+                {localStatusCounts?.pending ?? 0}
+              </p>
+              <p className="text-xs text-gray-600">Pending</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-[#D5A642] flex items-center justify-center">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-[#D5A642] dark:bg-amber-700 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
 
-    {/* In Progress Card */}
-    <Card className="bg-[#DAEEFE] border-[#60A8FA] dark:bg-blue-900/20 dark:border-blue-700">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-[#60A8FA] dark:text-blue-400">
-              {localStatusCounts?.in_progress ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
+      {/* In Progress Card */}
+      <Card className="bg-[#DAEEFE] border-[#60A8FA]">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-[#60A8FA]">
+                {localStatusCounts?.in_progress ?? 0}
+              </p>
+              <p className="text-xs text-gray-600">In Progress</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-[#60A8FA] flex items-center justify-center">
+              <RefreshCw className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-[#60A8FA] dark:bg-blue-600 flex items-center justify-center">
-            <RefreshCw className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
 
-    {/* Resolved Card */}
-    <Card className="bg-[#CFE7C4] border-[#41A52B] dark:bg-green-900/20 dark:border-green-700">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {localStatusCounts?.resolved ?? 0}
-            </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Resolved</p>
+      {/* Resolved Card */}
+      <Card className="bg-[#CFE7C4] border-[#41A52B]">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-green-600">
+                {localStatusCounts?.resolved ?? 0}
+              </p>
+              <p className="text-xs text-gray-600">Resolved</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-[#41A52B] flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-[#41A52B] dark:bg-green-700 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   const renderFilterBar = () => (
     <div className="flex flex-wrap gap-3 mb-4">
       {/* Search */}
       <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
           placeholder="Search reports by ID, description, location..."
-          className="pl-10 bg-gray-50 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+          className="pl-10 bg-gray-50 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -900,7 +900,7 @@ const Reports = () => {
         trigger={
           <Button
             variant={getFilterCount() > 0 ? "default" : "outline"}
-            className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+            className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'}`}
             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
           >
             <Filter className="w-4 h-4" />
@@ -914,69 +914,69 @@ const Reports = () => {
           </Button>
         }
       >
-        <div className="bg-white p-4 max-h-96 overflow-y-auto rounded-xl min-w-[280px] dark:bg-slate-800">
+        <div className="bg-white p-4 max-h-96 overflow-y-auto rounded-xl min-w-[280px]">
           <div className="space-y-4">
             {/* Status */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
+                <Label className="text-sm font-medium text-gray-700">Status</Label>
                 {filters.status.length > 0 && (
-                  <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                  <button onClick={() => setFilters(prev => ({ ...prev, status: [] }))} className="text-xs text-red-500 hover:text-red-700">Clear</button>
                 )}
               </div>
               <div className="space-y-2">
                 {Object.entries(statusLabels).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                    <input type="checkbox" checked={filters.status.includes(key)} onChange={() => toggleFilter('status', key)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input type="checkbox" checked={filters.status.includes(key)} onChange={() => toggleFilter('status', key)} className="rounded border-gray-300" />
+                    <span className="text-sm text-gray-700">{label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="border-t border-gray-200 dark:border-slate-700" />
+            <div className="border-t border-gray-200" />
 
             {/* Urgency */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Urgency</Label>
+                <Label className="text-sm font-medium text-gray-700">Urgency</Label>
                 {filters.urgency.length > 0 && (
-                  <button onClick={() => setFilters(prev => ({ ...prev, urgency: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                  <button onClick={() => setFilters(prev => ({ ...prev, urgency: [] }))} className="text-xs text-red-500 hover:text-red-700">Clear</button>
                 )}
               </div>
               <div className="space-y-2">
                 {Object.entries(urgencyLabels).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                    <input type="checkbox" checked={filters.urgency.includes(key)} onChange={() => toggleFilter('urgency', key)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input type="checkbox" checked={filters.urgency.includes(key)} onChange={() => toggleFilter('urgency', key)} className="rounded border-gray-300" />
+                    <span className="text-sm text-gray-700">{label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="border-t border-gray-200 dark:border-slate-700" />
+            <div className="border-t border-gray-200" />
 
             {/* Category */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Category</Label>
+                <Label className="text-sm font-medium text-gray-700">Category</Label>
                 {filters.category.length > 0 && (
-                  <button onClick={() => setFilters(prev => ({ ...prev, category: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                  <button onClick={() => setFilters(prev => ({ ...prev, category: [] }))} className="text-xs text-red-500 hover:text-red-700">Clear</button>
                 )}
               </div>
               <div className="space-y-2">
                 {Object.entries(categoryLabels).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                    <input type="checkbox" checked={filters.category.includes(key)} onChange={() => toggleFilter('category', key)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
-                    <span className="text-sm truncate text-gray-700 dark:text-gray-300">{label}</span>
+                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input type="checkbox" checked={filters.category.includes(key)} onChange={() => toggleFilter('category', key)} className="rounded border-gray-300" />
+                    <span className="text-sm truncate text-gray-700">{label}</span>
                   </label>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
-            <Button variant="ghost" size="sm" onClick={() => { setFilters(prev => ({ ...prev, status: [], urgency: [], category: [] })); setShowFilterDropdown(false); }} className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30">
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <Button variant="ghost" size="sm" onClick={() => { setFilters(prev => ({ ...prev, status: [], urgency: [], category: [] })); setShowFilterDropdown(false); }} className="w-full text-red-600 hover:text-red-700 hover:bg-red-50">
               Clear All Filters
             </Button>
           </div>
@@ -991,7 +991,7 @@ const Reports = () => {
         trigger={
           <Button
             variant={(filters.dateFrom || filters.dateTo) ? "default" : "outline"}
-            className={`gap-2 rounded-xl ${(filters.dateFrom || filters.dateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+            className={`gap-2 rounded-xl ${(filters.dateFrom || filters.dateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'}`}
             onClick={() => setShowDateDropdown(!showDateDropdown)}
           >
             <Calendar className="w-4 h-4" />
@@ -1003,38 +1003,38 @@ const Reports = () => {
           </Button>
         }
       >
-        <div className="bg-white p-4 rounded-xl min-w-[260px] dark:bg-slate-800">
+        <div className="bg-white p-4 rounded-xl min-w-[260px]">
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
+                <Label className="text-sm font-medium text-gray-700">Time Period</Label>
                 {(filters.dateFrom || filters.dateTo) && (
-                  <button onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear</button>
+                  <button onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700">Clear</button>
                 )}
               </div>
               <div className="space-y-2">
-                <button onClick={() => { const today = new Date(); const dateStr = today.toISOString().split('T')[0]; setFilters(prev => ({ ...prev, dateFrom: dateStr, dateTo: dateStr })); setDatePreset('today'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === 'today' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>Today</button>
-                <button onClick={() => { const today = new Date(); const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay()); const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + (6 - today.getDay())); setFilters(prev => ({ ...prev, dateFrom: startOfWeek.toISOString().split('T')[0], dateTo: endOfWeek.toISOString().split('T')[0] })); setDatePreset('week'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === 'week' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>This Week</button>
-                <button onClick={() => { const today = new Date(); const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1); const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); setFilters(prev => ({ ...prev, dateFrom: startOfMonth.toISOString().split('T')[0], dateTo: endOfMonth.toISOString().split('T')[0] })); setDatePreset('month'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === 'month' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>This Month</button>
-                <button onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === 'all' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>All Time</button>
+                <button onClick={() => { const today = new Date(); const dateStr = today.toISOString().split('T')[0]; setFilters(prev => ({ ...prev, dateFrom: dateStr, dateTo: dateStr })); setDatePreset('today'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 ${datePreset === 'today' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100'}`}>Today</button>
+                <button onClick={() => { const today = new Date(); const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay()); const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + (6 - today.getDay())); setFilters(prev => ({ ...prev, dateFrom: startOfWeek.toISOString().split('T')[0], dateTo: endOfWeek.toISOString().split('T')[0] })); setDatePreset('week'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 ${datePreset === 'week' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100'}`}>This Week</button>
+                <button onClick={() => { const today = new Date(); const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1); const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); setFilters(prev => ({ ...prev, dateFrom: startOfMonth.toISOString().split('T')[0], dateTo: endOfMonth.toISOString().split('T')[0] })); setDatePreset('month'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 ${datePreset === 'month' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100'}`}>This Month</button>
+                <button onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 ${datePreset === 'all' ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100'}`}>All Time</button>
               </div>
             </div>
 
-            <div className="border-t border-gray-200 dark:border-slate-700" />
+            <div className="border-t border-gray-200" />
 
             <div>
-              <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-200">Custom Range</Label>
+              <Label className="text-sm font-medium mb-2 block text-gray-700">Custom Range</Label>
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
-                  <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                  <Label className="text-xs text-gray-500 mb-1 block">From</Label>
+                  <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900" />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
-                  <Input type="date" value={filters.dateTo} onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                  <Label className="text-xs text-gray-500 mb-1 block">To</Label>
+                  <Input type="date" value={filters.dateTo} onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900" />
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
+                  <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700" onClick={() => { setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' })); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
                   <Button className="flex-1 bg-[#D4A853] hover:bg-[#C49A48] rounded-lg text-white" onClick={() => { if (filters.dateFrom && filters.dateTo) setDatePreset('custom'); setShowDateDropdown(false); }}>Apply</Button>
                 </div>
               </div>
@@ -1051,7 +1051,7 @@ const Reports = () => {
         trigger={
           <Button
             variant={filters.locations.length > 0 ? "default" : "outline"}
-            className={`gap-2 rounded-xl relative ${filters.locations.length > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+            className={`gap-2 rounded-xl relative ${filters.locations.length > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'}`}
             onClick={() => setShowLocationDropdown(!showLocationDropdown)}
           >
             <MapPin className="w-4 h-4" />
@@ -1065,27 +1065,27 @@ const Reports = () => {
           </Button>
         }
       >
-        <div className="bg-white p-4 max-h-96 overflow-y-auto rounded-xl min-w-[280px] dark:bg-slate-800">
+        <div className="bg-white p-4 max-h-96 overflow-y-auto rounded-xl min-w-[280px]">
           <div className="flex items-center justify-between mb-3">
-            <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Filter by Incident Location</Label>
+            <Label className="text-sm font-medium text-gray-700">Filter by Incident Location</Label>
             {filters.locations.length > 0 && (
-              <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">Clear all</button>
+              <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700">Clear all</button>
             )}
           </div>
           <div className="space-y-4">
             {Object.entries(locationLabels).map(([groupName, locations]) => (
               <div key={groupName}>
-                <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
+                <Label className="text-xs font-semibold text-gray-500 mb-2 block">{groupName}</Label>
                 <div className="space-y-2 pl-2">
                   {Object.entries(locations).map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                    <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
                         checked={filters.locations.includes(key)}
                         onChange={() => toggleFilter('locations', key)}
-                        className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                        className="rounded border-gray-300 text-[#D4A853]"
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                      <span className="text-sm text-gray-700">{label}</span>
                     </label>
                   ))}
                 </div>
@@ -1096,7 +1096,7 @@ const Reports = () => {
       </SimpleDropdown>
 
       {hasActiveFilters && (
-        <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={clearAllFilters}>
+        <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50" onClick={clearAllFilters}>
           <X className="w-4 h-4" />
           Clear All
         </Button>
@@ -1107,19 +1107,19 @@ const Reports = () => {
   const renderActiveFilters = () => (
     <div className="mb-4 flex flex-wrap gap-2">
       {filters.status.map(s => (
-        <Badge key={s} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+        <Badge key={s} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200">
           {statusLabels[s]}
           <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('status', s)} />
         </Badge>
       ))}
       {filters.urgency.map(u => (
-        <Badge key={u} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+        <Badge key={u} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200">
           {urgencyLabels[u]}
           <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('urgency', u)} />
         </Badge>
       ))}
       {filters.category.map(c => (
-        <Badge key={c} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+        <Badge key={c} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200">
           {categoryLabels[c]}
           <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('category', c)} />
         </Badge>
@@ -1134,7 +1134,7 @@ const Reports = () => {
           }
         }
         return (
-          <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+          <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200">
             <MapPin className="w-3 h-3" />
             {displayName}
             <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
@@ -1142,7 +1142,7 @@ const Reports = () => {
         );
       })}
       {(filters.dateFrom || filters.dateTo) && (
-        <Badge key="date-range" variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+        <Badge key="date-range" variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200">
           <Calendar className="w-3 h-3" />
           {filters.dateFrom && filters.dateTo ? `${filters.dateFrom} to ${filters.dateTo}` : filters.dateFrom ? `From ${filters.dateFrom}` : `To ${filters.dateTo}`}
           <X className="w-3 h-3 cursor-pointer" onClick={() => setFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' }))} />
@@ -1162,13 +1162,13 @@ const Reports = () => {
     };
 
     return (
-      <div className="rounded-xl border border-gray-200 overflow-hidden dark:border-slate-700">
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-slate-700">
+            <thead className="bg-gray-50">
               <tr>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[100px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[100px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('reportId')}
                 >
                   <div className="flex items-center gap-1">
@@ -1176,7 +1176,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[180px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[180px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('reporterName')}
                 >
                   <div className="flex items-center gap-1">
@@ -1184,7 +1184,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[130px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[130px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('category')}
                 >
                   <div className="flex items-center gap-1">
@@ -1192,7 +1192,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[200px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[200px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('location')}
                 >
                   <div className="flex items-center gap-1">
@@ -1200,7 +1200,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[110px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[110px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('dateTime')}
                 >
                   <div className="flex items-center gap-1">
@@ -1208,7 +1208,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[100px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[100px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('urgency')}
                 >
                   <div className="flex items-center gap-1">
@@ -1216,7 +1216,7 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[110px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[110px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('status')}
                 >
                   <div className="flex items-center gap-1">
@@ -1224,30 +1224,30 @@ const Reports = () => {
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-[140px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-[140px] cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('officerName')}
                 >
                   <div className="flex items-center gap-1">
                     Officer <SortIcon column="officerName" />
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-[70px]">Actions</th>
-                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-[50px]"></th>
+                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 w-[70px]">Actions</th>
+                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 w-[50px]"></th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100 dark:bg-slate-800 dark:divide-slate-700">
+            <tbody className="bg-white divide-y divide-gray-100">
               {sortedReports.length > 0 ? (
                 sortedReports.map((raw) => {
                   const r = normalise(raw);
                   const hasLocation = r.location && r.location.trim() !== '' && r.location !== 'No address specified';
 
                   return (
-                    <tr key={r.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors group dark:hover:bg-slate-700/50">
-                      <td className="px-4 py-3 text-sm font-mono text-[#D4A853] dark:text-amber-500">{r.id}</td>
+                    <tr key={r.id} className="hover:bg-gray-50/50 cursor-pointer transition-colors group">
+                      <td className="px-4 py-3 text-sm font-mono text-[#D4A853]">{r.id}</td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-200">{r.reporterName}</p>
-                        {r.reporterContact && <p className="text-xs text-gray-500 dark:text-gray-400">{r.reporterContact}</p>}
-                        {r.reporterEmail && <p className="text-xs text-gray-500 dark:text-gray-400">{r.reporterEmail}</p>}
+                        <p className="text-sm font-medium text-gray-900">{r.reporterName}</p>
+                        {r.reporterContact && <p className="text-xs text-gray-500">{r.reporterContact}</p>}
+                        {r.reporterEmail && <p className="text-xs text-gray-500">{r.reporterEmail}</p>}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <EditableCell value={r.category} reportId={r.id} field="incidentCategory" options={categoryLabels} optionLabels={categoryLabels} onUpdate={handleCellUpdate} />
@@ -1255,22 +1255,22 @@ const Reports = () => {
                       <td className="px-4 py-3">
                         {hasLocation ? (
                           <div className="flex items-start gap-1.5">
-                            <MapPin className="w-3 h-3 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs text-gray-600 dark:text-gray-400 break-words line-clamp-2" title={r.location}>
+                            <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs text-gray-600 break-words line-clamp-2" title={r.location}>
                               {r.location}
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                            <span className="text-xs text-gray-400 dark:text-gray-500 italic">No location</span>
+                            <MapPin className="w-3 h-3 text-gray-300" />
+                            <span className="text-xs text-gray-400 italic">No location</span>
                           </div>
                         )}
-                       </td>
+                      </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm text-gray-900 dark:text-gray-200">{r.date}</p>
-                        {r.time && <p className="text-xs text-gray-500 dark:text-gray-400">{r.time}</p>}
-                       </td>
+                        <p className="text-sm text-gray-900">{r.date}</p>
+                        {r.time && <p className="text-xs text-gray-500">{r.time}</p>}
+                      </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.urgency} reportId={r.id} field="urgency" options={urgencyLabels} optionLabels={urgencyLabels} onUpdate={handleCellUpdate} />
                        </td>
@@ -1284,15 +1284,15 @@ const Reports = () => {
                         <div onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
-                                <MoreHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-gray-100">
+                                <MoreHorizontal className="w-4 h-4 text-gray-500" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl min-w-[160px] dark:bg-slate-800 dark:border-slate-700">
-                              <DropdownMenuItem onClick={() => openReportDetails(raw)} className="gap-2 cursor-pointer hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/30 dark:hover:text-amber-400">
+                            <DropdownMenuContent align="end" className="rounded-xl min-w-[160px] bg-white">
+                              <DropdownMenuItem onClick={() => openReportDetails(raw)} className="gap-2 cursor-pointer hover:bg-amber-50 hover:text-amber-700">
                                 <Eye className="w-4 h-4" /><span>View Details</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => { const normalized = normalise(raw); setSelectedReport(normalized); setIsEditingOpen(true); }} className="gap-2 cursor-pointer hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/30 dark:hover:text-amber-400">
+                              <DropdownMenuItem onClick={() => { const normalized = normalise(raw); setSelectedReport(normalized); setIsEditingOpen(true); }} className="gap-2 cursor-pointer hover:bg-amber-50 hover:text-amber-700">
                                 <Edit className="w-4 h-4" /><span>Edit Report</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1300,20 +1300,20 @@ const Reports = () => {
                         </div>
                        </td>
                       <td className="px-4 py-3">
-                        <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); handleDeleteReport(raw); }}>
+                        <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleDeleteReport(raw); }}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                       </td>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan="10" className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No reports found matching your filters</td>
+                  <td colSpan="10" className="px-4 py-8 text-center text-sm text-gray-500">No reports found matching your filters</td>
                 </tr>
               )}
             </tbody>
-           </table>
+          </table>
         </div>
       </div>
     );
@@ -1322,22 +1322,22 @@ const Reports = () => {
   const renderPagination = () => (
     (reports?.total ?? 0) > 0 && (
       <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-600">
           Showing {startIndex + 1} to {Math.min(startIndex + (reports?.per_page ?? 10), reports?.total ?? 0)} of {reports?.total ?? 0} reports
         </p>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1 || isLoading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1 || isLoading} className="rounded-lg border-gray-200 text-gray-700">
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex gap-1">
-              {getPageNumbers().map((page, idx) => page === '...' ? <span key={idx} className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">...</span> : (
-                <Button key={page} variant={currentPage === page ? 'default' : 'outline'} size="sm" onClick={() => goToPage(page)} disabled={isLoading} className={`rounded-lg min-w-[36px] ${currentPage === page ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:border-slate-700 dark:text-gray-300`}>
+              {getPageNumbers().map((page, idx) => page === '...' ? <span key={idx} className="px-3 py-1 text-sm text-gray-500">...</span> : (
+                <Button key={page} variant={currentPage === page ? 'default' : 'outline'} size="sm" onClick={() => goToPage(page)} disabled={isLoading} className={`rounded-lg min-w-[36px] ${currentPage === page ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'}`}>
                   {page}
                 </Button>
               ))}
             </div>
-            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages || isLoading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+            <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages || isLoading} className="rounded-lg border-gray-200 text-gray-700">
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -1352,8 +1352,8 @@ const Reports = () => {
   return (
     <DashboardLayout title="Reports Management" subtitle="View and manage all incident reports">
       {isLoading && (
-        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center dark:bg-black/50">
-          <div className="bg-white rounded-lg p-4 shadow-lg dark:bg-slate-800">
+        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-4 shadow-lg">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A853]"></div>
           </div>
         </div>
@@ -1361,15 +1361,15 @@ const Reports = () => {
 
       {renderStatsCards()}
 
-      <Card className="bg-white rounded-2xl shadow-sm border-border dark:bg-slate-800">
+      <Card className="bg-white rounded-2xl shadow-sm border-border">
         <CardContent className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">All Reports</h3>
+            <h3 className="text-lg font-semibold text-gray-900">All Reports</h3>
             <div className="flex gap-2">
-              <Button variant="outline" className="gap-2 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300" onClick={handleManualRefresh} disabled={isLoading}>
+              <Button variant="outline" className="gap-2 rounded-xl border-gray-200 text-gray-700" onClick={handleManualRefresh} disabled={isLoading}>
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
-              <Button variant="outline" className="gap-2 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300" onClick={handleExportCSV} disabled={localReports.length === 0}>
+              <Button variant="outline" className="gap-2 rounded-xl border-gray-200 text-gray-700" onClick={handleExportCSV} disabled={localReports.length === 0}>
                 <Download className="w-4 h-4" />
                 Export CSV
               </Button>
