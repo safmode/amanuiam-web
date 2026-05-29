@@ -24,9 +24,13 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
       pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
       in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
       resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
-      nfa: 'bg-gray-700 text-white border-gray-700 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-600',
+      // nfa style removed - if an existing report has nfa status, it will fall back to default
     };
-    return <Badge className={`${styles[status]} text-xs border`}>{statusLabels[status]}</Badge>;
+    // If status is nfa, treat it as resolved for display purposes
+    if (status === 'nfa') {
+      return <Badge className={`${styles.resolved} text-xs border`}>Resolved (Previous NFA)</Badge>;
+    }
+    return <Badge className={`${styles[status] || styles.pending} text-xs border`}>{statusLabels[status] || status}</Badge>;
   };
 
   const getUrgencyBadge = (urgency) => {
@@ -599,7 +603,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
               <Button
                 className="bg-green-500 hover:bg-green-600 text-white rounded-xl gap-2"
                 onClick={handleMarkResolved}
-                disabled={rawReport.status === 'resolved' || localReport.status === 'resolved' || isResolving}
+                disabled={rawReport.status === 'resolved' || localReport.status === 'resolved' || rawReport.status === 'nfa' || localReport.status === 'nfa' || isResolving}
               >
                 {isResolving ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>

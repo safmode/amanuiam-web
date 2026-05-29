@@ -189,6 +189,11 @@ const matchLocationAreaToLabel = (value) => {
   return value;
 };
 
+// Filter status labels to remove NFA
+const filteredStatusLabels = Object.fromEntries(
+  Object.entries(statusLabels).filter(([key]) => key !== 'nfa')
+);
+
 export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const [editedReport, setEditedReport] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -999,7 +1004,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                          {Object.entries(statusLabels).map(([key, label]) => (
+                          {Object.entries(filteredStatusLabels).map(([key, label]) => (
                             <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
                           ))}
                         </SelectContent>
