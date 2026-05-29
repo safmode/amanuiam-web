@@ -378,16 +378,16 @@ const Settings = () => {
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="bg-transparent border-0 mb-6 p-0 w-full">
           <div className="grid grid-cols-4 gap-2 w-full">
-            <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
+            <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 text-gray-700 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
               <User className="w-4 h-4" />Profile
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
+            <TabsTrigger value="security" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 text-gray-700 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
               <Shield className="w-4 h-4" />Security
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
+            <TabsTrigger value="preferences" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 text-gray-700 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
               <Bell className="w-4 h-4" />Preferences
             </TabsTrigger>
-            <TabsTrigger value="broadcast" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
+            <TabsTrigger value="broadcast" className="gap-2 rounded-lg data-[state=active]:bg-[#D4A853]/10 data-[state=active]:text-[#D4A853] py-2 text-gray-700 dark:text-gray-300 dark:data-[state=active]:text-[#D4A853]">
               <Megaphone className="w-4 h-4" />Broadcast
             </TabsTrigger>
           </div>
@@ -423,7 +423,7 @@ const Settings = () => {
                   <Input
                     value={profile.name}
                     onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))}
-                    className="mt-1 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                    className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                   />
                 </div>
 
@@ -435,7 +435,7 @@ const Settings = () => {
                       type="email"
                       value={profile.email}
                       onChange={(e) => setProfile(p => ({ ...p, email: e.target.value }))}
-                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -447,7 +447,7 @@ const Settings = () => {
                     <Input
                       value={profile.phone}
                       onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))}
-                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -458,13 +458,13 @@ const Settings = () => {
                     value={profile.rank}
                     onValueChange={(value) => setProfile(p => ({ ...p, rank: value }))}
                   >
-                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                       <SelectValue placeholder="Select rank" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="Senior Security Officer">Senior Security Officer</SelectItem>
-                      <SelectItem value="Security Officer">Security Officer</SelectItem>
-                      <SelectItem value="Junior Officer">Junior Officer</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 dark:border-slate-700">
+                      <SelectItem value="Senior Security Officer" className="text-gray-900 dark:text-gray-300">Senior Security Officer</SelectItem>
+                      <SelectItem value="Security Officer" className="text-gray-900 dark:text-gray-300">Security Officer</SelectItem>
+                      <SelectItem value="Junior Officer" className="text-gray-900 dark:text-gray-300">Junior Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -475,14 +475,14 @@ const Settings = () => {
                     value={profile.department}
                     onValueChange={(value) => setProfile(p => ({ ...p, department: value }))}
                   >
-                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="Operations">Operations</SelectItem>
-                      <SelectItem value="URB Unit">URB Unit</SelectItem>
-                      <SelectItem value="Patrol Unit">Patrol Unit</SelectItem>
-                      <SelectItem value="Operations Room">Operations Room</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 dark:border-slate-700">
+                      <SelectItem value="Operations" className="text-gray-900 dark:text-gray-300">Operations</SelectItem>
+                      <SelectItem value="URB Unit" className="text-gray-900 dark:text-gray-300">URB Unit</SelectItem>
+                      <SelectItem value="Patrol Unit" className="text-gray-900 dark:text-gray-300">Patrol Unit</SelectItem>
+                      <SelectItem value="Operations Room" className="text-gray-900 dark:text-gray-300">Operations Room</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -517,11 +517,11 @@ const Settings = () => {
                         placeholder="Current Password"
                         value={passwordData.current_password}
                         onChange={(e) => setPasswordData(p => ({ ...p, current_password: e.target.value }))}
-                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       />
-                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 dark:hover:bg-slate-700"
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
                         onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
                     </div>
                     <div className="relative">
@@ -530,11 +530,11 @@ const Settings = () => {
                         placeholder="New Password (min 6 characters)"
                         value={passwordData.new_password}
                         onChange={(e) => setPasswordData(p => ({ ...p, new_password: e.target.value }))}
-                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       />
-                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 dark:hover:bg-slate-700"
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
                         onClick={() => setShowNewPassword(!showNewPassword)}>
-                        {showNewPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
                     </div>
                     <div className="relative">
@@ -543,11 +543,11 @@ const Settings = () => {
                         placeholder="Confirm New Password"
                         value={passwordData.new_password_confirmation}
                         onChange={(e) => setPasswordData(p => ({ ...p, new_password_confirmation: e.target.value }))}
-                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       />
-                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 dark:hover:bg-slate-700"
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
                     </div>
                     <Button className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl w-full text-white" onClick={handleChangePassword} disabled={isLoading}>
@@ -623,7 +623,7 @@ const Settings = () => {
                       size="sm"
                       onClick={() => handleSendDigest('weekly')}
                       disabled={sendingDigest === 'weekly'}
-                      className="rounded-lg gap-2"
+                      className="rounded-lg gap-2 text-gray-700 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
                     >
                       {sendingDigest === 'weekly' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -644,7 +644,7 @@ const Settings = () => {
                       size="sm"
                       onClick={() => handleSendDigest('monthly')}
                       disabled={sendingDigest === 'monthly'}
-                      className="rounded-lg gap-2"
+                      className="rounded-lg gap-2 text-gray-700 dark:text-gray-300 dark:border-slate-700 dark:hover:bg-slate-700"
                     >
                       {sendingDigest === 'monthly' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -743,7 +743,7 @@ const Settings = () => {
                       setVerificationCode(e.target.value);
                       setCodeError('');
                     }}
-                    className="mt-1 text-center text-xl tracking-widest dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                    className="mt-1 text-center text-xl tracking-widest text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                     autoFocus
                   />
                   {codeError && (
@@ -766,7 +766,7 @@ const Settings = () => {
                       setVerificationCode('');
                       setCodeError('');
                     }}
-                    className="dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                   >
                     Cancel
                   </Button>
@@ -778,7 +778,7 @@ const Settings = () => {
                     size="sm"
                     onClick={handleResendCode}
                     disabled={resendTimer > 0}
-                    className="text-xs dark:text-gray-400"
+                    className="text-xs text-gray-600 dark:text-gray-400"
                   >
                     {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend verification code'}
                   </Button>

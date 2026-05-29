@@ -66,7 +66,7 @@ const formatLocationName = (locationKey) => {
   return locationKey;
 };
 
-// Simple Dropdown Component - FIXED: No overflow on container (prevents nested scroll)
+// Simple Dropdown Component
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -264,19 +264,19 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="font-semibold text-sm dark:text-gray-200">Emergency Alert</span>
+                <span className="font-semibold text-sm text-gray-900 dark:text-gray-200">Emergency Alert</span>
                 <StatusBadge status={alert.status} />
                 <span className="text-xs text-gray-500 dark:text-gray-400">{getTimeAgo(alert.triggeredAt)}</span>
               </div>
               {alert.student && (
-                <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-0.5 dark:text-gray-400">
+                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
                   <User className="w-3 h-3" />
                   <span>{alert.student.name}</span>
                   <span className="text-gray-300 dark:text-gray-600">•</span>
                   <span className="text-xs">{alert.student.matrixNumber}</span>
                 </p>
               )}
-              <p className="text-xs text-gray-500 flex items-center gap-1.5 dark:text-gray-400">
+              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                 <MapPin className="w-3 h-3" />
                 <span className="truncate">{displayLocation}</span>
               </p>
@@ -329,7 +329,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-10 text-sm">
+              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-10 text-sm dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30">
                 <Undo2 className="w-4 h-4" />
                 Revert
               </Button>
@@ -337,14 +337,14 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             <DropdownMenuContent align="end" className="rounded-lg min-w-[170px] p-1">
               <DropdownMenuItem
                 onClick={() => onAction('revertToResponding', alert)}
-                className="gap-2 text-amber-600 text-sm cursor-pointer rounded-md"
+                className="gap-2 text-amber-600 text-sm cursor-pointer rounded-md dark:text-amber-400"
                 disabled={isReverting}
               >
                 <Undo2 className="w-4 h-4" /> To Responding
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onAction('revertToActive', alert)}
-                className="gap-2 text-red-600 text-sm cursor-pointer rounded-md"
+                className="gap-2 text-red-600 text-sm cursor-pointer rounded-md dark:text-red-400"
                 disabled={isReverting}
               >
                 <Undo2 className="w-4 h-4" /> To Active
@@ -353,7 +353,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           </DropdownMenu>
           <Button
             variant="outline"
-            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-10 text-sm"
+            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-10 text-sm dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
             onClick={() => onDelete(alert)}
           >
             <Trash2 className="w-4 h-4" />
@@ -409,26 +409,26 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <p className="text-sm">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
-                <span className="font-medium text-gray-800 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
               </p>
               {alert.student?.matrixNumber && (
-                <p className="text-sm">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
-                  <span className="font-mono text-gray-700 dark:text-gray-300">{alert.student.matrixNumber}</span>
+                  <span className="font-mono text-gray-900 dark:text-gray-200">{alert.student.matrixNumber}</span>
                 </p>
               )}
               {alert.student?.phone && (
-                <p className="text-sm flex items-center gap-1.5">
+                <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-700 dark:text-gray-300">{alert.student.phone}</span>
+                  <span>{alert.student.phone}</span>
                 </p>
               )}
               {alert.student?.email && (
-                <p className="text-sm flex items-center gap-1.5 col-span-2">
+                <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5 col-span-2">
                   <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300 truncate">{alert.student.email}</span>
+                  <span className="truncate">{alert.student.email}</span>
                 </p>
               )}
             </div>
@@ -443,9 +443,9 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
             </div>
             <div className="space-y-2">
-              <p className="text-sm">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
-                <span className="font-medium text-gray-800 dark:text-gray-200">{displayLocation}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-200">{displayLocation}</span>
               </p>
               {alert.address && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
@@ -454,16 +454,16 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
                 <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
               )}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
-                <p className="text-sm">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Triggered:</span>{' '}
-                  <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.triggeredAt)}</span>
+                  <span>{formatDate(alert.triggeredAt)}</span>
                 </p>
                 <p className="text-xs text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
               </div>
               {alert.resolvedAt && (
-                <p className="text-sm">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
-                  <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.resolvedAt)}</span>
+                  <span>{formatDate(alert.resolvedAt)}</span>
                 </p>
               )}
             </div>
@@ -479,14 +479,14 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
               </div>
               <div className="space-y-2">
-                <p className="text-sm">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{alert.assigned_officer_name}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-200">{alert.assigned_officer_name}</span>
                 </p>
                 {alert.dispatched_at && (
-                  <p className="text-sm">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
-                    <span className="text-gray-700 dark:text-gray-300">{formatDate(alert.dispatched_at)}</span>
+                    <span>{formatDate(alert.dispatched_at)}</span>
                   </p>
                 )}
                 {alert.dispatch_notes && (
@@ -883,7 +883,7 @@ const Alerts = () => {
               />
             </div>
 
-            {/* Filters Dropdown - FIXED: Single scroll container, no nested scroll */}
+            {/* Filters Dropdown */}
             <SimpleDropdown
               isOpen={showFilterDropdown}
               onClose={() => setShowFilterDropdown(false)}
@@ -891,7 +891,7 @@ const Alerts = () => {
               trigger={
                 <Button
                   variant={getFilterCount() > 0 ? 'default' : 'outline'}
-                  className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
                   <Filter className="w-4 h-4" />
@@ -905,7 +905,7 @@ const Alerts = () => {
                 </Button>
               }
             >
-              {/* SINGLE SCROLL CONTAINER - handles ALL scrolling for the dropdown */}
+              {/* SINGLE SCROLL CONTAINER */}
               <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
                 {/* Status Section */}
                 <div>
@@ -937,7 +937,7 @@ const Alerts = () => {
 
                 <div className="border-t border-gray-200 dark:border-slate-700" />
 
-                {/* Locations Section - NO internal scrollbar */}
+                {/* Locations Section */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
@@ -989,7 +989,7 @@ const Alerts = () => {
               trigger={
                 <Button
                   variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? 'default' : 'outline'}
-                  className={`gap-2 rounded-xl relative ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  className={`gap-2 rounded-xl relative ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
                   onClick={() => setShowDateDropdown(!showDateDropdown)}
                 >
                   <Calendar className="w-4 h-4" />
@@ -1039,7 +1039,11 @@ const Alerts = () => {
                           setDatePreset(value);
                           setShowDateDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 ${datePreset === value ? 'bg-[#D4A853] text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          datePreset === value
+                            ? 'bg-[#D4A853] text-white'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700'
+                        }`}
                       >
                         {label}
                       </button>
@@ -1176,7 +1180,11 @@ const Alerts = () => {
                           size="sm"
                           onClick={() => handlePageChange(page)}
                           disabled={loading}
-                          className={`rounded-lg min-w-[36px] ${pagination.current_page === page ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300'}`}
+                          className={`rounded-lg min-w-[36px] ${
+                            pagination.current_page === page
+                              ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white'
+                              : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700'
+                          }`}
                         >
                           {page}
                         </Button>
