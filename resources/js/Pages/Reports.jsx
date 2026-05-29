@@ -38,7 +38,6 @@ export const statusLabels = {
   pending: 'Pending',
   inProgress: 'In Progress',
   resolved: 'Resolved',
-  nfa: 'No Further Action',
 };
 
 export const urgencyLabels = {
