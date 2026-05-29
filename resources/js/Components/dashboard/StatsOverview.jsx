@@ -1,4 +1,4 @@
-import { FileText, Clock, RefreshCw, CheckCircle, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { FileText, Clock, RefreshCw, CheckCircle, XCircle, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +60,17 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
       hoverLine: 'bg-[#41A52B]',
     },
     {
+      label: 'NFA',
+      value: stats.nfaReports,
+      key: 'nfaReports',
+      icon: XCircle,
+      color: 'text-[#5F6368] dark:text-gray-300',
+      bgColor: 'bg-[#E9E9E9] dark:bg-slate-700',
+      iconBg: 'bg-[#5F6368]',
+      borderColor: 'border-[#5F6368] dark:border-slate-600',
+      hoverLine: 'bg-[#5F6368]',
+    },
+    {
       label: 'Active Emergencies',
       value: stats.emergencyAlerts,
       key: 'emergencyAlerts',
@@ -78,7 +89,7 @@ export const StatsOverview = ({ stats, previousStats = null }) => {
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
         Quick Statistics
       </h2>
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {statsConfig.map((stat, index) => {
           const trend = calculateTrend(stat.value, previousStats, stat.key);
           const Icon = stat.icon;

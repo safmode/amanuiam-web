@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
-  Clock, RefreshCw, CheckCircle, Search, Plus,
+  Clock, RefreshCw, CheckCircle, XCircle, Search, Plus,
   Download, Filter, Calendar, MapPin, X, ChevronUp, ChevronDown,
   ChevronLeft, ChevronRight, Trash2, MoreHorizontal, Eye, Edit
 } from 'lucide-react';
@@ -38,6 +38,7 @@ export const statusLabels = {
   pending: 'Pending',
   inProgress: 'In Progress',
   resolved: 'Resolved',
+  nfa: 'No Further Action',
 };
 
 export const urgencyLabels = {
@@ -864,6 +865,19 @@ const Reports = () => {
             </div>
         </CardContent>
         </Card>
+
+        {/* NFA Card */}
+        <Card className="bg-[#E9E9E9] border-[#5F6368] dark:bg-slate-700 dark:border-slate-600">
+        <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-[#5F6368] dark:bg-gray-600 flex items-center justify-center">
+            <XCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+            <p className="text-2xl font-bold text-[#5F6368] dark:text-gray-300">{localStatusCounts?.nfa ?? 0}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">No Further Action</p>
+            </div>
+        </CardContent>
+        </Card>
     </div>
   );
 
@@ -1239,7 +1253,7 @@ const Reports = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <EditableCell value={r.category} reportId={r.id} field="incidentCategory" options={categoryLabels} optionLabels={categoryLabels} onUpdate={handleCellUpdate} />
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         {hasLocation ? (
                           <div className="flex items-start gap-1.5">
@@ -1254,20 +1268,20 @@ const Reports = () => {
                             <span className="text-xs text-gray-400 dark:text-gray-500 italic">No location</span>
                           </div>
                         )}
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         <p className="text-sm text-gray-900 dark:text-gray-200">{r.date}</p>
                         {r.time && <p className="text-xs text-gray-500 dark:text-gray-400">{r.time}</p>}
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.urgency} reportId={r.id} field="urgency" options={urgencyLabels} optionLabels={urgencyLabels} onUpdate={handleCellUpdate} />
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.status} reportId={r.id} field="status" options={statusLabels} optionLabels={statusLabels} onUpdate={handleCellUpdate} />
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         <EditableCell value={r.assignedOfficer ? r.officerName : 'Not Assigned'} reportId={r.id} field="assignedOfficer" options={officerOptions} optionLabels={officerOptions} onUpdate={handleOfficerUpdate} />
-                        </td>
+                       </td>
                       <td className="px-4 py-3 text-center">
                         <div onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
@@ -1286,12 +1300,12 @@ const Reports = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        </td>
+                       </td>
                       <td className="px-4 py-3">
                         <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); handleDeleteReport(raw); }}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                        </td>
+                       </td>
                     </tr>
                   );
                 })
@@ -1301,7 +1315,7 @@ const Reports = () => {
                 </tr>
               )}
             </tbody>
-          </table>
+           </table>
         </div>
       </div>
     );
