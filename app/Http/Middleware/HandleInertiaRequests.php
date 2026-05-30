@@ -34,8 +34,12 @@ class HandleInertiaRequests extends Middleware
             ],
             // Add emergency counts for sidebar badge
             'emergencyCounts' => [
-                'active' => Emergencies::where('status', 'active')->count(),
-                'responding' => Emergencies::where('status', 'responding')->count(),
+                'active' => cache()->remember('emergency.active.count', 30, function () {
+                    return Emergencies::where('status', 'active')->count();
+                }),
+                'responding' => cache()->remember('emergency.responding.count', 30, function () {
+                    return Emergencies::where('status', 'responding')->count();
+                }),
             ],
         ]);
     }
