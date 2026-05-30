@@ -24,56 +24,52 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Heatmap Layer Component - with show/hide control
+// Heatmap Layer Component - Fixed with percentage-based colors
 const HeatmapLayer = ({ points, show }) => {
   const map = useMap();
   const heatLayerRef = useRef(null);
 
   useEffect(() => {
-    // Clean up previous layer
+    // Remove layer if it exists
     if (heatLayerRef.current) {
       map.removeLayer(heatLayerRef.current);
       heatLayerRef.current = null;
     }
 
-    // Only create if we have points AND show is true
+    // Only create if show is true AND we have points
     if (!show || !points || points.length === 0) {
       return;
     }
 
-    // Check if L.heatLayer is available (it should be from the import)
     if (typeof L.heatLayer !== 'function') {
-      console.error('L.heatLayer is not available. Make sure leaflet.heat is imported correctly.');
+      console.error('L.heatLayer is not available');
       return;
     }
 
-    // Format points for leaflet.heat: [lat, lng, intensity]
     const heatPoints = points.map(point => [point.lat, point.lng, point.intensity || 0.5]);
 
-    // Create and add heat layer
     heatLayerRef.current = L.heatLayer(heatPoints, {
       radius: 35,
       blur: 15,
       maxZoom: 17,
       minOpacity: 0.4,
       gradient: {
-        0.0: '#22c55e',  // Green starts at 0
-        0.33: '#22c55e', // Green stays until 33%
-        0.34: '#f59e0b', // Yellow/Amber from 34-66%
-        0.66: '#f59e0b',
-        0.67: '#ef4444', // Red from 67-100%
+        0.0: '#22c55e',  // Green (<40%)
+        0.39: '#22c55e',
+        0.4: '#f59e0b',  // Yellow/Amber (40-70%)
+        0.69: '#f59e0b',
+        0.7: '#ef4444',  // Red (>70%)
         1.0: '#ef4444'
       }
     }).addTo(map);
 
-    // Cleanup on unmount or when show changes
     return () => {
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
         heatLayerRef.current = null;
       }
     };
-  }, [points, map, show]); // Re-run when points, map, or show changes
+  }, [points, map, show]);
 
   return null;
 };
@@ -128,7 +124,6 @@ const IIUM_CENTER = [3.2510, 101.7355];
 const Heatmap = () => {
   const { hotspots: hotspotsData = [] } = usePage().props;
   console.log('Received hotspots:', hotspotsData);
-  console.log('Google API Key exists?', !!usePage().props.googleApiKey);
 
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -141,7 +136,7 @@ const Heatmap = () => {
   const [filters, setFilters] = useState({
     category: [],
   });
-  const [showHeatmap, setShowHeatmap] = useState(true); // New state for heatmap toggle
+  const [showHeatmap, setShowHeatmap] = useState(true);
 
   // Generate heatmap points from filtered hotspots
   const heatmapPoints = useMemo(() => {
@@ -149,39 +144,42 @@ const Heatmap = () => {
     if (filteredHotspotsData.length === 0) return points;
 
     const maxIncidents = Math.max(...filteredHotspotsData.map(h => h.incidents), 1);
-    const minIncidents = Math.min(...filteredHotspotsData.map(h => h.incidents), 0);
 
     filteredHotspotsData.forEach(hotspot => {
-        if (hotspot.lat && hotspot.lng) {
-        // Better intensity calculation that spreads values
+      if (hotspot.lat && hotspot.lng) {
+        // Calculate intensity based on percentage of max incidents
+        const percentage = (hotspot.incidents / maxIncidents) * 100;
         let intensity;
-        if (maxIncidents === minIncidents) {
-            intensity = 0.5;
+
+        // Map percentage to intensity (0-1 range)
+        if (percentage >= 70) {
+          intensity = 0.7 + ((percentage - 70) / 30) * 0.3; // 0.7 to 1.0
+        } else if (percentage >= 40) {
+          intensity = 0.4 + ((percentage - 40) / 30) * 0.3; // 0.4 to 0.7
         } else {
-            // Normalize between 0.1 and 1.0
-            intensity = 0.1 + ((hotspot.incidents - minIncidents) / (maxIncidents - minIncidents)) * 0.9;
+          intensity = 0 + (percentage / 40) * 0.4; // 0 to 0.4
         }
 
         points.push({
-            lat: hotspot.lat,
-            lng: hotspot.lng,
-            intensity: intensity,
+          lat: hotspot.lat,
+          lng: hotspot.lng,
+          intensity: intensity,
         });
 
-        // Add scatter points for better heat distribution
+        // Add scatter points
         const scatterCount = Math.min(Math.floor(hotspot.incidents / 2), 10);
         for (let i = 0; i < scatterCount; i++) {
-            const latOffset = (Math.random() - 0.5) * 0.0008;
-            const lngOffset = (Math.random() - 0.5) * 0.0008;
-            const scatterIntensity = Math.max(0.05, intensity * (0.2 + Math.random() * 0.3));
+          const latOffset = (Math.random() - 0.5) * 0.0008;
+          const lngOffset = (Math.random() - 0.5) * 0.0008;
+          const scatterIntensity = Math.max(0.05, intensity * (0.2 + Math.random() * 0.3));
 
-            points.push({
+          points.push({
             lat: hotspot.lat + latOffset,
             lng: hotspot.lng + lngOffset,
             intensity: scatterIntensity,
-            });
+          });
         }
-        }
+      }
     });
 
     return points;
@@ -366,9 +364,9 @@ const Heatmap = () => {
             <div>
               <p className="font-medium text-sm text-gray-800 dark:text-gray-200">How to Read This Map</p>
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Heatmap colors</span> show incident density: <span className="text-green-500 font-medium">Green = Low</span>,{' '}
-                <span className="text-amber-500 font-medium">Yellow/Amber = Moderate</span>,{' '}
-                <span className="text-red-500 font-medium">Red = High risk</span>.{' '}
+                <span className="font-medium">Heatmap colors</span> show incident density: <span className="text-green-500 font-medium">Green = Low (&lt;40%)</span>,{' '}
+                <span className="text-amber-500 font-medium">Yellow/Amber = Moderate (40-70%)</span>,{' '}
+                <span className="text-red-500 font-medium">Red = High risk (&gt;70%)</span>.{' '}
                 Circle <span className="font-medium">size</span> reflects incident count — bigger means more incidents.{' '}
                 Click any circle to see the breakdown.
               </p>
@@ -600,7 +598,7 @@ const Heatmap = () => {
                 </div>
               )}
 
-              {/* Leaflet Map with Heatmap Layer - Toggleable */}
+              {/* Leaflet Map */}
               <div className="rounded-xl border border-gray-200 overflow-hidden relative dark:border-slate-600" style={{ height: '500px', position: 'relative', zIndex: 0 }}>
                 {hasNoData ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-800">
@@ -625,8 +623,8 @@ const Heatmap = () => {
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {/* Heatmap Layer - Only shows when showHeatmap is true */}
-                    {heatmapPoints.length > 0 && showHeatmap && (
+                    {/* Heatmap Layer - Toggleable */}
+                    {heatmapPoints.length > 0 && (
                       <HeatmapLayer points={heatmapPoints} show={showHeatmap} />
                     )}
 
@@ -683,7 +681,7 @@ const Heatmap = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-amber-500 rounded-2xl text-white text-xs flex items-center justify-center font-bold">&gt;40%</div>
+                      <div className="w-10 h-10 bg-amber-500 rounded-2xl text-white text-xs flex items-center justify-center font-bold">40-70%</div>
                       <div>
                         <p className="font-medium text-sm text-amber-500">Moderate</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">40-70% of max incidents</p>
@@ -693,13 +691,13 @@ const Heatmap = () => {
                       <div className="w-10 h-10 bg-green-500 rounded-2xl text-white text-xs flex items-center justify-center font-bold">&lt;40%</div>
                       <div>
                         <p className="font-medium text-sm text-green-500">Low Risk</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Under 40% of max</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Under 40% of max incidents</p>
                       </div>
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-gray-200 dark:border-slate-600">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Heatmap overlay shows incident density - greener = lower density, redder = higher concentration
+                      Heatmap overlay shows incident density - Green = Low (&lt;40%), Yellow = Moderate (40-70%), Red = High (&gt;70%)
                     </p>
                   </div>
                 </div>
@@ -709,9 +707,8 @@ const Heatmap = () => {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - Keep the same as before */}
         <div className="space-y-6">
-
           {/* Selected Location Card */}
           {selectedLocation && !hasNoData ? (
             <Card className="bg-white dark:bg-slate-800 border-border">
@@ -812,7 +809,6 @@ const Heatmap = () => {
               )}
             </CardContent>
           </Card>
-
         </div>
       </div>
     </DashboardLayout>
