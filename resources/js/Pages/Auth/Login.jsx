@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,25 +20,29 @@ const Login = () => {
     setIsPendingApproval(false);
     setIsLoading(true);
 
-    try {
-      // JUST ONE LINE - refreshes CSRF token (no Sanctum needed!)
-      await axios.get('/');
-
-      await router.post('/login', {
-        email,
-        password,
-      }, {
-        onError: (errors) => {
+    // Use Inertia router directly - it handles CSRF automatically!
+    router.post('/login', {
+      email,
+      password,
+    }, {
+      onError: (errors) => {
+        // Check if it's a pending approval error
+        if (errors.email && errors.email.includes('pending approval')) {
+          setIsPendingApproval(true);
+          setError(errors.email);
+        } else {
           setError(errors.email || 'Invalid email or password');
-        },
-        onFinish: () => {
-          setIsLoading(false);
         }
-      });
-    } catch (err) {
-      setError('Something went wrong. Please try again.');
-      setIsLoading(false);
-    }
+        setIsLoading(false);
+      },
+      onSuccess: () => {
+        // Login successful - Inertia will redirect automatically
+        setIsLoading(false);
+      },
+      onFinish: () => {
+        // This runs whether success or error
+      }
+    });
   };
 
   return (
