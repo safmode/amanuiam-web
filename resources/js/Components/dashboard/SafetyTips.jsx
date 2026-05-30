@@ -1,4 +1,4 @@
-// components/dashboard/SafetyTips.jsx - Simplified General Announcements
+// components/dashboard/SafetyTips.jsx - No Axios, Pure Fetch API
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Send, Loader2, Plus, X, Bell, Shield, History, Megaphone } from 'lucide-react';
-import axios from 'axios';
+import { Send, Loader2, Plus, X, Bell, History, Megaphone } from 'lucide-react';
 
 const SafetyTips = () => {
   const [tips, setTips] = useState([]);
@@ -17,15 +16,46 @@ const SafetyTips = () => {
   const [newTip, setNewTip] = useState({
     title: '',
     message: '',
-    type: 'announcement'
+    type: 'announcement',
+    priority: 'normal'
   });
+
+  // Helper function to get CSRF token
+  const getCsrfToken = () => {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    return token;
+  };
+
+  // Helper function for fetch requests
+  const fetchWithCSRF = async (url, options = {}) => {
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
+    };
+
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers
+      }
+    };
+
+    const response = await fetch(url, mergedOptions);
+    return response;
+  };
 
   // Pre-defined templates
   const templates = [
-    { title: "Night Safety", message: "When walking at night, stay in well-lit areas and walk with friends.", type: "safety_tip" },
-    { title: "Theft Prevention", message: "Don't leave laptops or bags unattended in public areas.", type: "safety_tip" },
-    { title: "Emergency Contacts", message: "HOTLINE (24H): +603-6421 5555 / 4173 | Email: osem@iium.edu.my. Any emergency cases can also be contacted through this.", type: "announcement" },
-    { title: "Weather Alert", message: "Heavy rain expected. Drive carefully and avoid driving recklessly.", type: "reminder" },
+    { title: "Night Safety", message: "When walking at night, stay in well-lit areas and walk with friends.", type: "safety_tip", priority: "normal" },
+    { title: "Theft Prevention", message: "Don't leave laptops or bags unattended in public areas.", type: "safety_tip", priority: "normal" },
+    { title: "Emergency Contacts", message: "HOTLINE (24H): +603-6421 5555 / 4173 | Email: osem@iium.edu.my. Any emergency cases can also be contacted through this.", type: "announcement", priority: "high" },
+    { title: "Weather Alert", message: "Heavy rain expected. Drive carefully and avoid driving recklessly.", type: "reminder", priority: "normal" },
   ];
 
   useEffect(() => {
@@ -34,8 +64,14 @@ const SafetyTips = () => {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get('/api/safety-tips/history');
-      setTips(res.data.data || []);
+      const response = await fetchWithCSRF('/api/safety-tips/history');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setTips(data.data || []);
     } catch (error) {
       console.error('Failed to fetch history:', error);
     } finally {
@@ -51,13 +87,23 @@ const SafetyTips = () => {
 
     setSending(true);
     try {
-      await axios.post('/api/safety-tips/send', newTip);
+      const response = await fetchWithCSRF('/api/safety-tips/send', {
+        method: 'POST',
+        body: JSON.stringify(newTip)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to send announcement');
+      }
+
       alert('✅ Announcement sent to all students!');
-      setNewTip({ title: '', message: '', type: 'announcement' });
+      setNewTip({ title: '', message: '', type: 'announcement', priority: 'normal' });
       setShowForm(false);
       fetchHistory();
     } catch (error) {
-      alert('❌ Failed to send announcement');
+      alert(`❌ ${error.message}`);
       console.error('Send error:', error);
     } finally {
       setSending(false);
@@ -70,6 +116,14 @@ const SafetyTips = () => {
       case 'reminder': return '🔔';
       case 'weather': return '🌧️';
       default: return '📢';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch(priority) {
+      case 'urgent': return 'text-red-600 bg-red-100 dark:bg-red-900/30';
+      case 'high': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30';
+      default: return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
     }
   };
 
@@ -114,7 +168,8 @@ const SafetyTips = () => {
                       setNewTip({
                         title: template.title,
                         message: template.message,
-                        type: 'announcement'
+                        type: template.type,
+                        priority: template.priority || 'normal'
                       });
                       setShowForm(true);
                     }}
@@ -126,7 +181,7 @@ const SafetyTips = () => {
             </div>
           )}
 
-          {/* Send Form - Simplified */}
+          {/* Send Form */}
           {showForm && (
             <div className="mb-6 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl">
               <div className="flex justify-between items-center mb-4">
@@ -150,6 +205,23 @@ const SafetyTips = () => {
                 </div>
 
                 <div>
+                  <Label className="text-sm font-medium">Priority Level</Label>
+                  <Select
+                    value={newTip.priority}
+                    onValueChange={(value) => setNewTip({...newTip, priority: value})}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">📌 Normal - Regular announcement</SelectItem>
+                      <SelectItem value="high">⚠️ High - Important notice</SelectItem>
+                      <SelectItem value="urgent">🚨 Urgent - Emergency alert</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
                   <Label className="text-sm font-medium">Message</Label>
                   <Textarea
                     value={newTip.message}
@@ -166,15 +238,25 @@ const SafetyTips = () => {
                 <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-muted-foreground mb-2">Preview:</p>
                   <div className="flex items-start gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#D4A853]/10 flex items-center justify-center flex-shrink-0">
-                      <Megaphone className="w-4 h-4 text-[#D4A853]" />
+                    <div className={`w-8 h-8 rounded-lg ${getPriorityColor(newTip.priority)} flex items-center justify-center flex-shrink-0`}>
+                      {newTip.priority === 'urgent' ? '🚨' : newTip.priority === 'high' ? '⚠️' : '📢'}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold">{newTip.title || 'Your Announcement Title'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold">{newTip.title || 'Your Announcement Title'}</p>
+                        {newTip.priority === 'urgent' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">URGENT</span>
+                        )}
+                        {newTip.priority === 'high' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">HIGH PRIORITY</span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {newTip.message || 'Your announcement message will appear here...'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">📢 General Announcement</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        📢 {newTip.type === 'announcement' ? 'General Announcement' : newTip.type === 'safety_tip' ? 'Safety Tip' : 'Reminder'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -217,12 +299,15 @@ const SafetyTips = () => {
                 {tips.map((tip, i) => (
                   <div key={i} className="p-3 bg-gray-50 dark:bg-slate-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#D4A853]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Megaphone className="w-3 h-3 text-[#D4A853]" />
+                      <div className={`w-6 h-6 rounded-full ${getPriorityColor(tip.priority)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                        {tip.priority === 'urgent' ? '🚨' : tip.priority === 'high' ? '⚠️' : '📢'}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">{tip.title}</span>
+                          {tip.priority === 'urgent' && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">URGENT</span>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {new Date(tip.created_at).toLocaleDateString()} at {new Date(tip.created_at).toLocaleTimeString()}
                           </span>
