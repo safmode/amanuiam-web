@@ -1,7 +1,4 @@
-// DispatchOfficerModal.jsx
-
 import { useState, useEffect } from 'react';
-import { router, usePage } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Send, User, Shield, AlertTriangle, Phone, Mail } from 'lucide-react';
 
 export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
-  const { props } = usePage();
   const [officers, setOfficers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -18,17 +14,14 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
   const [dispatchNotes, setDispatchNotes] = useState('');
   const [officerDetails, setOfficerDetails] = useState(null);
 
-  // Get officers from props (shared from server)
-  useEffect(() => {
-    if (props.officersList) {
-      setOfficers(props.officersList);
-    }
-  }, [props.officersList]);
+  // Helper function to get CSRF token
+  const getCsrfToken = () => {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  };
 
-  // Load officers using Inertia when modal opens
   useEffect(() => {
     if (open && alert) {
-      loadOfficers();
+      fetchOfficers();
       setDispatchNotes(
         `EMERGENCY DISPATCH\n` +
         `Location: ${alert.address || alert.location?.mahallah || 'Unknown location'}\n` +
@@ -40,22 +33,25 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
     }
   }, [open, alert]);
 
-  const loadOfficers = () => {
+  const fetchOfficers = async () => {
     setLoading(true);
-    // Use Inertia visit to get officers list
-    router.visit('/api/officers/list', {
-      method: 'get',
-      preserveScroll: true,
-      preserveState: false,
-      only: ['officersList'],
-      onSuccess: (page) => {
-        setOfficers(page.props.officersList || []);
-        setLoading(false);
-      },
-      onError: () => {
-        setLoading(false);
-      }
-    });
+    try {
+      const response = await fetch('/api/officers/list', {
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch officers');
+
+      const data = await response.json();
+      setOfficers(data);
+    } catch (error) {
+      console.error('Failed to fetch officers:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOfficerSelect = (officerId) => {
@@ -71,35 +67,19 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
     }
 
     setSubmitting(true);
-
-    const officer = officers.find(o => o.officerId === selectedOfficer);
-
-    // Use Inertia router for dispatch - CSRF handled automatically!
-    router.put(`/api/emergencies/${alert._id}/dispatch`, {
-      officerId: selectedOfficer,
-      officerName: officer?.officerName,
-      dispatchNotes: dispatchNotes
-    }, {
-      preserveScroll: true,
-      preserveState: true,
-      onSuccess: () => {
-        // Trigger custom event to refresh emergency list
-        window.dispatchEvent(new CustomEvent('emergency-updated'));
-        if (onDispatch) onDispatch({
-          officerId: selectedOfficer,
-          officerName: officer?.officerName,
-          dispatchNotes: dispatchNotes
-        });
-        onClose();
-      },
-      onError: (errors) => {
-        console.error('Failed to dispatch officer:', errors);
-        alert(errors.error || 'Failed to dispatch officer. Please try again.');
-      },
-      onFinish: () => {
-        setSubmitting(false);
-      }
-    });
+    try {
+      const officer = officers.find(o => o.officerId === selectedOfficer);
+      await onDispatch({
+        officerId: selectedOfficer,
+        officerName: officer?.officerName,
+        dispatchNotes: dispatchNotes
+      });
+      onClose();
+    } catch (error) {
+      console.error('Failed to dispatch officer:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!alert) return null;

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const Header = ({ darkMode, toggleDarkMode }) => {
-  const { auth, flash, notifications: serverNotifications } = usePage().props;
+  const { auth, flash } = usePage().props;
   const currentUserId = auth?.admins?._id || auth?.admins?.id;
 
   const [notifications, setNotifications] = useState([]);
@@ -25,64 +25,115 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
   const echoRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Load notifications from server props
-  useEffect(() => {
-    if (serverNotifications) {
-      setNotifications(serverNotifications.notifications || []);
-      setUnreadCount(serverNotifications.unread_count || 0);
-    }
-  }, [serverNotifications]);
+  // Helper function to get CSRF token
+  const getCsrfToken = () => {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  };
 
-  // Refresh notifications using Inertia
-  const refreshNotifications = () => {
-    router.reload({ only: ['notifications'] });
+  // Fetch notifications using fetch
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications', {
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch');
+
+      const data = await response.json();
+      const newNotifications = data.notifications || [];
+      const newUnreadCount = data.unread_count || 0;
+
+      // Merge without duplicates (keep newest first)
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n._id));
+        const uniqueNew = newNotifications.filter(n => !existingIds.has(n._id));
+        return [...uniqueNew, ...prev];
+      });
+
+      setUnreadCount(newUnreadCount);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  // Fetch unread count using fetch
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await fetch('/api/notifications/unread-count', {
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch');
+
+      const data = await response.json();
+      setUnreadCount(data.unread_count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
   };
 
   // Mark all as read using Inertia router
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setIsLoading(true);
-    router.put('/api/notifications/read-all', {}, {
-      preserveScroll: true,
-      preserveState: true,
-      onSuccess: () => {
-        setUnreadCount(0);
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-        refreshNotifications();
-      },
-      onError: (errors) => {
-        console.error('Failed to mark all as read:', errors);
-      },
-      onFinish: () => {
-        setIsLoading(false);
-      }
-    });
+    try {
+      // Use Inertia router for PUT request
+      router.put('/api/notifications/read-all', {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+          setUnreadCount(0);
+          setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        },
+        onError: (errors) => {
+          console.error('Failed to mark all as read:', errors);
+        },
+        onFinish: () => {
+          setIsLoading(false);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      setIsLoading(false);
+    }
   };
 
   // Mark single as read using Inertia router
-  const markAsRead = (notificationId) => {
-    router.put(`/api/notifications/${notificationId}/read`, {}, {
-      preserveScroll: true,
-      preserveState: true,
-      onSuccess: () => {
-        setNotifications(prev =>
-          prev.map(notification =>
-            notification._id === notificationId
-              ? { ...notification, is_read: true }
-              : notification
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      },
-      onError: (errors) => {
-        console.error('Failed to mark as read:', errors);
-      }
-    });
+  const markAsRead = async (notificationId) => {
+    try {
+      router.put(`/api/notifications/${notificationId}/read`, {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+          setNotifications(prev =>
+            prev.map(notification =>
+              notification._id === notificationId
+                ? { ...notification, is_read: true }
+                : notification
+            )
+          );
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        },
+        onError: (errors) => {
+          console.error('Failed to mark as read:', errors);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
   };
 
-  // Refresh notifications periodically
+  // Fetch notifications on mount
   useEffect(() => {
+    fetchNotifications();
+
     const interval = setInterval(() => {
-      refreshNotifications();
+      fetchUnreadCount();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -91,7 +142,7 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
   useEffect(() => {
     const handlePreferenceChange = (event) => {
       console.log('Preference changed, refetching notifications...', event.detail);
-      refreshNotifications();
+      fetchNotifications();
     };
 
     window.addEventListener('notification-preference-changed', handlePreferenceChange);

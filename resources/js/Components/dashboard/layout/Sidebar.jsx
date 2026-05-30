@@ -15,6 +15,7 @@ import {
   ChevronRight,
   UserCheck,
 } from 'lucide-react';
+import axios from 'axios';
 
 export const Sidebar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,21 +26,32 @@ export const Sidebar = () => {
   const userName = admin?.name || 'Admin';
   const userRole = admin?.rank || 'Security Officer';
 
-  // Get emergency counts from shared props (passed from server)
-  const emergencyCounts = props.emergencyCounts || { active: 0, responding: 0 };
+  // Fetch active + responding alert count from the API
+  const fetchActiveAlertCount = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/emergencies/counts');
+      // Count both 'active' and 'responding' emergencies
+      const totalActive = (response.data.active || 0) + (response.data.responding || 0);
+      setActiveAlertCount(totalActive);
+    } catch (error) {
+      console.error('Failed to fetch active alert count:', error);
+    }
+  }, []);
 
-  // Update count when props change
+  // Initial fetch
   useEffect(() => {
-    const totalActive = (emergencyCounts.active || 0) + (emergencyCounts.responding || 0);
-    setActiveAlertCount(totalActive);
-  }, [emergencyCounts]);
+    fetchActiveAlertCount();
 
-  // Listen for emergency status changes via custom events
+    // Poll for updates every 10 seconds (faster)
+    const interval = setInterval(fetchActiveAlertCount, 10000);
+    return () => clearInterval(interval);
+  }, [fetchActiveAlertCount]);
+
+  // Listen for emergency status changes via custom event
   useEffect(() => {
     const handleEmergencyUpdate = () => {
-      console.log('Emergency update detected, refreshing...');
-      // Reload the page to get fresh counts from server
-      router.reload({ only: ['emergencyCounts'] });
+      console.log('Emergency update detected, refreshing badge...');
+      fetchActiveAlertCount();
     };
 
     // Listen for custom events
@@ -50,7 +62,7 @@ export const Sidebar = () => {
     // Also listen for page visibility change (when user returns to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        router.reload({ only: ['emergencyCounts'] });
+        fetchActiveAlertCount();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -61,16 +73,12 @@ export const Sidebar = () => {
       window.removeEventListener('report-created', handleEmergencyUpdate);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [fetchActiveAlertCount]);
 
-  // Poll for updates every 30 seconds using Inertia reload
+  // Listen for Inertia page updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      router.reload({ only: ['emergencyCounts'] });
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
+    fetchActiveAlertCount();
+  }, [url, fetchActiveAlertCount]);
 
   const navItems = [
     { path: '/Dashboard', icon: LayoutDashboard, label: 'Dashboard', badgeCount: 0 },
@@ -89,7 +97,6 @@ export const Sidebar = () => {
   };
 
   const handleLogout = () => {
-    // Use Inertia router for logout - CSRF handled automatically!
     router.post('/logout', {}, {
       onSuccess: () => {},
     });

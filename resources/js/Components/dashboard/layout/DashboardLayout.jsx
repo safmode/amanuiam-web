@@ -1,33 +1,73 @@
 import { useState, useEffect } from 'react';
-import { router, usePage } from '@inertiajs/react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export const DashboardLayout = ({ children, title, subtitle }) => {
-  const { darkMode: serverDarkMode } = usePage().props;
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load dark mode preference from server props
+  // Helper function to get CSRF token
+  const getCsrfToken = () => {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  };
+
+  // Load dark mode preference from database on mount
   useEffect(() => {
-    // Get dark mode from server props or fallback to localStorage
-    const isDark = serverDarkMode ?? localStorage.getItem('darkMode') === 'true';
-    setDarkMode(isDark);
+    const loadDarkMode = async () => {
+      try {
+        const response = await fetch('/settings/dark-mode', {
+          headers: {
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
 
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+        if (response.ok) {
+          const data = await response.json();
 
-    setIsLoading(false);
-  }, [serverDarkMode]);
+          if (data && typeof data.dark_mode !== 'undefined') {
+            const isDark = data.dark_mode;
+            setDarkMode(isDark);
 
-  const toggleDarkMode = () => {
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          } else {
+            // Fallback to localStorage
+            const saved = localStorage.getItem('darkMode');
+            const isDark = saved === 'true';
+            setDarkMode(isDark);
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to load dark mode preference:', error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('darkMode');
+        const isDark = saved === 'true';
+        setDarkMode(isDark);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDarkMode();
+  }, []);
+
+  const toggleDarkMode = async () => {
     const newDarkMode = !darkMode;
-
-    // Update UI immediately (optimistic)
     setDarkMode(newDarkMode);
+
+    // Apply to DOM immediately
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -37,28 +77,29 @@ export const DashboardLayout = ({ children, title, subtitle }) => {
     // Save to localStorage (backup)
     localStorage.setItem('darkMode', newDarkMode);
 
-    // Use Inertia router - CSRF handled automatically!
-    router.post('/settings/dark-mode', {
-      dark_mode: newDarkMode
-    }, {
-      preserveScroll: true,
-      preserveState: true,
-      onError: () => {
-        // Revert on error
-        const revertMode = !newDarkMode;
-        setDarkMode(revertMode);
-        if (revertMode) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('darkMode', revertMode);
-        console.error('Failed to save dark mode preference');
+    // Save to database using fetch
+    try {
+      const response = await fetch('/settings/dark-mode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          dark_mode: newDarkMode
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
+    } catch (error) {
+      console.error('Failed to save dark mode preference:', error);
+    }
   };
 
-  // Show loading state while fetching preference
+  // Optional: Show loading state while fetching preference
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FAF7F2] dark:bg-slate-900 flex items-center justify-center">
