@@ -89,31 +89,6 @@ const extractLocationData = (report) => {
     console.log('Found specificPlace in _raw:', specificPlace);
   }
 
-  // NEW: ONLY move to specificPlace if locationArea is EXACTLY a place name, not containing it
-  // This prevents "Dar al-Hikmah Library" from being moved just because it contains "library"
-  const exactPlaceNames = ['7 Eleven', 'Seven Eleven', 'Office', 'Cafe', 'Cafeteria', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
-  const isExactPlaceName = exactPlaceNames.some(place =>
-    locationArea.toLowerCase() === place.toLowerCase() ||
-    locationArea.toLowerCase().includes(place.toLowerCase()) && locationArea.toLowerCase().split(' ').length <= 2
-  );
-
-  // Only move if it's a short name (2 words or less) and matches place names
-  // This prevents "Dar al-Hikmah Library" from being moved
-  if (isExactPlaceName && !specificPlace && locationArea) {
-    specificPlace = locationArea;
-    locationArea = '';
-    console.log('Moved place name from locationArea to specificPlace:', specificPlace);
-  }
-
-  // MATCH locationArea to predefined labels
-  if (locationArea) {
-    const matchedLabel = matchLocationAreaToLabel(locationArea);
-    if (matchedLabel) {
-      locationArea = matchedLabel;
-      console.log('Matched locationArea to label:', locationArea);
-    }
-  }
-
   // Build full address - prioritize specificPlace over building
   const addressParts = [];
   if (locationArea && locationArea.trim() !== '') {
@@ -130,63 +105,6 @@ const extractLocationData = (report) => {
   console.log('FINAL EXTRACTED DATA:', { locationArea, building, specificPlace, fullAddress });
 
   return { locationArea, building, specificPlace, fullAddress };
-};
-
-// Helper function to match locationArea to predefined labels
-const matchLocationAreaToLabel = (value) => {
-  if (!value) return null;
-
-  const lowerValue = value.toLowerCase().trim();
-
-  // Flatten all location labels for matching
-  const allLocations = {};
-  Object.values(locationLabels).forEach(group => {
-    Object.assign(allLocations, group);
-  });
-
-  // Create a reverse mapping for easier matching
-  const labelToKey = {};
-  Object.entries(allLocations).forEach(([key, label]) => {
-    labelToKey[label.toLowerCase()] = key;
-    labelToKey[key.toLowerCase()] = key;
-  });
-
-  // Check for exact match first (case insensitive)
-  if (labelToKey[lowerValue]) {
-    // Return the display label, not the key
-    return allLocations[labelToKey[lowerValue]];
-  }
-
-  // Check if value contains any of our keys or labels
-  for (const [key, label] of Object.entries(allLocations)) {
-    if (lowerValue.includes(key.toLowerCase()) ||
-        key.toLowerCase().includes(lowerValue) ||
-        lowerValue.includes(label.toLowerCase())) {
-      return label;
-    }
-  }
-
-  // Special handling for common variations
-  const specialMatches = {
-    'aminah': 'Mahallah Aminah',
-    'asiah': 'Mahallah Asiah',
-    'ali': 'Mahallah Ali',
-    'kict': 'Kulliyyah of Information and Communication Technology (KICT)',
-    'koe': 'Kulliyyah of Engineering (KOE)',
-    'kaed': 'Kulliyyah of Architecture and Environmental Design (KAED)',
-    'kenms': 'Kulliyyah of Economics and Management Sciences (KENMS)',
-    'aikol': 'Ahmad Ibrahim Kulliyyah of Law (AIKOL)',
-    'koed': 'Kulliyyah of Education (KOED)',
-  };
-
-  for (const [variation, label] of Object.entries(specialMatches)) {
-    if (lowerValue.includes(variation)) {
-      return label;
-    }
-  }
-
-  // If nothing matches, return the original value (it will show but won't match dropdown)
-  return value;
 };
 
 export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
@@ -304,7 +222,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         incidentTime: formattedTime,
         locationArea: locationArea || '',
         building: building || '',
-        specificPlace: specificPlace || '', // Add specificPlace field
+        specificPlace: specificPlace || '',
         fullAddress: fullAddress || '',
         injuries: report.injuries || '',
         damages: report.damages || '',
@@ -455,7 +373,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     if (locationAreaVal && locationAreaVal.trim() !== '') {
       parts.push(locationAreaVal);
     }
-    // Prioritize specificPlace over building for place names
     if (specificPlaceVal && specificPlaceVal.trim() !== '') {
       parts.push(specificPlaceVal);
     } else if (buildingVal && buildingVal.trim() !== '') {
@@ -474,7 +391,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const handleBuildingChange = (value) => {
-    // Clear specificPlace if we're setting a building (mutually exclusive for clarity)
     if (value && editedReport.specificPlace) {
       setEditedReport(prev => ({ ...prev, specificPlace: '' }));
     }
@@ -487,7 +403,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const handleSpecificPlaceChange = (value) => {
-    // Clear building if we're setting a specific place (mutually exclusive)
     if (value && editedReport.building) {
       setEditedReport(prev => ({ ...prev, building: '' }));
     }
@@ -499,33 +414,26 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }));
   };
 
-  // Handle the combined address input (intelligently determines if it's a building or specific place)
-    const handleCombinedAddressChange = (value) => {
+  const handleCombinedAddressChange = (value) => {
     if (!value || value.trim() === '') {
-        handleBuildingChange('');
-        handleSpecificPlaceChange('');
-        return;
+      handleBuildingChange('');
+      handleSpecificPlaceChange('');
+      return;
     }
 
-    // List of exact place names (short names, not descriptive ones)
     const exactPlaceNames = ['7 Eleven', 'Seven Eleven', 'Office', 'Cafe', 'Cafeteria', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
-
-    // Check if the value is EXACTLY or predominantly a place name
-    // This prevents "Dar al-Hikmah Library" from being treated as just "Library"
     const isShortPlaceName = value.split(' ').length <= 2;
     const isExactPlace = exactPlaceNames.some(place =>
-        value.toLowerCase() === place ||
-        (value.toLowerCase().includes(place) && isShortPlaceName)
+      value.toLowerCase() === place.toLowerCase() ||
+      (value.toLowerCase().includes(place.toLowerCase()) && isShortPlaceName)
     );
 
     if (isExactPlace) {
-        // It's a specific place/business - store in specificPlace
-        handleSpecificPlaceChange(value);
+      handleSpecificPlaceChange(value);
     } else {
-        // It's a building/block/room or detailed location - store in building
-        handleBuildingChange(value);
+      handleBuildingChange(value);
     }
-    };
+  };
 
   // Upload pending files to Cloudinary
   const uploadPendingFiles = async () => {
@@ -634,7 +542,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       const allUrls = [...existingUrls, ...finalAttachmentUrls];
       const allPublicIds = [...existingPublicIds, ...finalAttachmentPublicIds];
 
-      // Build full address from components
       const addressParts = [];
       if (editedReport.locationArea && editedReport.locationArea.trim() !== '') {
         addressParts.push(editedReport.locationArea);
@@ -646,7 +553,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       }
       const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
 
-      // Build location object with all three fields
       const locationObj = {
         locationArea: editedReport.locationArea || '',
         building: editedReport.building || '',
@@ -673,7 +579,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
         attachmentUrls: allUrls,
         attachmentPublicIds: allPublicIds,
         location: locationObj,
-        // Include individual fields as fallback for backward compatibility
         mahallah: editedReport.locationArea || '',
         building: editedReport.building || '',
         specificPlace: editedReport.specificPlace || '',
@@ -818,15 +723,15 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   };
 
   const getFileIcon = (url) => {
-    if (!url) return <FileText className="w-8 h-8 text-gray-500" />;
+    if (!url) return <FileText className="w-8 h-8 text-gray-500 dark:text-gray-400" />;
     const extension = url.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-      return <Image className="w-8 h-8 text-blue-500" />;
+      return <Image className="w-8 h-8 text-blue-500 dark:text-blue-400" />;
     }
     if (extension === 'pdf') {
-      return <FileText className="w-8 h-8 text-red-500" />;
+      return <FileText className="w-8 h-8 text-red-500 dark:text-red-400" />;
     }
-    return <FileText className="w-8 h-8 text-gray-500" />;
+    return <FileText className="w-8 h-8 text-gray-500 dark:text-gray-400" />;
   };
 
   const isImageFile = (url) => {
@@ -862,13 +767,13 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
           handleClose();
         }
       }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white" aria-describedby="dialog-description">
-          <DialogHeader className="p-6 pb-4 border-b border-gray-100">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-slate-800 dark:border-slate-700" aria-describedby="dialog-description">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
+                <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
-              <DialogTitle className="text-xl font-semibold text-gray-900">
+              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Edit Report {editedReport.reportId}
               </DialogTitle>
             </div>
@@ -876,12 +781,12 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
               Edit report form with reporter information, incident details, and attachments
             </div>
             {pendingFiles.length > 0 && (
-              <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+              <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded dark:text-blue-400 dark:bg-blue-950/20">
                 {pendingFiles.length} file(s) ready to upload to Cloudinary. Click Save Changes to upload.
               </div>
             )}
             {pendingDeletions.length > 0 && (
-              <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+              <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded dark:text-red-400 dark:bg-red-950/20">
                 {pendingDeletions.length} file(s) marked for deletion. Click Save Changes to delete from Cloudinary.
               </div>
             )}
@@ -889,56 +794,56 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
           <div className="p-6 space-y-5">
             {/* Reporter Information */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                    <User className="w-3 h-3 text-amber-600" />
+                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
+                    <User className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                   </div>
-                  <span className="text-sm font-medium text-gray-700">Reporter Information</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Reporter Information</span>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-xs text-gray-500">Full Name</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Full Name</Label>
                     <Input
                       value={editedReport.reporterName || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, reporterName: e.target.value }))}
-                      className="mt-1 bg-white"
+                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                       placeholder="Enter full name"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Matric Number</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Matric Number</Label>
                     <Input
                       value={editedReport.reporterMatricNo || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, reporterMatricNo: e.target.value }))}
-                      className="mt-1 bg-white"
+                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                       placeholder="e.g., 2226488"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs text-gray-500">Email Address</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Email Address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <Input
                           type="email"
                           value={editedReport.reporterEmail || ''}
                           onChange={(e) => setEditedReport(prev => ({ ...prev, reporterEmail: e.target.value }))}
-                          className="mt-1 bg-white pl-9"
+                          className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                           placeholder="student@example.com"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Phone Number</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Phone Number</Label>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <Input
                           type="tel"
                           value={editedReport.reporterPhone || ''}
                           onChange={(e) => setEditedReport(prev => ({ ...prev, reporterPhone: e.target.value }))}
-                          className="mt-1 bg-white pl-9"
+                          className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                           placeholder="012-3456789"
                         />
                       </div>
@@ -949,58 +854,58 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
             </Card>
 
             {/* Incident Details */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Incident Details</span>
+                  <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Incident Details</span>
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label className="text-xs text-gray-500">Category *</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Category *</Label>
                       <Select
                         value={editedReport.category}
                         onValueChange={handleCategoryChange}
                       >
-                        <SelectTrigger className="mt-1 bg-white">
+                        <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                           {Object.entries(categoryLabels).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                            <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Urgency Level</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Urgency Level</Label>
                       <Select
                         value={editedReport.urgency}
                         onValueChange={handleUrgencyChange}
                       >
-                        <SelectTrigger className="mt-1 bg-white">
+                        <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                           {Object.entries(urgencyLabels).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                            <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Status</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Status</Label>
                       <Select
                         value={editedReport.status}
                         onValueChange={(v) => setEditedReport(prev => ({ ...prev, status: v }))}
                       >
-                        <SelectTrigger className="mt-1 bg-white">
+                        <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                           {Object.entries(statusLabels).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                            <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1009,21 +914,21 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs text-gray-500">Incident Date *</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Date *</Label>
                       <Input
                         type="date"
                         value={editedReport.incidentDate || ''}
                         onChange={(e) => setEditedReport(prev => ({ ...prev, incidentDate: e.target.value }))}
-                        className="mt-1 bg-white"
+                        className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Incident Time *</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Time *</Label>
                       <Input
                         type="time"
                         value={editedReport.incidentTime || ''}
                         onChange={(e) => setEditedReport(prev => ({ ...prev, incidentTime: e.target.value }))}
-                        className="mt-1 bg-white"
+                        className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                       />
                     </div>
                   </div>
@@ -1032,25 +937,25 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                   <div className="space-y-3">
                     {/* Location Area */}
                     <div>
-                      <Label className="text-xs text-gray-500">Location Area *</Label>
-                      <p className="text-[10px] text-gray-500">
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Location Area *</Label>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
                         Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
                       </p>
                       <Select
                         value={editedReport.locationArea || ""}
                         onValueChange={handleLocationAreaChange}
                       >
-                        <SelectTrigger className="mt-1 bg-white">
+                        <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                           <SelectValue placeholder="Select location area" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                           {Object.entries(locationLabels).map(([groupName, locations]) => (
                             <Fragment key={groupName}>
-                              <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50">
+                              <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
                                 {groupName}
                               </div>
                               {Object.entries(locations).map(([key, label]) => (
-                                <SelectItem key={key} value={label}>
+                                <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700">
                                   {label}
                                 </SelectItem>
                               ))}
@@ -1060,33 +965,33 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       </Select>
                     </div>
 
-                    {/* Specific Address (Building/Room/Block/Specific Place) */}
+                    {/* Specific Address */}
                     <div>
-                      <Label className="text-xs text-gray-500">Specific Address (Building/Room/Block/Specific Place)</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block/Specific Place)</Label>
                       <div className="flex items-start gap-1.5 mt-1 mb-1">
-                        <p className="text-[10px] text-gray-500">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
                           Enter the specific location where the incident happened (building name/number, room/block, landmarks, or specific place like '7 Eleven', 'Office')
                         </p>
                       </div>
                       <Textarea
                         value={editedReport.specificPlace || editedReport.building || ''}
                         onChange={(e) => handleCombinedAddressChange(e.target.value)}
-                        className="mt-1 bg-white text-sm"
+                        className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, 7 Eleven, Office, etc."
                         rows={2}
                       />
-                      <p className="text-[10px] text-blue-600 mt-1">
+                      <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
                         💡 Tip: Be as specific as possible to help security personnel locate the exact spot
                       </p>
                     </div>
 
                     {/* Full Address (Combined) */}
                     {editedReport.fullAddress && (
-                      <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                      <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                         <div className="flex items-center gap-2">
-                          <MapPin className="w-3 h-3 text-amber-600" />
-                          <span className="text-xs font-light text-amber-700">Full Address:</span>
-                          <p className="text-xs text-amber-800 mt-1">{editedReport.fullAddress}</p>
+                          <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span className="text-xs font-light text-amber-700 dark:text-amber-300">Full Address:</span>
+                          <p className="text-xs text-amber-800 mt-1 dark:text-amber-300">{editedReport.fullAddress}</p>
                         </div>
                       </div>
                     )}
@@ -1095,28 +1000,28 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                   {/* Description with AI Feature */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-xs text-gray-500">Description *</Label>
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Description *</Label>
                       {isAnalyzing && (
                         <div className="flex items-center gap-1">
                           <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                          <span className="text-xs text-gray-500">AI analyzing...</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">AI analyzing...</span>
                         </div>
                       )}
                     </div>
                     <Textarea
                       value={editedReport.description || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, description: e.target.value }))}
-                      className="mt-1 bg-white min-h-[100px]"
+                      className="mt-1 bg-white min-h-[100px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="Describe what happened in detail... AI will automatically analyze and suggest category & urgency!"
                     />
                   </div>
 
                   {/* AI Suggestion Display */}
                   {isAnalyzing && (
-                    <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-                        <span className="text-sm text-gray-500">AI analyzing description...</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">AI analyzing description...</span>
                       </div>
                     </div>
                   )}
@@ -1124,32 +1029,32 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                   {aiSuggestion && !isAnalyzing && (
                     <div className={`p-3 rounded-lg border ${
                       aiSuggestion.confidence > 0.7
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-yellow-50 border-yellow-200'
+                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                        : 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800'
                     }`}>
                       <div className="flex items-start gap-2">
                         <Sparkles className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <div className="flex items-center justify-between flex-wrap gap-2">
-                            <p className="text-xs font-semibold text-purple-700">🤖 AI SUGGESTION</p>
+                            <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">🤖 AI SUGGESTION</p>
                             {aiSuggestion.applied ? (
-                              <Badge variant="outline" className="text-green-600 border-green-300 text-xs">
+                              <Badge variant="outline" className="text-green-600 border-green-300 text-xs dark:text-green-400 dark:border-green-700">
                                 ✓ Applied - You can still change below
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs">
+                              <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs dark:text-purple-400 dark:border-purple-700">
                                 Click to apply
                               </Badge>
                             )}
                           </div>
                           <div className="text-sm mt-1">
-                            <span className="text-gray-600">Category:</span>{' '}
-                            <strong className="text-gray-800">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
+                            <span className="text-gray-600 dark:text-gray-400">Category:</span>{' '}
+                            <strong className="text-gray-800 dark:text-gray-200">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
                             {' • '}
-                            <span className="text-gray-600">Urgency:</span>{' '}
-                            <strong className="text-gray-800">{urgencyLabels[aiSuggestion.urgency]}</strong>
+                            <span className="text-gray-600 dark:text-gray-400">Urgency:</span>{' '}
+                            <strong className="text-gray-800 dark:text-gray-200">{urgencyLabels[aiSuggestion.urgency]}</strong>
                             {aiSuggestion.confidence > 0.7 && (
-                              <Badge variant="outline" className="ml-2 text-green-600 border-green-300 text-[10px]">
+                              <Badge variant="outline" className="ml-2 text-green-600 border-green-300 text-[10px] dark:text-green-400 dark:border-green-700">
                                 ✓ High confidence
                               </Badge>
                             )}
@@ -1167,7 +1072,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-500 text-xs h-7 px-2"
+                                className="text-gray-500 text-xs h-7 px-2 dark:text-gray-400 dark:hover:bg-slate-700"
                                 onClick={() => setAiSuggestion(null)}
                               >
                                 Dismiss
@@ -1175,7 +1080,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                             </div>
                           )}
                           {aiSuggestion.applied && (
-                            <p className="text-xs text-gray-500 mt-2 italic">
+                            <p className="text-xs text-gray-500 mt-2 italic dark:text-gray-400">
                               Suggestion applied. You can still change category or urgency using the dropdowns above.
                             </p>
                           )}
@@ -1188,28 +1093,28 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
             </Card>
 
             {/* Injuries & Damages */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Injuries & Damages</span>
+                  <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Injuries & Damages</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500">Injuries</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Injuries</Label>
                     <Textarea
                       value={editedReport.injuries || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, injuries: e.target.value }))}
-                      className="mt-1 bg-white min-h-[80px]"
+                      className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="Describe any injuries sustained..."
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Damages</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Damages</Label>
                     <Textarea
                       value={editedReport.damages || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, damages: e.target.value }))}
-                      className="mt-1 bg-white min-h-[80px]"
+                      className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="Describe any property damage..."
                     />
                   </div>
@@ -1218,18 +1123,18 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
             </Card>
 
             {/* Suspect Information */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <User className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Suspect Information (if applicable)</span>
+                  <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suspect Information (if applicable)</span>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500">Suspect Description</Label>
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</Label>
                   <Textarea
                     value={editedReport.suspectDescription || ''}
                     onChange={(e) => setEditedReport(prev => ({ ...prev, suspectDescription: e.target.value }))}
-                    className="mt-1 bg-white min-h-[80px]"
+                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe the suspect (height, build, clothing, distinguishing features)..."
                   />
                 </div>
@@ -1237,13 +1142,13 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
             </Card>
 
             {/* Attachments */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Image className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Attachments</span>
-                    <span className="text-xs text-gray-500">
+                    <Image className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                       ({editedReport.attachmentUrls?.length || 0} files)
                       {pendingFiles.length > 0 && ` (${pendingFiles.length} pending upload)`}
                       {pendingDeletions.length > 0 && ` (${pendingDeletions.length} pending deletion)`}
@@ -1265,7 +1170,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading || isUploadingOnSave}
-                      className="gap-2"
+                      className="gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                     >
                       <Upload className="w-4 h-4" />
                       Select Files
@@ -1282,7 +1187,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                       const isImage = isImageFile(url);
 
                       return (
-                        <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-white">
+                        <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-white dark:border-slate-700 dark:bg-slate-800">
                           {isImage ? (
                             <img
                               src={getImageUrl(url)}
@@ -1295,9 +1200,9 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                               }}
                             />
                           ) : (
-                            <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50">
+                            <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-700">
                               {getFileIcon(url)}
-                              <span className="text-xs text-gray-500 mt-1 truncate px-1 max-w-full">
+                              <span className="text-xs text-gray-500 mt-1 truncate px-1 max-w-full dark:text-gray-400">
                                 {url?.split('/').pop()?.slice(0, 15) || `File ${index + 1}`}
                               </span>
                             </div>
@@ -1319,7 +1224,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="w-8 h-8 p-0 rounded-full hover:bg-white"
+                              className="w-8 h-8 p-0 rounded-full hover:bg-white dark:hover:bg-slate-600"
                               onClick={() => handlePreview(url)}
                             >
                               <Eye className="w-4 h-4" />
@@ -1338,59 +1243,59 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                     })}
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No attachments</p>
-                    <p className="text-xs text-gray-500 mt-1">Click "Select Files" to add images or PDFs</p>
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30 dark:border-slate-700 dark:bg-slate-800/30">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2 dark:text-gray-500" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No attachments</p>
+                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Click "Select Files" to add images or PDFs</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Assignment & Notes */}
-            <Card className="border-gray-200 bg-white">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <MessageSquare className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Assignment & Notes</span>
+                  <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Assignment & Notes</span>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-xs text-gray-500">Assigned Officer</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</Label>
                     <Select
                       value={editedReport.assignedOfficer || "unassigned"}
                       onValueChange={(value) => {
                         setEditedReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }));
                       }}
                     >
-                      <SelectTrigger className="mt-1 bg-white">
+                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder={isLoadingOfficers ? "Loading officers..." : "Select officer to assign"}>
                           {getOfficerDisplayName(editedReport.assignedOfficer)}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">
-                          <span className="text-gray-500">None (Not Assigned)</span>
+                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                        <SelectItem value="unassigned" className="dark:text-gray-300 dark:focus:bg-slate-700">
+                          <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
                         </SelectItem>
                         {officersList.map((officer) => (
-                          <SelectItem key={officer.officerId} value={officer.officerId}>
+                          <SelectItem key={officer.officerId} value={officer.officerId} className="dark:text-gray-300 dark:focus:bg-slate-700">
                             {officer.officerName}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {editedReport.assignedOfficer && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                         Assigned: {getOfficerDisplayName(editedReport.assignedOfficer)}
                       </p>
                     )}
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Officer Notes</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400">Officer Notes</Label>
                     <Textarea
                       value={editedReport.officerNotes || ''}
                       onChange={(e) => setEditedReport(prev => ({ ...prev, officerNotes: e.target.value }))}
-                      className="mt-1 bg-white min-h-[60px]"
+                      className="mt-1 bg-white min-h-[60px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="Add internal notes..."
                     />
                   </div>
@@ -1400,7 +1305,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" className="rounded-xl" onClick={handleClose} disabled={isSaving}>
+              <Button variant="outline" className="rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={handleClose} disabled={isSaving}>
                 Cancel
               </Button>
               <Button className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl text-white" onClick={handleSaveChanges} disabled={isSaving || isUploadingOnSave}>
@@ -1414,13 +1319,13 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">Delete Attachment</h3>
-            <p className="text-sm text-gray-600 mb-6">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 dark:bg-slate-800 dark:border dark:border-slate-700">
+            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Delete Attachment</h3>
+            <p className="text-sm text-gray-600 mb-6 dark:text-gray-400">
               Are you sure you want to delete this attachment? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={cancelDeleteAttachment} disabled={isDeletingAttachment}>
+              <Button variant="outline" onClick={cancelDeleteAttachment} disabled={isDeletingAttachment} className="dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700">
                 Cancel
               </Button>
               <Button variant="destructive" onClick={confirmDeleteAttachment} disabled={isDeletingAttachment}>

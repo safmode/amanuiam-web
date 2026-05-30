@@ -927,7 +927,7 @@ const Reports = () => {
               <div className="space-y-2">
                 {Object.entries(statusLabels).map(([key, label]) => (
                   <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
-                    <input type="checkbox" checked={filters.status.includes(key)} onChange={() => toggleFilter('status', key)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
+                    <input type="checkbox" checked={filters.status.includes(key)} onChange={() => toggleFilter('status', key)} className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                   </label>
                 ))}
