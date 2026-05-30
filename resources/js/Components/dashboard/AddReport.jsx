@@ -602,7 +602,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(categoryLabels).map(([key, label]) => (
                           <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
@@ -619,7 +619,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(urgencyLabels).map(([key, label]) => (
                           <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
@@ -989,7 +989,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         {getOfficerDisplayName(newReport.assignedOfficer)}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                    <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                       <SelectItem value="unassigned" className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                         <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
                       </SelectItem>
@@ -1023,7 +1023,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="outline"
-              className="rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+              className="text-gray-700 border-gray-700 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
               onClick={handleClose}
               disabled={isSubmitting}
             >
