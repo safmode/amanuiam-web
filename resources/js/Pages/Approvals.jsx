@@ -60,7 +60,7 @@ const Approvals = () => {
 
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false); // ADDED THIS LINE
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
@@ -203,6 +203,8 @@ const Approvals = () => {
         setNewStatus('');
         setRejectionReason('');
         showToast(`Status updated to ${newStatus}`, 'success');
+        // Refresh after status update
+        handleRefresh();
       },
       onError: (errors) => {
         showToast('Failed to update status', 'error');
@@ -222,17 +224,13 @@ const Approvals = () => {
     setTimeout(() => toast.remove(), 3000);
   };
 
-  // REPLACED THIS FUNCTION
   const handleRefresh = () => {
     setIsRefreshing(true);
 
     router.reload({
       only: ['allAdmins'],
-      preserveState: true,
+      preserveState: false,
       preserveScroll: true,
-      onStart: () => {
-        setIsRefreshing(true);
-      },
       onFinish: () => {
         setTimeout(() => {
           setIsRefreshing(false);
@@ -245,13 +243,6 @@ const Approvals = () => {
         showToast('Failed to refresh data', 'error');
       }
     });
-
-    setTimeout(() => {
-      if (allAdmins) {
-        setAdmins(allAdmins);
-        setLoading(false);
-      }
-    }, 100);
   };
 
   const handleExportCSV = () => {
@@ -394,7 +385,6 @@ const Approvals = () => {
                 <Download className="w-4 h-4" />
                 Export CSV
               </Button>
-              {/* REPLACED THIS BUTTON */}
               <Button
                 variant="outline"
                 className="gap-2 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
@@ -578,8 +568,8 @@ const Approvals = () => {
                               </Button>
                             )}
                           </div>
-                         </td>
-                       </tr>
+                        </td>
+                      </tr>
                     ))
                   ) : (
                     <tr>
