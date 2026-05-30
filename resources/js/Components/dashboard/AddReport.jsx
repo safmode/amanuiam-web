@@ -616,7 +616,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       value={newReport.urgency}
                       onValueChange={handleUrgencyChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
@@ -630,10 +630,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Status</Label>
                     <Select value={newReport.status} onValueChange={(v) => setNewReport({...newReport, status: v})}>
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(statusLabels).map(([key, label]) => (
                           <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
@@ -648,7 +648,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <Textarea
                     value={newReport.description}
                     onChange={(e) => setNewReport({...newReport, description: e.target.value})}
-                    className="mt-1 bg-white min-h-[100px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[100px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe the incident in detail... AI will automatically analyze and suggest category & urgency!"
                   />
                 </div>
@@ -734,7 +734,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       type="date"
                       value={newReport.incidentDate}
                       onChange={(e) => setNewReport({...newReport, incidentDate: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                     />
                   </div>
                   <div>
@@ -743,7 +743,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       type="time"
                       value={newReport.incidentTime}
                       onChange={(e) => setNewReport({...newReport, incidentTime: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                     />
                   </div>
                 </div>
@@ -760,10 +760,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       value={newReport.locationArea || ""}
                       onValueChange={handleLocationAreaChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select location area" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(locationLabels).map(([groupName, locations]) => (
                           <Fragment key={groupName}>
                             <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
@@ -984,7 +984,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       setNewReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }));
                     }}
                   >
-                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                    <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                       <SelectValue placeholder={isLoadingOfficers ? "Loading officers..." : "Select officer to assign"}>
                         {getOfficerDisplayName(newReport.assignedOfficer)}
                       </SelectValue>
