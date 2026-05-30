@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import axios from 'axios';
 import { Bell, Moon, Sun, CheckCheck, BellRing, BellOff, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const Header = ({ darkMode, toggleDarkMode }) => {
-  const { auth } = usePage().props;
+  const { auth, flash, notifications: serverNotifications } = usePage().props;
   const currentUserId = auth?.admins?._id || auth?.admins?.id;
 
   const [notifications, setNotifications] = useState([]);
@@ -26,12 +25,64 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
   const echoRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Fetch notifications on mount
+  // Load notifications from server props
   useEffect(() => {
-    fetchNotifications();
+    if (serverNotifications) {
+      setNotifications(serverNotifications.notifications || []);
+      setUnreadCount(serverNotifications.unread_count || 0);
+    }
+  }, [serverNotifications]);
 
+  // Refresh notifications using Inertia
+  const refreshNotifications = () => {
+    router.reload({ only: ['notifications'] });
+  };
+
+  // Mark all as read using Inertia router
+  const markAllAsRead = () => {
+    setIsLoading(true);
+    router.put('/api/notifications/read-all', {}, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        setUnreadCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        refreshNotifications();
+      },
+      onError: (errors) => {
+        console.error('Failed to mark all as read:', errors);
+      },
+      onFinish: () => {
+        setIsLoading(false);
+      }
+    });
+  };
+
+  // Mark single as read using Inertia router
+  const markAsRead = (notificationId) => {
+    router.put(`/api/notifications/${notificationId}/read`, {}, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        setNotifications(prev =>
+          prev.map(notification =>
+            notification._id === notificationId
+              ? { ...notification, is_read: true }
+              : notification
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      },
+      onError: (errors) => {
+        console.error('Failed to mark as read:', errors);
+      }
+    });
+  };
+
+  // Refresh notifications periodically
+  useEffect(() => {
     const interval = setInterval(() => {
-      fetchUnreadCount();
+      refreshNotifications();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -40,8 +91,7 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
   useEffect(() => {
     const handlePreferenceChange = (event) => {
       console.log('Preference changed, refetching notifications...', event.detail);
-      // Refetch notifications when preference changes
-      fetchNotifications();
+      refreshNotifications();
     };
 
     window.addEventListener('notification-preference-changed', handlePreferenceChange);
@@ -111,34 +161,6 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
     };
   }, []);
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await axios.get('/api/notifications');
-      const newNotifications = response.data.notifications || [];
-      const newUnreadCount = response.data.unread_count || 0;
-
-      // Merge without duplicates (keep newest first)
-      setNotifications(prev => {
-        const existingIds = new Set(prev.map(n => n._id));
-        const uniqueNew = newNotifications.filter(n => !existingIds.has(n._id));
-        return [...uniqueNew, ...prev];
-      });
-
-      setUnreadCount(newUnreadCount);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  };
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await axios.get('/api/notifications/unread-count');
-      setUnreadCount(response.data.unread_count);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
-
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/sounds/notification.mp3');
@@ -159,35 +181,6 @@ export const Header = ({ darkMode, toggleDarkMode }) => {
       });
     } catch (e) {
       console.log('New notification!');
-    }
-  };
-
-  const markAllAsRead = async () => {
-    setIsLoading(true);
-    try {
-      await axios.put('/api/notifications/read-all');
-      setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const markAsRead = async (notificationId) => {
-    try {
-      await axios.put(`/api/notifications/${notificationId}/read`);
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification._id === notificationId
-            ? { ...notification, is_read: true }
-            : notification
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
     }
   };
 

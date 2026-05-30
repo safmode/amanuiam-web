@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,9 +13,8 @@ import { DispatchOfficerModal } from '@/Components/dashboard/DispatchOfficerModa
 import { AddEmergencyReport } from '@/Components/dashboard/AddEmergencyReport';
 import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
-import axios from 'axios';
 
-// Location labels matching LocationMatchingTrait keys exactly
+// Location labels (unchanged)
 const locationLabels = {
   'Mahallahs': {
     'Asiah': 'Mahallah Asiah',
@@ -66,7 +66,7 @@ const formatLocationName = (locationKey) => {
   return locationKey;
 };
 
-// Simple Dropdown Component
+// Simple Dropdown Component (unchanged)
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -92,7 +92,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
   );
 };
 
-// Toast Notification
+// Toast Notification (unchanged)
 const showToast = (message, type = 'success') => {
   const toast = document.createElement('div');
   toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 ${
@@ -103,7 +103,7 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => toast.remove(), 3000);
 };
 
-// Stat Card Component
+// Stat Card Component (unchanged)
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const getColorClasses = () => {
     switch (color) {
@@ -130,7 +130,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
   );
 };
 
-// Status Badge Component
+// Status Badge Component (unchanged)
 const StatusBadge = ({ status }) => {
   const config = {
     active:     { label: 'Active',     className: 'bg-red-500 dark:bg-red-600' },
@@ -141,7 +141,7 @@ const StatusBadge = ({ status }) => {
   return <Badge className={`${className} text-white text-[11px]`}>{label}</Badge>;
 };
 
-// Alert Card Component
+// Alert Card Component (unchanged - uses props)
 const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTimeAgo, formatDate, onDelete }) => {
   const getAlertCardStyle = (status) => {
     switch (status) {
@@ -289,8 +289,10 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// Alert Detail Modal - STACKED LAYOUT, NO SCROLLING
+// Alert Detail Modal (unchanged - too long but identical)
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
+  // ... (keep exactly the same as your original)
+  // To save space, I'm not repeating it but keep your existing implementation
   const getHeaderColor = () => {
     switch (alert?.status) {
       case 'active':     return 'bg-red-500';
@@ -381,7 +383,6 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] rounded-xl p-0 overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
-        {/* Header */}
         <div className={`px-6 py-4 ${getHeaderColor()} flex items-center justify-between`}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -397,10 +398,8 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           <StatusBadge status={alert.status} />
         </div>
 
-        {/* Content - Stacked Layout, No Scroll */}
         <div className="p-6 space-y-4">
-
-          {/* Reporter Information - Full Width */}
+          {/* Reporter Information */}
           <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
@@ -434,7 +433,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           </div>
 
-          {/* Location & Time - Full Width */}
+          {/* Location & Time */}
           <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
@@ -469,7 +468,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           </div>
 
-          {/* Assigned Officer - Full Width (if exists) */}
+          {/* Assigned Officer */}
           {alert.assigned_officer_name && (
             <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-3">
@@ -501,7 +500,6 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-slate-700 mt-2">
             <Button variant="outline" className="rounded-lg h-10 px-5 text-sm text-gray-700 border-gray-300 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
               Close
@@ -515,10 +513,12 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 };
 
 // ============================================================
-// MAIN ALERTS COMPONENT
+// MAIN ALERTS COMPONENT - CONVERTED TO PURE INERTIA
 // ============================================================
 
 const Alerts = () => {
+  const { alertsData, emergencyStats } = usePage().props;
+
   // State
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -561,6 +561,166 @@ const Alerts = () => {
   ];
 
   const searchTimeoutRef = useRef(null);
+
+  // Load data from server props
+  useEffect(() => {
+    if (alertsData) {
+      setAlerts(alertsData.data || []);
+      setPagination(alertsData.pagination || {
+        current_page: 1, per_page: 10, total: 0, last_page: 1, from: null, to: null
+      });
+      setLoading(false);
+    }
+    if (emergencyStats) {
+      setGlobalStats({
+        active: emergencyStats.active || 0,
+        responding: emergencyStats.responding || 0,
+        resolved: emergencyStats.resolved || 0,
+        total: (emergencyStats.active || 0) + (emergencyStats.responding || 0) + (emergencyStats.resolved || 0),
+      });
+    }
+  }, [alertsData, emergencyStats]);
+
+  // Refresh data using Inertia
+  const refreshData = () => {
+    router.reload({ only: ['alertsData', 'emergencyStats'] });
+  };
+
+  // Fetch emergencies with filters using Inertia
+  const fetchEmergencies = (page = 1, perPage = pagination.per_page) => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('per_page', perPage);
+    if (filters.status.length > 0) params.append('status', filters.status.join(','));
+    if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
+
+    router.visit(`/api/emergencies?${params.toString()}`, {
+      method: 'get',
+      preserveScroll: true,
+      preserveState: false,
+      only: ['alertsData'],
+      onSuccess: (page) => {
+        setAlerts(page.props.alertsData?.data || []);
+        setPagination(page.props.alertsData?.pagination || {
+          current_page: 1, per_page: 10, total: 0, last_page: 1, from: null, to: null
+        });
+        setLoading(false);
+        window.dispatchEvent(new CustomEvent('emergency-updated'));
+      },
+      onError: () => {
+        setLoading(false);
+        showToast('Failed to load emergencies', 'error');
+      }
+    });
+  };
+
+  // Delete emergency using Inertia
+  const handleDeleteEmergency = async (alert) => {
+    const alertId = alert._id || alert.id;
+    if (confirm('Are you sure you want to delete this emergency record? This action cannot be undone.')) {
+      setIsDeleting(true);
+      router.delete(`/api/emergencies/${alertId}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+          showToast('Emergency record deleted successfully', 'success');
+          setSelectedAlert(null);
+          fetchEmergencies(pagination.current_page, pagination.per_page);
+          refreshData();
+        },
+        onError: (error) => {
+          showToast(error.response?.data?.error || 'Failed to delete emergency', 'error');
+        },
+        onFinish: () => setIsDeleting(false)
+      });
+    }
+  };
+
+  // Revert status using Inertia
+  const handleRevertStatus = async (alert, newStatus) => {
+    const alertId = alert._id || alert.id;
+    setIsReverting(true);
+    // Optimistic update
+    setAlerts(prev => prev.map(a => (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a));
+    if (selectedAlert && (selectedAlert._id === alertId || selectedAlert.id === alertId)) {
+      setSelectedAlert({ ...selectedAlert, status: newStatus });
+    }
+
+    router.put(`/api/emergencies/${alertId}/revert`, { status: newStatus }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        fetchEmergencies(pagination.current_page, pagination.per_page);
+        refreshData();
+        setSelectedAlert(null);
+      },
+      onError: () => {
+        fetchEmergencies(pagination.current_page, pagination.per_page);
+      },
+      onFinish: () => setIsReverting(false)
+    });
+  };
+
+  // Dispatch officer using Inertia
+  const handleDispatchOfficer = async (dispatchData) => {
+    if (!selectedAlertForDispatch) return;
+    const alertId = selectedAlertForDispatch._id || selectedAlertForDispatch.id;
+    setIsDispatching(true);
+
+    router.put(`/api/emergencies/${alertId}/dispatch`, dispatchData, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showToast(`Officer ${dispatchData.officerName} has been dispatched successfully!`, 'success');
+        fetchEmergencies(pagination.current_page, pagination.per_page);
+        refreshData();
+        setShowDispatchModal(false);
+        setSelectedAlertForDispatch(null);
+      },
+      onError: (error) => {
+        showToast(error.response?.data?.error || 'Failed to dispatch officer', 'error');
+      },
+      onFinish: () => setIsDispatching(false)
+    });
+  };
+
+  // Resolve emergency using Inertia
+  const handleConfirmResolve = async () => {
+    if (!alertToResolve) return;
+    const alertId = alertToResolve._id || alertToResolve.id;
+    setIsResolving(true);
+
+    router.put(`/api/emergencies/${alertId}/resolve`, {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        fetchEmergencies(pagination.current_page, pagination.per_page);
+        refreshData();
+        setShowConfirmationModal(false);
+        setAlertForReport(alertToResolve);
+        setAlertToResolve(null);
+        setShowDecisionModal(true);
+      },
+      onError: () => {
+        showToast('Failed to mark as resolved', 'error');
+      },
+      onFinish: () => setIsResolving(false)
+    });
+  };
+
+  // Save report using Inertia
+  const handleSaveReport = async (reportData) => {
+    setIsSubmitting(true);
+    router.post('/Reports', reportData, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showToast('Report created successfully!', 'success');
+        setShowAddReportModal(false);
+        setAlertForReport(null);
+      },
+      onError: (error) => {
+        showToast(error.response?.data?.message || error.response?.data?.error || 'Failed to create report', 'error');
+      },
+      onFinish: () => setIsSubmitting(false)
+    });
+  };
 
   // Helpers
   const formatDate = (dateString) => {
@@ -607,80 +767,6 @@ const Alerts = () => {
     return pages;
   };
 
-  const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
-    const params = new URLSearchParams();
-    params.append('page', page);
-    params.append('per_page', perPage);
-    if (filters.status.length > 0) params.append('status', filters.status.join(','));
-    if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
-    return params;
-  };
-
-  // API calls
-  const fetchGlobalStats = async () => {
-    try {
-      const response = await axios.get('/api/emergencies/counts');
-      setGlobalStats({
-        active:    response.data.active    || 0,
-        responding: response.data.responding || 0,
-        resolved:  response.data.resolved  || 0,
-        total: (response.data.active || 0) + (response.data.responding || 0) + (response.data.resolved || 0),
-      });
-    } catch (error) {
-      console.error('Failed to fetch global stats:', error);
-    }
-  };
-
-  const fetchEmergencies = async (page = 1, perPage = pagination.per_page) => {
-    setLoading(true);
-    try {
-        const params = buildQueryParams(page, perPage);
-        const response = await axios.get(`/api/emergencies?${params.toString()}`);
-        const data = response.data;
-        setAlerts(data.data || []);
-        setPagination(data.pagination);
-        window.dispatchEvent(new CustomEvent('emergency-updated'));
-    } catch (error) {
-        console.error('Failed to fetch emergencies:', error);
-        showToast('Failed to load emergencies', 'error');
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  const handleDeleteEmergency = async (alert) => {
-    const alertId = alert._id || alert.id;
-    if (confirm('Are you sure you want to delete this emergency record? This action cannot be undone.')) {
-      setIsDeleting(true);
-      try {
-        const response = await axios.delete(`/api/emergencies/${alertId}`, {
-          headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
-        });
-        if (response.data.success) {
-          showToast('Emergency record deleted successfully', 'success');
-          setSelectedAlert(null);
-          await fetchEmergencies(pagination.current_page, pagination.per_page);
-          await fetchGlobalStats();
-        }
-      } catch (error) {
-        showToast(error.response?.data?.error || 'Failed to delete emergency', 'error');
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.last_page) {
-      fetchEmergencies(newPage, pagination.per_page);
-    }
-  };
-
-  const handlePerPageChange = (newPerPage) => {
-    setPagination(prev => ({ ...prev, per_page: newPerPage }));
-    fetchEmergencies(1, newPerPage);
-  };
-
   const toggleFilter = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
@@ -700,14 +786,51 @@ const Alerts = () => {
     setPagination(prev => ({ ...prev, current_page: 1 }));
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.last_page) {
+      fetchEmergencies(newPage, pagination.per_page);
+    }
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setPagination(prev => ({ ...prev, per_page: newPerPage }));
+    fetchEmergencies(1, newPerPage);
+  };
+
+  const handleResolveClick = (alert) => {
+    setAlertToResolve(alert);
+    setShowConfirmationModal(true);
+  };
+
+  const handleDecisionYes = () => { setShowDecisionModal(false); setShowAddReportModal(true); };
+  const handleDecisionNo  = () => { setShowDecisionModal(false); setAlertForReport(null); showToast('Report creation skipped', 'success'); };
+
+  const handleAction = async (action, alert) => {
+    switch (action) {
+      case 'dispatch':          setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
+      case 'resolve':           handleResolveClick(alert); setSelectedAlert(null); break;
+      case 'createReport':      setAlertForReport(alert); setShowAddReportModal(true); break;
+      case 'revertToResponding': await handleRevertStatus(alert, 'responding'); break;
+      case 'revertToActive':    await handleRevertStatus(alert, 'active'); break;
+    }
+  };
+
+  // Apply filters on change
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       fetchEmergencies(1, pagination.per_page);
-      fetchGlobalStats();
     }, 300);
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [filters.status, filters.locations, pagination.per_page]);
+
+  useEffect(() => {
+    fetchEmergencies();
+    const interval = setInterval(() => {
+      refreshData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Client-side search + date filtering on the current page
   const filteredAlerts = alerts.filter(alert => {
@@ -745,117 +868,6 @@ const Alerts = () => {
     return true;
   });
 
-  // Action handlers
-  const updateLocalAlertStatus = (alertId, newStatus) => {
-    setAlerts(prev => prev.map(a => (a._id === alertId || a.id === alertId) ? { ...a, status: newStatus } : a));
-    if (selectedAlert && (selectedAlert._id === alertId || selectedAlert.id === alertId)) {
-      setSelectedAlert({ ...selectedAlert, status: newStatus });
-    }
-  };
-
-  const handleRevertStatus = async (alert, newStatus) => {
-    const alertId = alert._id || alert.id;
-    setIsReverting(true);
-    updateLocalAlertStatus(alertId, newStatus);
-    try {
-      await axios.put(`/api/emergencies/${alertId}/revert`, { status: newStatus });
-      await fetchEmergencies(pagination.current_page, pagination.per_page);
-      await fetchGlobalStats();
-      setSelectedAlert(null);
-    } catch (error) {
-      console.error('Failed to revert status:', error);
-      await fetchEmergencies(pagination.current_page, pagination.per_page);
-    } finally {
-      setIsReverting(false);
-    }
-  };
-
-  const handleDispatchOfficer = async (dispatchData) => {
-    if (!selectedAlertForDispatch) return;
-    const alertId = selectedAlertForDispatch._id || selectedAlertForDispatch.id;
-    setIsDispatching(true);
-    try {
-      const response = await axios.put(`/api/emergencies/${alertId}/dispatch`, dispatchData);
-      if (response.data.success) {
-        showToast(`Officer ${dispatchData.officerName} has been dispatched successfully!`, 'success');
-        await fetchEmergencies(pagination.current_page, pagination.per_page);
-        await fetchGlobalStats();
-        setShowDispatchModal(false);
-        setSelectedAlertForDispatch(null);
-      }
-    } catch (error) {
-      showToast(error.response?.data?.error || 'Failed to dispatch officer', 'error');
-    } finally {
-      setIsDispatching(false);
-    }
-  };
-
-  const handleResolveClick = (alert) => {
-    setAlertToResolve(alert);
-    setShowConfirmationModal(true);
-  };
-
-  const handleConfirmResolve = async () => {
-    if (!alertToResolve) return;
-    const alertId = alertToResolve._id || alertToResolve.id;
-    setIsResolving(true);
-    try {
-      await axios.put(`/api/emergencies/${alertId}/resolve`);
-      await fetchEmergencies(pagination.current_page, pagination.per_page);
-      await fetchGlobalStats();
-      setShowConfirmationModal(false);
-      setAlertForReport(alertToResolve);
-      setAlertToResolve(null);
-      setShowDecisionModal(true);
-    } catch (error) {
-      showToast('Failed to mark as resolved', 'error');
-    } finally {
-      setIsResolving(false);
-    }
-  };
-
-  const handleDecisionYes = () => { setShowDecisionModal(false); setShowAddReportModal(true); };
-  const handleDecisionNo  = () => { setShowDecisionModal(false); setAlertForReport(null); showToast('Report creation skipped', 'success'); };
-
-  const handleSaveReport = async (reportData) => {
-    setIsSubmitting(true);
-    try {
-      const response = await axios.post('/Reports', reportData, {
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
-      });
-      if (response.data.success || response.status === 200 || response.status === 201) {
-        showToast('Report created successfully!', 'success');
-        setShowAddReportModal(false);
-        setAlertForReport(null);
-      }
-    } catch (error) {
-      showToast(error.response?.data?.message || error.response?.data?.error || 'Failed to create report', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAction = async (action, alert) => {
-    switch (action) {
-      case 'dispatch':          setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
-      case 'resolve':           handleResolveClick(alert); setSelectedAlert(null); break;
-      case 'createReport':      setAlertForReport(alert); setShowAddReportModal(true); break;
-      case 'revertToResponding': await handleRevertStatus(alert, 'responding'); break;
-      case 'revertToActive':    await handleRevertStatus(alert, 'active'); break;
-    }
-  };
-
-  useEffect(() => {
-    fetchEmergencies();
-    fetchGlobalStats();
-    const interval = setInterval(() => {
-      fetchEmergencies(pagination.current_page, pagination.per_page);
-      fetchGlobalStats();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Render
   return (
     <DashboardLayout title="Emergency Alerts" subtitle="Monitor and respond to emergency situations">
       {/* Stats Cards */}
@@ -905,7 +917,6 @@ const Alerts = () => {
                 </Button>
               }
             >
-              {/* SINGLE SCROLL CONTAINER */}
               <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
                 {/* Status Section */}
                 <div>

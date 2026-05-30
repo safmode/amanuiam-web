@@ -1,4 +1,4 @@
-// Dashboard.jsx - Updated version
+// Dashboard.jsx - Pure Inertia (No Fetch, No Axios)
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { RecentReports } from '@/components/dashboard/RecentReports';
@@ -15,11 +15,11 @@ import {
   BarChart3,
   Users
 } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import SafetyTips from '@/components/dashboard/SafetyTips';
-import axios from 'axios';
 
 const Dashboard = () => {
+  const { dashboardData: serverDashboardData } = usePage().props;
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddReportOpen, setIsAddReportOpen] = useState(false);
@@ -38,43 +38,49 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Fetch dashboard data (reports and stats)
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/dashboard/recent-data');
-
-      setRecentReports(response.data.recentReports);
+  // Load dashboard data from server props
+  useEffect(() => {
+    if (serverDashboardData) {
+      setRecentReports(serverDashboardData.recentReports || []);
       setStats({
-        totalReports: response.data.stats.totalReports,
-        pendingReports: response.data.stats.pendingReports,
-        inProgressReports: response.data.stats.inProgressReports,
-        resolvedReports: response.data.stats.resolvedReports,
-        nfaReports: response.data.stats.nfaReports,
-        emergencyAlerts: response.data.stats.emergencyAlerts
+        totalReports: serverDashboardData.stats?.totalReports || 0,
+        pendingReports: serverDashboardData.stats?.pendingReports || 0,
+        inProgressReports: serverDashboardData.stats?.inProgressReports || 0,
+        resolvedReports: serverDashboardData.stats?.resolvedReports || 0,
+        nfaReports: serverDashboardData.stats?.nfaReports || 0,
+        emergencyAlerts: serverDashboardData.stats?.emergencyAlerts || 0
       });
-      setLastUpdated(response.data.lastUpdated);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
+      setHotspots(serverDashboardData.hotspots || []);
+      setLastUpdated(serverDashboardData.lastUpdated);
       setLoading(false);
+    } else {
+      // Fallback: reload to get data
+      refreshDashboardData();
     }
+  }, [serverDashboardData]);
+
+  // Refresh dashboard data using Inertia
+  const refreshDashboardData = () => {
+    setLoading(true);
+    router.reload({ only: ['dashboardData'] });
   };
 
-  // Fetch hotspot data from the API
-  const fetchHotspotData = async () => {
-    try {
-      const response = await axios.get('/heatmap-data');
-      setHotspots(response.data.hotspots || []);
-    } catch (error) {
-      console.error('Error fetching hotspot data:', error);
-      // Fallback: generate hotspots from recent reports
-      if (recentReports.length > 0) {
-        const generatedHotspots = generateHotspotsFromReports(recentReports);
-        setHotspots(generatedHotspots);
-      }
+  // Refresh hotspots when recentReports changes (as fallback)
+  useEffect(() => {
+    if (recentReports.length > 0 && hotspots.length === 0) {
+      const generatedHotspots = generateHotspotsFromReports(recentReports);
+      setHotspots(generatedHotspots);
     }
-  };
+  }, [recentReports]);
+
+  // Set up polling for real-time updates (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshDashboardData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Generate hotspots from reports (fallback method)
   const generateHotspotsFromReports = (reports) => {
@@ -105,27 +111,6 @@ const Dashboard = () => {
       .slice(0, 5);
   };
 
-  // Set up polling for real-time updates (every 30 seconds)
-  useEffect(() => {
-    fetchDashboardData();
-    fetchHotspotData();
-
-    const interval = setInterval(() => {
-      fetchDashboardData();
-      fetchHotspotData();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Refresh hotspots when recentReports changes (as fallback)
-  useEffect(() => {
-    if (recentReports.length > 0 && hotspots.length === 0) {
-      const generatedHotspots = generateHotspotsFromReports(recentReports);
-      setHotspots(generatedHotspots);
-    }
-  }, [recentReports]);
-
   const handleViewReport = (report) => {
     setSelectedReport(report);
     setIsModalOpen(true);
@@ -138,19 +123,16 @@ const Dashboard = () => {
 
   const handleCreateReport = () => {
     // Refresh the data after creating a new report
-    fetchDashboardData();
-    fetchHotspotData();
+    refreshDashboardData();
   };
 
   const handleReportUpdate = () => {
     // Refresh data when report is updated
-    fetchDashboardData();
-    fetchHotspotData();
+    refreshDashboardData();
   };
 
   // Transform report data to match your component's expected format
-  // Transform report data to match your component's expected format
- const formattedReports = recentReports.map(report => ({
+  const formattedReports = recentReports.map(report => ({
     id: report.reportId,
     reportId: report.reportId,
     issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
@@ -183,7 +165,7 @@ const Dashboard = () => {
     studentEmail: report.studentEmail,
     studentPhone: report.studentPhone,
     studentMatrix: report.studentMatrix
-}));
+  }));
 
   return (
     <DashboardLayout>
@@ -206,8 +188,6 @@ const Dashboard = () => {
         </div>
 
         {/* Right Sidebar */}
-
-
         <div className="space-y-6">
           {/* Quick Actions */}
           <Card className="bg-white dark:bg-slate-800 border-border">
