@@ -24,7 +24,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   // === AI FEATURE: State for AI suggestion ===
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisTimeout, setAnalysisTimeout] = useState(null);
+  const analysisTimeoutRef = useRef(null); // Use ref for timeout
 
   // Store pending files that need to be uploaded on submit
   const [pendingFiles, setPendingFiles] = useState([]);
@@ -83,30 +83,35 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     fetchOfficers();
   }, []);
 
-  // === Debounced description analysis ===
+  // === FIXED: Debounced description analysis ===
   useEffect(() => {
-    if (analysisTimeout) {
-      clearTimeout(analysisTimeout);
+    // Clear existing timeout
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
     }
 
+    // Don't analyze if description is too short
     if (!newReport.description || newReport.description.length < 15) {
       setAiSuggestion(null);
       setIsAnalyzing(false);
       return;
     }
 
+    // Set analyzing state
     setIsAnalyzing(true);
 
-    const timeout = setTimeout(() => {
+    // Set new timeout
+    analysisTimeoutRef.current = setTimeout(() => {
       analyzeDescription(newReport.description);
     }, 1200);
 
-    setAnalysisTimeout(timeout);
-
+    // Cleanup function
     return () => {
-      if (timeout) clearTimeout(timeout);
+      if (analysisTimeoutRef.current) {
+        clearTimeout(analysisTimeoutRef.current);
+      }
     };
-  }, [newReport.description]);
+  }, [newReport.description]); // Only depend on description
 
   const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
@@ -115,24 +120,33 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
 
     try {
+      console.log('Analyzing description:', description);
+
       const response = await fetch('/api/ai/analyze-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ description })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('AI Analysis response:', data);
 
       if (data.success) {
         setAiSuggestion({
           category: data.category,
           urgency: data.urgency,
-          confidence: data.confidence
+          confidence: data.confidence || 0.8
         });
       } else {
+        console.error('AI analysis failed:', data.error);
         setAiSuggestion(null);
       }
     } catch (error) {
@@ -148,19 +162,25 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       const updates = {};
       if (aiSuggestion.category) updates.category = aiSuggestion.category;
       if (aiSuggestion.urgency) updates.urgency = aiSuggestion.urgency;
+
       if (Object.keys(updates).length > 0) {
         setNewReport(prev => ({ ...prev, ...updates }));
         showToast(`AI suggestion applied: ${categoryLabels[aiSuggestion.category] || aiSuggestion.category} / ${urgencyLabels[aiSuggestion.urgency]}`, 'success');
+
+        // Mark as applied but keep showing for a moment
+        setAiSuggestion(prev => prev ? { ...prev, applied: true } : null);
+
+        // Clear the suggestion after 3 seconds
+        setTimeout(() => {
+          setAiSuggestion(prev => prev?.applied ? null : prev);
+        }, 3000);
       }
-      setAiSuggestion(prev => prev ? { ...prev, applied: true } : null);
-      setTimeout(() => {
-        setAiSuggestion(prev => prev?.applied ? null : prev);
-      }, 3000);
     }
   };
 
   const handleCategoryChange = (value) => {
     setNewReport(prev => ({ ...prev, category: value }));
+    // Clear AI suggestion when manually selecting
     if (aiSuggestion && !aiSuggestion.applied) {
       setAiSuggestion(null);
       showToast('Manual selection made, AI suggestion cleared', 'info');
@@ -169,6 +189,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   const handleUrgencyChange = (value) => {
     setNewReport(prev => ({ ...prev, urgency: value }));
+    // Clear AI suggestion when manually selecting
     if (aiSuggestion && !aiSuggestion.applied) {
       setAiSuggestion(null);
       showToast('Manual selection made, AI suggestion cleared', 'info');
@@ -461,8 +482,8 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     setFoundStudent(null);
     setAiSuggestion(null);
     setIsAnalyzing(false);
-    if (analysisTimeout) {
-        clearTimeout(analysisTimeout);
+    if (analysisTimeoutRef.current) {
+        clearTimeout(analysisTimeoutRef.current);
     }
   };
 
@@ -676,7 +697,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                           <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">🤖 AI SUGGESTION</p>
                           {aiSuggestion.applied ? (
                             <Badge variant="outline" className="text-green-600 border-green-300 text-xs dark:text-green-400 dark:border-green-700">
-                              ✓ Applied - You can still change below
+                              ✓ Applied
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs dark:text-purple-400 dark:border-purple-700">
@@ -690,11 +711,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                             {' • '}
                             <span className="text-gray-600 dark:text-gray-400">Urgency:</span>{' '}
                             <strong className="text-gray-800 dark:text-gray-200">{urgencyLabels[aiSuggestion.urgency]}</strong>
-                            {aiSuggestion.confidence > 0.7 && (
-                                <Badge variant="outline" className="ml-2 text-green-600 border-green-300 text-[10px] dark:text-green-400 dark:border-green-700">
-                                ✓ High confidence
-                                </Badge>
-                            )}
                         </div>
                         {!aiSuggestion.applied && (
                           <div className="flex gap-2 mt-2">
