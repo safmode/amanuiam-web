@@ -19,6 +19,18 @@ const Settings = () => {
   const { auth } = usePage().props;
   const admin = auth?.admins;
 
+  // Setup axios with CSRF token from Inertia
+  useEffect(() => {
+    // Get CSRF token from meta tag or Inertia shared data
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (token) {
+      axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+    }
+
+    // Also set X-Requested-With header for AJAX requests
+    axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  }, []);
+
   // Profile
   const [profile, setProfile] = useState({
     name: admin?.name || '',
@@ -52,20 +64,57 @@ const Settings = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Helper function to get CSRF token
+  const getCsrfToken = () => {
+    // Try multiple ways to get the CSRF token
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (metaToken) return metaToken;
+
+    // Try to get from csrf token meta tag with different name
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]') || document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) return csrfMeta.getAttribute('content');
+
+    // Try to get from a hidden input if it exists (for forms)
+    const csrfInput = document.querySelector('input[name="_token"]');
+    if (csrfInput) return csrfInput.value;
+
+    return null;
+  };
+
   // Load ALL preferences from database on component mount
   useEffect(() => {
     const loadAllPreferences = async () => {
       try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrfToken = getCsrfToken();
+
+        if (!csrfToken) {
+          console.error('CSRF token not found');
+          // Fallback to localStorage
+          const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+          setDarkMode(savedDarkMode);
+          setNotifications({
+            weeklyDigest: false,
+            monthlyDigest: false,
+            incidentAlerts: localStorage.getItem('incidentAlerts') !== 'false',
+          });
+          setIsLoadingPreferences(false);
+          return;
+        }
 
         // Load dark mode preference
         const darkModeResponse = await axios.get('/settings/dark-mode', {
-          headers: { 'X-CSRF-TOKEN': csrfToken }
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         });
 
         // Load notification preferences
         const notifResponse = await axios.get('/settings/notification-preferences', {
-          headers: { 'X-CSRF-TOKEN': csrfToken }
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         });
 
         // Set dark mode from database
@@ -81,7 +130,7 @@ const Settings = () => {
 
         // Set notifications from database
         setNotifications({
-          weeklyDigest: false, // Default values
+          weeklyDigest: false,
           monthlyDigest: false,
           incidentAlerts: notifResponse.data.incident_alerts ?? true,
         });
@@ -93,9 +142,8 @@ const Settings = () => {
       } catch (error) {
         console.error('Failed to load preferences:', error);
         // Fallback to localStorage or defaults
-        const savedDarkMode = localStorage.getItem('darkMode');
-        const darkModeValue = savedDarkMode === 'true';
-        setDarkMode(darkModeValue);
+        const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+        setDarkMode(savedDarkMode);
 
         const savedIncidentAlerts = localStorage.getItem('incidentAlerts');
         setNotifications({
@@ -104,7 +152,7 @@ const Settings = () => {
           incidentAlerts: savedIncidentAlerts !== 'false',
         });
 
-        if (darkModeValue) {
+        if (savedDarkMode) {
           document.documentElement.classList.add('dark');
         }
       } finally {
@@ -117,7 +165,13 @@ const Settings = () => {
 
   // Save dark mode to database when changed
   const handleDarkModeToggle = async (checked) => {
-    if (darkMode === null) return; // Don't save until loaded
+    if (darkMode === null) return;
+
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+      showToast('CSRF token not found. Please refresh the page.', 'error');
+      return;
+    }
 
     // Save to localStorage immediately as backup
     localStorage.setItem('darkMode', checked);
@@ -137,7 +191,11 @@ const Settings = () => {
       const response = await axios.post('/settings/dark-mode', {
         dark_mode: checked
       }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data && response.data.success === true) {
@@ -147,6 +205,16 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Failed to save dark mode preference:', error);
+
+      let errorMessage = 'Failed to save preference';
+      if (error.response?.status === 419) {
+        errorMessage = 'Session expired. Please refresh the page.';
+        // Optionally refresh the page to get new CSRF token
+        setTimeout(() => window.location.reload(), 2000);
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       // Revert the UI change
       const revertMode = !checked;
       setDarkMode(revertMode);
@@ -156,13 +224,19 @@ const Settings = () => {
         document.documentElement.classList.remove('dark');
       }
       localStorage.setItem('darkMode', revertMode);
-      showToast('Failed to save preference', 'error');
+      showToast(errorMessage, 'error');
     }
   };
 
   // Toggle Incident Alerts
   const handleToggleIncidentAlerts = async (checked) => {
-    if (notifications === null) return; // Don't save until loaded
+    if (notifications === null) return;
+
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+      showToast('CSRF token not found. Please refresh the page.', 'error');
+      return;
+    }
 
     // Save previous state in case we need to revert
     const previousState = notifications.incidentAlerts;
@@ -177,7 +251,11 @@ const Settings = () => {
       const response = await axios.post('/settings/notification-preferences', {
         incident_alerts: checked
       }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data && response.data.success === true) {
@@ -192,10 +270,19 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Failed to save preference:', error);
+
+      let errorMessage = 'Failed to save preference';
+      if (error.response?.status === 419) {
+        errorMessage = 'Session expired. Please refresh the page.';
+        setTimeout(() => window.location.reload(), 2000);
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       // Revert UI change
       setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
       localStorage.setItem('incidentAlerts', previousState);
-      showToast('Failed to save preference', 'error');
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -254,9 +341,14 @@ const Settings = () => {
   const handleSendDigest = async (type) => {
     setSendingDigest(type);
 
+    const csrfToken = getCsrfToken();
+
     try {
       await axios.post('/digest/send', { type }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       });
 
       showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} digest sent to your email`);
@@ -285,12 +377,17 @@ const Settings = () => {
 
     setIsLoading(true);
 
+    const csrfToken = getCsrfToken();
+
     axios.post('/password/send-code', {
       current_password: passwordData.current_password,
       new_password: passwordData.new_password,
       new_password_confirmation: passwordData.new_password_confirmation
     }, {
-      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     })
     .then(() => {
       setIsLoading(false);
@@ -327,8 +424,13 @@ const Settings = () => {
     setCodeError('');
     setIsLoading(true);
 
+    const csrfToken = getCsrfToken();
+
     axios.post('/password/verify-change', { code: verificationCode }, {
-      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     })
     .then(() => {
       setIsLoading(false);
@@ -346,8 +448,13 @@ const Settings = () => {
   const handleResendCode = () => {
     if (resendTimer > 0) return;
 
+    const csrfToken = getCsrfToken();
+
     axios.post('/password/resend-code', {}, {
-      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     })
     .then(() => {
       setResendTimer(60);
@@ -363,9 +470,13 @@ const Settings = () => {
   const handleLogoutAllDevices = () => {
     if (confirm('This will log you out from all devices. You will need to login again. Continue?')) {
       setIsLoading(true);
+
+      const csrfToken = getCsrfToken();
+
       axios.post('/logout-all', {}, {
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
         }
       })
       .then(() => {
@@ -396,13 +507,21 @@ const Settings = () => {
       });
       setAvatarPreview(null);
 
+      const csrfToken = getCsrfToken();
+
       // Also reset in database
       axios.post('/settings/dark-mode', { dark_mode: false }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       }).catch(console.error);
 
       axios.post('/settings/notification-preferences', { incident_alerts: true }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       }).catch(console.error);
 
       showToast('All settings reset to default');
@@ -441,7 +560,7 @@ const Settings = () => {
           </div>
         </TabsList>
 
-        {/* Profile Tab - Keep your existing code */}
+        {/* Profile Tab */}
         <TabsContent value="profile">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
@@ -548,7 +667,7 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* Security Tab - Keep your existing code */}
+        {/* Security Tab */}
         <TabsContent value="security">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
