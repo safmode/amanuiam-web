@@ -412,7 +412,7 @@ const Approvals = () => {
                       <div className="space-y-2">
                         {allRanks.map(rank => (
                           <label key={rank} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded text-gray-700 dark:text-gray-300 dark:hover:bg-slate-700">
-                            <input type="checkbox" checked={filters.rank.includes(rank)} onChange={() => toggleFilter('rank', rank)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
+                            <input type="checkbox" checked={filters.rank.includes(rank)} onChange={() => toggleFilter('rank', rank)} className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700" />
                             <span className="text-sm">{rank}</span>
                           </label>
                         ))}
@@ -428,7 +428,7 @@ const Approvals = () => {
                       <div className="space-y-2">
                         {allDepartments.map(dept => (
                           <label key={dept} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded text-gray-700 dark:text-gray-300 dark:hover:bg-slate-700">
-                            <input type="checkbox" checked={filters.department.includes(dept)} onChange={() => toggleFilter('department', dept)} className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700" />
+                            <input type="checkbox" checked={filters.department.includes(dept)} onChange={() => toggleFilter('department', dept)} className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700" />
                             <span className="text-sm">{dept}</span>
                           </label>
                         ))}

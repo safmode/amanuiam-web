@@ -611,7 +611,7 @@ const Officers = () => {
                             type="checkbox"
                             checked={filters.rank.includes(rank)}
                             onChange={() => toggleFilter('rank', rank)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700"
+                            className="bg-white rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-300">{rank}</span>
                         </label>
@@ -636,7 +636,7 @@ const Officers = () => {
                             type="checkbox"
                             checked={filters.department.includes(dept)}
                             onChange={() => toggleFilter('department', dept)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700"
+                            className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-300">{dept}</span>
                         </label>

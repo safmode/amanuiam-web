@@ -927,7 +927,7 @@ const Alerts = () => {
                           type="checkbox"
                           checked={filters.status.includes(option.value)}
                           onChange={() => toggleFilter('status', option.value)}
-                          className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                          className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
                       </label>
@@ -958,7 +958,7 @@ const Alerts = () => {
                                 type="checkbox"
                                 checked={filters.locations.includes(key)}
                                 onChange={() => toggleFilter('locations', key)}
-                                className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                                className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
                               />
                               <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                             </label>

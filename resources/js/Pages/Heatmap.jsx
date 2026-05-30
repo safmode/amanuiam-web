@@ -412,7 +412,7 @@ const Heatmap = () => {
                             type="checkbox"
                             checked={filters.category.includes(key)}
                             onChange={() => toggleFilter('category', key)}
-                            className="rounded border-gray-300 dark:border-slate-600 dark:bg-slate-700"
+                            className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                         </label>
