@@ -380,7 +380,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[500px] rounded-xl p-0 overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
         {/* Header */}
         <div className={`px-6 py-4 ${getHeaderColor()} flex items-center justify-between`}>
           <div className="flex items-center gap-3">
@@ -401,7 +401,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
         <div className="p-6 space-y-4">
 
           {/* Reporter Information - Full Width */}
-          <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
                 <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -435,7 +435,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
           </div>
 
           {/* Location & Time - Full Width */}
-          <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
                 <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -471,7 +471,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
           {/* Assigned Officer - Full Width (if exists) */}
           {alert.assigned_officer_name && (
-            <div className="bg-gray-50 rounded-lg p-4 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
                   <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -492,7 +492,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
                 {alert.dispatch_notes && (
                   <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
                     <p className="text-xs text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
-                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-28 overflow-y-auto whitespace-pre-wrap">
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-28 overflow-y-auto whitespace-pre-wrap">
                       {alert.dispatch_notes}
                     </div>
                   </div>
@@ -503,7 +503,7 @@ const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeA
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-slate-700 mt-2">
-            <Button variant="outline" className="rounded-lg h-10 px-5 text-sm dark:border-slate-700 dark:text-gray-300" onClick={onClose}>
+            <Button variant="outline" className="rounded-lg h-10 px-5 text-sm text-gray-700 border-gray-300 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
               Close
             </Button>
             {getActionButtons()}
