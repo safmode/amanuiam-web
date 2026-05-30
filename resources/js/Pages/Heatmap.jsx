@@ -24,54 +24,55 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Heatmap Layer Component using leaflet.heat - Always on
+// Heatmap Layer Component
 const HeatmapLayer = ({ points }) => {
   const map = useMap();
   const heatLayerRef = useRef(null);
 
   useEffect(() => {
-    const loadHeatmap = async () => {
-      if (!points || points.length === 0) {
-        if (heatLayerRef.current) {
-          map.removeLayer(heatLayerRef.current);
-          heatLayerRef.current = null;
-        }
-        return;
+    // Clean up previous layer
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    // Only create if we have points
+    if (!points || points.length === 0) {
+      return;
+    }
+
+    // Check if L.heatLayer is available (it should be from the import)
+    if (typeof L.heatLayer !== 'function') {
+      console.error('L.heatLayer is not available. Make sure leaflet.heat is imported correctly.');
+      return;
+    }
+
+    // Format points for leaflet.heat: [lat, lng, intensity]
+    const heatPoints = points.map(point => [point.lat, point.lng, point.intensity || 0.5]);
+
+    // Create and add heat layer
+    heatLayerRef.current = L.heatLayer(heatPoints, {
+      radius: 35,
+      blur: 15,
+      maxZoom: 17,
+      minOpacity: 0.4,
+      gradient: {
+        0.2: '#22c55e',  // Green - low intensity
+        0.4: '#f59e0b',  // Amber - medium intensity
+        0.6: '#ef4444',  // Red - high intensity
+        0.8: '#dc2626',  // Darker red
+        1.0: '#b91c1c'   // Darkest red
       }
+    }).addTo(map);
 
-      const heatModule = await import('leaflet.heat');
-      const heatLayer = heatModule.default;
-
-      const heatPoints = points.map(point => [point.lat, point.lng, point.intensity]);
-
-      if (heatLayerRef.current) {
-        map.removeLayer(heatLayerRef.current);
-      }
-
-      heatLayerRef.current = heatLayer(heatPoints, {
-        radius: 35,
-        blur: 15,
-        maxZoom: 17,
-        minOpacity: 0.4,
-        gradient: {
-          0.2: '#22c55e',  // Green - low intensity
-          0.4: '#f59e0b',  // Amber - medium intensity
-          0.6: '#ef4444',  // Red - high intensity
-          0.8: '#dc2626',  // Darker red
-          1.0: '#b91c1c'   // Darkest red
-        }
-      }).addTo(map);
-    };
-
-    loadHeatmap();
-
+    // Cleanup on unmount
     return () => {
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
         heatLayerRef.current = null;
       }
     };
-  }, [points, map]);
+  }, [points, map]); // Re-run when points or map changes
 
   return null;
 };
