@@ -1,4 +1,4 @@
-// components/dashboard/SafetyTips.jsx - Using ONLY Inertia Router
+// components/dashboard/SafetyTips.jsx - Hybrid Approach (Fetch for GET, Inertia for POST)
 import { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,28 +30,39 @@ const SafetyTips = () => {
     { title: "Weather Alert", message: "Heavy rain expected. Drive carefully and avoid driving recklessly.", type: "reminder", priority: "normal" },
   ];
 
-  // Load history using Inertia
-  useEffect(() => {
-    // Use Inertia's visit for GET requests
-    router.visit('/api/safety-tips/history', {
-      method: 'get',
-      preserveScroll: true,
-      preserveState: false,
-      only: ['safetyTips'], // Only update the safetyTips prop
-      onSuccess: (page) => {
-        setTips(page.props.safetyTips?.data || []);
-        setLoading(false);
-      },
-      onError: () => {
-        setLoading(false);
+  // Helper to get CSRF token
+  const getCsrfToken = () => {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  };
+
+  // Load history using regular fetch (since API returns JSON)
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/safety-tips/history');
+      const data = await response.json();
+
+      if (data.success) {
+        setTips(data.data || []);
+      } else {
+        console.error('Failed to load history:', data);
       }
-    });
+    } catch (error) {
+      console.error('Error loading history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
   }, []);
 
-  // Show flash messages
+  // Show flash messages from Inertia
   useEffect(() => {
     if (flash?.success) {
       alert(flash.success);
+      fetchHistory(); // Refresh the list after success
     }
     if (flash?.error) {
       alert(`❌ ${flash.error}`);
@@ -74,8 +85,8 @@ const SafetyTips = () => {
         alert('✅ Announcement sent to all students!');
         setNewTip({ title: '', message: '', type: 'announcement', priority: 'normal' });
         setShowForm(false);
-        // Refresh the list
-        router.reload({ only: ['safetyTips'] });
+        // Refresh the list using fetch
+        fetchHistory();
       },
       onError: (errors) => {
         const errorMsg = errors.error || errors.message || 'Failed to send announcement';

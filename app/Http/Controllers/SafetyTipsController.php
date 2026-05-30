@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class SafetyTipsController extends Controller
 {
@@ -48,7 +49,6 @@ class SafetyTipsController extends Controller
                 'announcement' => 'ANNOUNCEMENT'
             ];
 
-            $priorityEmoji = $validated['priority'] === 'high' ? '⚠️ ' : '';
             $priorityText = $validated['priority'] === 'high' ? 'HIGH PRIORITY - ' : '';
 
             $formattedMessage = "{$typeEmojis[$validated['type']]} *{$priorityText}{$typeLabels[$validated['type']]}*\n\n";
@@ -103,25 +103,19 @@ class SafetyTipsController extends Controller
                 'sent_by' => $admin->name
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => "Announcement sent to {$sentCount} students",
-                'notification_id' => (string)$notification->_id,
-                'sent_count' => $sentCount,
-                'failed_count' => $failedCount
-            ]);
+            // RETURN REDIRECT FOR INERTIA (NOT JSON)
+            return redirect()->back()->with('success', "Announcement sent to {$sentCount} students");
 
         } catch (\Exception $e) {
             Log::error('Failed to send safety tip: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to send announcement: ' . $e->getMessage()
-            ], 500);
+
+            // RETURN REDIRECT WITH ERROR FOR INERTIA
+            return redirect()->back()->with('error', 'Failed to send announcement: ' . $e->getMessage());
         }
     }
 
     /**
-     * Get sent tips history
+     * Get sent tips history - Returns JSON (this is fine since it's a GET request)
      */
     public function history(Request $request)
     {
@@ -132,6 +126,7 @@ class SafetyTipsController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
+            // For GET requests, JSON is fine
             return response()->json([
                 'success' => true,
                 'data' => $tips->items(),
