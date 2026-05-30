@@ -60,6 +60,7 @@ const Approvals = () => {
 
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // ADDED THIS LINE
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
@@ -221,8 +222,36 @@ const Approvals = () => {
     setTimeout(() => toast.remove(), 3000);
   };
 
+  // REPLACED THIS FUNCTION
   const handleRefresh = () => {
-    router.reload({ only: ['allAdmins'] });
+    setIsRefreshing(true);
+
+    router.reload({
+      only: ['allAdmins'],
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => {
+        setIsRefreshing(true);
+      },
+      onFinish: () => {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          showToast('Data refreshed successfully', 'success');
+        }, 500);
+      },
+      onError: (errors) => {
+        console.error('Refresh failed:', errors);
+        setIsRefreshing(false);
+        showToast('Failed to refresh data', 'error');
+      }
+    });
+
+    setTimeout(() => {
+      if (allAdmins) {
+        setAdmins(allAdmins);
+        setLoading(false);
+      }
+    }, 100);
   };
 
   const handleExportCSV = () => {
@@ -308,7 +337,7 @@ const Approvals = () => {
   return (
     <DashboardLayout title="Admin Management" subtitle="Manage all admin registrations">
 
-      {(loading || isSubmitting) && (
+      {(loading || isSubmitting || isRefreshing) && (
         <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center dark:bg-black/50">
           <div className="bg-white rounded-lg p-4 shadow-lg dark:bg-slate-800">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4A853]"></div>
@@ -365,8 +394,15 @@ const Approvals = () => {
                 <Download className="w-4 h-4" />
                 Export CSV
               </Button>
-              <Button variant="outline" className="gap-2 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300" onClick={handleRefresh}>
-                <RefreshCw className="w-4 h-4" />
+              {/* REPLACED THIS BUTTON */}
+              <Button
+                variant="outline"
+                className="gap-2 rounded-xl border-gray-200 text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing && 'Refreshing'}
               </Button>
             </div>
           </div>
@@ -542,8 +578,8 @@ const Approvals = () => {
                               </Button>
                             )}
                           </div>
-                        </td>
-                      </tr>
+                         </td>
+                       </tr>
                     ))
                   ) : (
                     <tr>
