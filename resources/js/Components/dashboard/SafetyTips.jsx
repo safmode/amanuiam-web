@@ -1,4 +1,4 @@
-// components/dashboard/SafetyTips.jsx - No Axios, Pure Fetch API
+// components/dashboard/SafetyTips.jsx - Fixed Version
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Send, Loader2, Plus, X, Bell, History, Megaphone } from 'lucide-react';
+import { Send, Loader2, Plus, X, Bell, Shield, History, Megaphone, Flag } from 'lucide-react';
+import axios from 'axios';
 
 const SafetyTips = () => {
   const [tips, setTips] = useState([]);
@@ -17,38 +18,8 @@ const SafetyTips = () => {
     title: '',
     message: '',
     type: 'announcement',
-    priority: 'normal'
+    priority: 'normal'  // ADD THIS - default priority
   });
-
-  // Helper function to get CSRF token
-  const getCsrfToken = () => {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    return token;
-  };
-
-  // Helper function for fetch requests
-  const fetchWithCSRF = async (url, options = {}) => {
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': getCsrfToken(),
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      credentials: 'same-origin'
-    };
-
-    const mergedOptions = {
-      ...defaultOptions,
-      ...options,
-      headers: {
-        ...defaultOptions.headers,
-        ...options.headers
-      }
-    };
-
-    const response = await fetch(url, mergedOptions);
-    return response;
-  };
 
   // Pre-defined templates
   const templates = [
@@ -64,14 +35,8 @@ const SafetyTips = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetchWithCSRF('/api/safety-tips/history');
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setTips(data.data || []);
+      const res = await axios.get('/api/safety-tips/history');
+      setTips(res.data.data || []);
     } catch (error) {
       console.error('Failed to fetch history:', error);
     } finally {
@@ -87,24 +52,15 @@ const SafetyTips = () => {
 
     setSending(true);
     try {
-      const response = await fetchWithCSRF('/api/safety-tips/send', {
-        method: 'POST',
-        body: JSON.stringify(newTip)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to send announcement');
-      }
-
+      await axios.post('/api/safety-tips/send', newTip);
       alert('✅ Announcement sent to all students!');
       setNewTip({ title: '', message: '', type: 'announcement', priority: 'normal' });
       setShowForm(false);
       fetchHistory();
     } catch (error) {
-      alert(`❌ ${error.message}`);
-      console.error('Send error:', error);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to send announcement';
+      alert(`❌ ${errorMsg}`);
+      console.error('Send error:', error.response?.data || error);
     } finally {
       setSending(false);
     }
@@ -181,7 +137,7 @@ const SafetyTips = () => {
             </div>
           )}
 
-          {/* Send Form */}
+          {/* Send Form - Fixed */}
           {showForm && (
             <div className="mb-6 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl">
               <div className="flex justify-between items-center mb-4">
