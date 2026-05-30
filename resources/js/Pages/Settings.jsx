@@ -85,30 +85,45 @@ const Settings = () => {
 
   // Save dark mode to database when changed
   const handleDarkModeToggle = async (checked) => {
-    setDarkMode(checked);
-
-    // Apply dark mode to DOM immediately
-    if (checked) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
     // Save to localStorage as backup
     localStorage.setItem('darkMode', checked);
 
+    // Apply dark mode to DOM immediately
+    if (checked) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+
+    // Update UI immediately
+    setDarkMode(checked);
+
     // Save to database
     try {
-      await axios.post('/settings/dark-mode', {
+        const response = await axios.post('/settings/dark-mode', {
         dark_mode: checked
-      }, {
+        }, {
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-      });
+        });
 
-      showToast('Dark mode preference saved');
+        // Only show success if the server confirms it worked
+        if (response.data && response.data.success === true) {
+        showToast('Dark mode preference saved');
+        } else {
+        throw new Error('Server did not confirm save');
+        }
     } catch (error) {
-      console.error('Failed to save dark mode preference:', error);
-      showToast('Failed to save preference', 'error');
+        console.error('Failed to save dark mode preference:', error);
+        // Revert the UI change
+        const revertMode = !checked;
+        setDarkMode(revertMode);
+        if (revertMode) {
+        document.documentElement.classList.add('dark');
+        } else {
+        document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('darkMode', revertMode);
+        showToast('Failed to save preference', 'error');
     }
   };
 
@@ -218,25 +233,35 @@ const Settings = () => {
 
   // Toggle Incident Alerts
   const handleToggleIncidentAlerts = async (checked) => {
+    // Save previous state in case we need to revert
+    const previousState = notifications.incidentAlerts;
+
+    // Update UI immediately
     setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
 
     try {
-      await axios.post('/settings/notification-preferences', {
+        const response = await axios.post('/settings/notification-preferences', {
         incident_alerts: checked
-      }, {
+        }, {
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-      });
+        });
 
-      showToast('Notification preference saved');
+        // Only show success if server confirms
+        if (response.data && response.data.success === true) {
+        showToast('Notification preference saved');
 
-      window.dispatchEvent(new CustomEvent('notification-preference-changed', {
-        detail: { enabled: checked }
-      }));
-
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('notification-preference-changed', {
+            detail: { enabled: checked }
+        }));
+        } else {
+        throw new Error('Server did not confirm save');
+        }
     } catch (error) {
-      console.error('Failed to save preference:', error);
-      setNotifications(prev => ({ ...prev, incidentAlerts: !checked }));
-      showToast('Failed to save preference', 'error');
+        console.error('Failed to save preference:', error);
+        // Revert UI change
+        setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
+        showToast('Failed to save preference', 'error');
     }
   };
 

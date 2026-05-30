@@ -157,24 +157,21 @@ class SettingsController extends Controller
      */
     public function updateDarkMode(Request $request)
     {
+        \Log::info('Dark mode update called', ['request_data' => $request->all()]);
+
         $admin = Auth::user();
 
         $validated = $request->validate([
             'dark_mode' => 'required|boolean',
         ]);
 
-        // Merge with existing preferences or create new
         $currentPreferences = $admin->notification_preferences ?? [];
         $admin->notification_preferences = array_merge($currentPreferences, [
             'dark_mode' => $validated['dark_mode'],
         ]);
         $admin->save();
 
-        Log::info('Dark mode preference updated', [
-            'admin_id' => (string)$admin->_id,
-            'admin_email' => $admin->email,
-            'dark_mode' => $validated['dark_mode']
-        ]);
+        \Log::info('Dark mode saved', ['new_value' => $validated['dark_mode']]);
 
         return response()->json([
             'success' => true,
