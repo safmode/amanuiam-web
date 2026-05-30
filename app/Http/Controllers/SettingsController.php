@@ -51,12 +51,11 @@ class SettingsController extends Controller
 
     public function toggleTwoFactor(Request $request)
     {
-        // Store two-factor preference
         $admin = Auth::user();
         $admin->two_factor_enabled = $request->enabled;
         $admin->save();
 
-        return response()->json(['success' => true]);
+        return redirect()->back()->with('success', 'Two-factor authentication updated');
     }
 
     /**
@@ -67,18 +66,14 @@ class SettingsController extends Controller
         try {
             $admin = Auth::user();
 
-            // For Laravel Sanctum (if using API tokens)
             if (method_exists($admin, 'tokens')) {
                 $admin->tokens()->delete();
             }
 
-            // For session-based logout
-            // This will invalidate all sessions for this user
             $admin->forceFill([
                 'remember_token' => null,
             ])->save();
 
-            // Also clear any other session data
             $guards = array_keys(config('auth.guards'));
             foreach ($guards as $guard) {
                 if (Auth::guard($guard)->check() && Auth::guard($guard)->id() == $admin->id) {
@@ -91,7 +86,6 @@ class SettingsController extends Controller
                 'admin_email' => $admin->email
             ]);
 
-            // Return redirect instead of JSON for Inertia
             return redirect('/')->with('success', 'Logged out from all devices successfully');
 
         } catch (\Exception $e) {
@@ -117,7 +111,13 @@ class SettingsController extends Controller
         ]);
         $admin->save();
 
-        // Return redirect instead of JSON
+        Log::info('Notification preferences updated', [
+            'admin_id' => (string)$admin->_id,
+            'admin_email' => $admin->email,
+            'preferences' => $admin->notification_preferences
+        ]);
+
+        // ✅ FIXED: Return redirect for Inertia
         return redirect()->back()->with('success', 'Notification preferences updated successfully');
     }
 
@@ -129,6 +129,7 @@ class SettingsController extends Controller
         $admin = Auth::user();
         $preferences = $admin->notification_preferences ?? [];
 
+        // For GET requests, JSON is fine
         return response()->json([
             'incident_alerts' => $preferences['incident_alerts'] ?? true,
         ]);
@@ -138,9 +139,6 @@ class SettingsController extends Controller
     // Dark Mode Preference
     // ============================================================
 
-    /**
-     * Update dark mode preference for the authenticated admin
-     */
     public function updateDarkMode(Request $request)
     {
         $admin = Auth::user();
@@ -155,10 +153,9 @@ class SettingsController extends Controller
         ]);
         $admin->save();
 
-        // Return redirect instead of JSON
+        // ✅ FIXED: Return redirect for Inertia
         return redirect()->back()->with('success', 'Dark mode preference updated successfully');
     }
-
 
     /**
      * Get dark mode preference for the authenticated admin
