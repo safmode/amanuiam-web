@@ -91,17 +91,12 @@ class SettingsController extends Controller
                 'admin_email' => $admin->email
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Logged out from all devices successfully'
-            ]);
+            // Return redirect instead of JSON for Inertia
+            return redirect('/')->with('success', 'Logged out from all devices successfully');
 
         } catch (\Exception $e) {
             Log::error('Failed to logout from all devices: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to logout from all devices: ' . $e->getMessage()
-            ], 500);
+            return redirect()->back()->with('error', 'Failed to logout from all devices: ' . $e->getMessage());
         }
     }
 

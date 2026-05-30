@@ -12,11 +12,10 @@ import {
   Shield, User, Mail, Phone, Save, Moon, Sun, Eye, EyeOff,
   Camera, Loader2, LogOut, Key, Trash2, RefreshCw, Bell, Send, Megaphone
 } from 'lucide-react';
-import axios from 'axios';
 import SafetyTips from '@/components/dashboard/SafetyTips';
 
 const Settings = () => {
-  const { auth } = usePage().props;
+  const { auth, flash } = usePage().props;
   const admin = auth?.admins;
 
   // Profile
@@ -42,9 +41,11 @@ const Settings = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [codeError, setCodeError] = useState('');
 
-  // Preferences - Start with null, then load from database
-  const [darkMode, setDarkMode] = useState(null);
-  const [notifications, setNotifications] = useState(null);
+  // Preferences
+  const [darkMode, setDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState({
+    incidentAlerts: true,
+  });
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -52,60 +53,40 @@ const Settings = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Load ALL preferences from database on component mount
+  // Load preferences from database using Inertia
   useEffect(() => {
-    const loadAllPreferences = async () => {
+    const loadPreferences = async () => {
       try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        // Use fetch instead of axios
+        const darkModeResponse = await fetch('/settings/dark-mode');
+        const darkModeData = await darkModeResponse.json();
 
-        // Load dark mode preference
-        const darkModeResponse = await axios.get('/settings/dark-mode', {
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
+        const notifResponse = await fetch('/settings/notification-preferences');
+        const notifData = await notifResponse.json();
 
-        // Load notification preferences
-        const notifResponse = await axios.get('/settings/notification-preferences', {
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
-
-        // Set dark mode from database
-        const darkModeValue = darkModeResponse.data.dark_mode ?? false;
+        const darkModeValue = darkModeData.dark_mode ?? false;
         setDarkMode(darkModeValue);
 
-        // Apply dark mode to DOM
         if (darkModeValue) {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
         }
 
-        // Set notifications from database
         setNotifications({
-          weeklyDigest: false,
-          monthlyDigest: false,
-          incidentAlerts: notifResponse.data.incident_alerts ?? true,
+          incidentAlerts: notifData.incident_alerts ?? true,
         });
 
-        // Update localStorage as backup
         localStorage.setItem('darkMode', darkModeValue);
-        localStorage.setItem('incidentAlerts', notifResponse.data.incident_alerts ?? true);
+        localStorage.setItem('incidentAlerts', notifData.incident_alerts ?? true);
 
       } catch (error) {
         console.error('Failed to load preferences:', error);
-        // Fallback to localStorage or defaults
         const savedDarkMode = localStorage.getItem('darkMode') === 'true';
         setDarkMode(savedDarkMode);
 
         const savedIncidentAlerts = localStorage.getItem('incidentAlerts');
         setNotifications({
-          weeklyDigest: false,
-          monthlyDigest: false,
           incidentAlerts: savedIncidentAlerts !== 'false',
         });
 
@@ -117,38 +98,40 @@ const Settings = () => {
       }
     };
 
-    loadAllPreferences();
+    loadPreferences();
   }, []);
 
-  // Save dark mode to database when changed - Using Inertia router
-  const handleDarkModeToggle = async (checked) => {
-    if (darkMode === null) return;
+  // Show toast message from flash
+  useEffect(() => {
+    if (flash?.success) {
+      showToast(flash.success);
+    }
+    if (flash?.error) {
+      showToast(flash.error, 'error');
+    }
+  }, [flash]);
 
-    // Save to localStorage immediately as backup
-    localStorage.setItem('darkMode', checked);
+  // Save dark mode to database using Inertia
+  const handleDarkModeToggle = (checked) => {
+    if (isLoadingPreferences) return;
 
-    // Apply dark mode to DOM immediately
+    // Optimistically update UI
+    setDarkMode(checked);
     if (checked) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('darkMode', checked);
 
-    // Update UI immediately
-    setDarkMode(checked);
-
-    // Use Inertia router instead of axios
+    // Use Inertia router
     router.post('/settings/dark-mode',
       { dark_mode: checked },
       {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => {
-          showToast('Dark mode preference saved');
-        },
-        onError: (errors) => {
-          console.error('Failed to save:', errors);
-          // Revert the UI change
+        onError: () => {
+          // Revert on error
           const revertMode = !checked;
           setDarkMode(revertMode);
           if (revertMode) {
@@ -163,36 +146,24 @@ const Settings = () => {
     );
   };
 
-  // Toggle Incident Alerts - Using Inertia router
-  const handleToggleIncidentAlerts = async (checked) => {
-    if (notifications === null) return;
+  // Toggle Incident Alerts using Inertia
+  const handleToggleIncidentAlerts = (checked) => {
+    if (isLoadingPreferences) return;
 
-    // Save previous state in case we need to revert
     const previousState = notifications.incidentAlerts;
 
-    // Update localStorage immediately
+    // Optimistically update UI
+    setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
     localStorage.setItem('incidentAlerts', checked);
 
-    // Update UI immediately
-    setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
-
-    // Use Inertia router instead of axios
+    // Use Inertia router
     router.post('/settings/notification-preferences',
       { incident_alerts: checked },
       {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => {
-          showToast('Notification preference saved');
-
-          // Dispatch event for other components
-          window.dispatchEvent(new CustomEvent('notification-preference-changed', {
-            detail: { enabled: checked }
-          }));
-        },
-        onError: (errors) => {
-          console.error('Failed to save:', errors);
-          // Revert UI change
+        onError: () => {
+          // Revert on error
           setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
           localStorage.setItem('incidentAlerts', previousState);
           showToast('Failed to save preference', 'error');
@@ -242,7 +213,6 @@ const Settings = () => {
       onSuccess: () => {
         setIsLoading(false);
         showToast('Profile updated successfully');
-        setTimeout(() => window.location.reload(), 1000);
       },
       onError: (errors) => {
         setIsLoading(false);
@@ -252,24 +222,30 @@ const Settings = () => {
     });
   };
 
-  // Send Digest
+  // Send Digest using fetch
   const handleSendDigest = async (type) => {
     setSendingDigest(type);
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
     try {
-      await axios.post('/digest/send', { type }, {
+      const response = await fetch('/digest/send', {
+        method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
           'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        body: JSON.stringify({ type })
       });
 
-      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} digest sent to your email`);
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} digest sent to your email`);
+      } else {
+        throw new Error(data.message || 'Failed to send digest');
+      }
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to send digest';
-      showToast(message, 'error');
+      showToast(error.message, 'error');
     } finally {
       setSendingDigest(null);
     }
@@ -292,29 +268,34 @@ const Settings = () => {
 
     setIsLoading(true);
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-    axios.post('/password/send-code', {
-      current_password: passwordData.current_password,
-      new_password: passwordData.new_password,
-      new_password_confirmation: passwordData.new_password_confirmation
-    }, {
+    fetch('/password/send-code', {
+      method: 'POST',
       headers: {
-        'X-CSRF-TOKEN': csrfToken,
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      body: JSON.stringify({
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+        new_password_confirmation: passwordData.new_password_confirmation
+      })
     })
-    .then(() => {
+    .then(async (response) => {
       setIsLoading(false);
-      setShowCodeModal(true);
-      setResendTimer(60);
-      startResendTimer();
-      showToast('Verification code sent to your email');
+      if (response.ok) {
+        setShowCodeModal(true);
+        setResendTimer(60);
+        startResendTimer();
+        showToast('Verification code sent to your email');
+      } else {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to send verification code');
+      }
     })
     .catch((error) => {
       setIsLoading(false);
-      const message = error.response?.data?.message || 'Failed to send verification code';
-      showToast(message, 'error');
+      showToast(error.message, 'error');
     });
   };
 
@@ -339,35 +320,41 @@ const Settings = () => {
     setCodeError('');
     setIsLoading(true);
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-    axios.post('/password/verify-change', { code: verificationCode }, {
+    fetch('/password/verify-change', {
+      method: 'POST',
       headers: {
-        'X-CSRF-TOKEN': csrfToken,
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      body: JSON.stringify({ code: verificationCode })
     })
-    .then(() => {
+    .then(async (response) => {
       setIsLoading(false);
-      setShowCodeModal(false);
-      setVerificationCode('');
-      setPasswordData({ current_password: '', new_password: '', new_password_confirmation: '' });
-      showToast('Password changed successfully');
+      if (response.ok) {
+        setShowCodeModal(false);
+        setVerificationCode('');
+        setPasswordData({ current_password: '', new_password: '', new_password_confirmation: '' });
+        showToast('Password changed successfully');
+      } else {
+        const data = await response.json();
+        throw new Error(data.message || 'Invalid verification code');
+      }
     })
     .catch((error) => {
       setIsLoading(false);
-      setCodeError(error.response?.data?.message || 'Invalid verification code');
+      setCodeError(error.message);
     });
   };
 
   const handleResendCode = () => {
     if (resendTimer > 0) return;
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-    axios.post('/password/resend-code', {}, {
+    fetch('/password/resend-code', {
+      method: 'POST',
       headers: {
-        'X-CSRF-TOKEN': csrfToken,
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
         'X-Requested-With': 'XMLHttpRequest'
       }
     })
@@ -391,10 +378,9 @@ const Settings = () => {
         onSuccess: () => {
           window.location.href = '/';
         },
-        onError: (errors) => {
+        onError: () => {
           setIsLoading(false);
           showToast('Failed to logout from all devices', 'error');
-          console.error('Logout error:', errors);
         }
       });
     }
@@ -411,28 +397,22 @@ const Settings = () => {
 
       setDarkMode(false);
       setNotifications({
-        weeklyDigest: false,
-        monthlyDigest: false,
         incidentAlerts: true,
       });
       setAvatarPreview(null);
 
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      document.documentElement.classList.remove('dark');
 
-      // Also reset in database
-      axios.post('/settings/dark-mode', { dark_mode: false }, {
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      }).catch(console.error);
+      // Reset in database using Inertia
+      router.post('/settings/dark-mode', { dark_mode: false }, {
+        preserveScroll: true,
+        preserveState: true,
+      });
 
-      axios.post('/settings/notification-preferences', { incident_alerts: true }, {
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      }).catch(console.error);
+      router.post('/settings/notification-preferences', { incident_alerts: true }, {
+        preserveScroll: true,
+        preserveState: true,
+      });
 
       showToast('All settings reset to default');
       setTimeout(() => window.location.reload(), 1000);
@@ -440,7 +420,7 @@ const Settings = () => {
   };
 
   // Show loading while fetching preferences
-  if (isLoadingPreferences || darkMode === null || notifications === null) {
+  if (isLoadingPreferences) {
     return (
       <DashboardLayout title="Settings" subtitle="Manage your account preferences">
         <div className="flex items-center justify-center h-64">
@@ -470,7 +450,7 @@ const Settings = () => {
           </div>
         </TabsList>
 
-        {/* Profile Tab */}
+        {/* Profile Tab - Same as before */}
         <TabsContent value="profile">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
@@ -577,7 +557,7 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* Security Tab */}
+        {/* Security Tab - Same as before */}
         <TabsContent value="security">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
