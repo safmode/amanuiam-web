@@ -518,7 +518,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <Input
                     value={newReport.reporterName}
                     onChange={(e) => setNewReport({...newReport, reporterName: e.target.value})}
-                    className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Enter full name"
                   />
                 </div>
@@ -531,7 +531,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         type="email"
                         value={newReport.reporterEmail}
                         onChange={(e) => setNewReport({...newReport, reporterEmail: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                        className="mt-1 bg-white pl-9 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="student@example.com"
                       />
                     </div>
@@ -544,7 +544,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         type="tel"
                         value={newReport.reporterPhone}
                         onChange={(e) => setNewReport({...newReport, reporterPhone: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                        className="mt-1 bg-white pl-9 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="012-3456789"
                       />
                     </div>
@@ -559,7 +559,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         setNewReport({...newReport, reporterMatricNo: e.target.value});
                         setFoundStudent(null);
                       }}
-                      className="bg-white flex-1 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="bg-white flex-1 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="e.g., 2226488"
                     />
                     <Button
@@ -568,7 +568,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       size="sm"
                       onClick={searchStudentByMatric}
                       disabled={isSearchingStudent || !newReport.reporterMatricNo}
-                      className="shrink-0 gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                      className="shrink-0 gap-2 text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                     >
                       {isSearchingStudent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                       Search
@@ -599,7 +599,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       value={newReport.category}
                       onValueChange={handleCategoryChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
@@ -790,7 +790,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     <Textarea
                       value={newReport.building || ''}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="mt-1 bg-white text-sm text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
                       rows={2}
                     />
@@ -827,7 +827,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <Textarea
                     value={newReport.injuries}
                     onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe any injuries sustained..."
                   />
                 </div>
@@ -836,7 +836,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <Textarea
                     value={newReport.damages}
                     onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe any property damage..."
                   />
                 </div>
@@ -856,7 +856,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 <Textarea
                   value={newReport.suspectDescription}
                   onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
-                  className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                  className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                   placeholder="Describe the suspect (height, build, clothing, distinguishing features)..."
                 />
               </div>
@@ -891,7 +891,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading || isUploadingOnSubmit}
-                    className="gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="gap-2 text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                   >
                     <Upload className="w-4 h-4" />
                     Select Files
@@ -1011,7 +1011,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   <Textarea
                     value={newReport.officerNotes}
                     onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
-                    className="mt-1 bg-white min-h-[60px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[60px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Add internal notes..."
                   />
                 </div>
