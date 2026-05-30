@@ -236,12 +236,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const getFileIcon = (url) => {
     const extension = url.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-      return <Image className="w-8 h-8 text-blue-500 dark:text-blue-400" />;
+      return <Image className="w-8 h-8 text-blue-500" />;
     }
     if (extension === 'pdf') {
-      return <FileText className="w-8 h-8 text-red-500 dark:text-red-400" />;
+      return <FileText className="w-8 h-8 text-red-500" />;
     }
-    return <FileText className="w-8 h-8 text-gray-500 dark:text-gray-400" />;
+    return <FileText className="w-8 h-8 text-gray-500" />;
   };
 
   const showToast = (message, type = 'success') => {
@@ -465,16 +465,16 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (analysisTimeout) {
         clearTimeout(analysisTimeout);
     }
-        };
+  };
 
-    const handleClose = () => {
-        attachmentUrls.forEach(url => {
-        if (url.startsWith('blob:')) {
-            URL.revokeObjectURL(url);
-        }
-        });
-        resetForm();
-        onClose();
+  const handleClose = () => {
+    attachmentUrls.forEach(url => {
+      if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+      }
+    });
+    resetForm();
+    onClose();
   };
 
   const getOptimizedImageUrl = (url) => {
@@ -488,16 +488,16 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 dark:bg-slate-800 dark:border-slate-700">
-        <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white">
+        <DialogHeader className="p-6 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
-              <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-amber-600" />
             </div>
-            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create New Report</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Create New Report</DialogTitle>
           </div>
           {pendingFiles.length > 0 && (
-            <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded dark:text-blue-400 dark:bg-blue-950/20">
+            <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
               {pendingFiles.length} file(s) ready to upload. Click Create Report to upload.
             </div>
           )}
@@ -505,54 +505,54 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
         <div className="p-6 space-y-5">
           {/* Reporter Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
-                  <User className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                  <User className="w-3 h-3 text-amber-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Reporter Information</span>
+                <span className="text-sm font-medium text-gray-700">Reporter Information</span>
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Full Name *</Label>
+                  <Label className="text-xs text-gray-500">Full Name *</Label>
                   <Input
                     value={newReport.reporterName}
                     onChange={(e) => setNewReport({...newReport, reporterName: e.target.value})}
-                    className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white"
                     placeholder="Enter full name"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Email Address *</Label>
+                    <Label className="text-xs text-gray-500">Email Address *</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         type="email"
                         value={newReport.reporterEmail}
                         onChange={(e) => setNewReport({...newReport, reporterEmail: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                        className="mt-1 bg-white pl-9"
                         placeholder="student@example.com"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Phone Number *</Label>
+                    <Label className="text-xs text-gray-500">Phone Number *</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         type="tel"
                         value={newReport.reporterPhone}
                         onChange={(e) => setNewReport({...newReport, reporterPhone: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                        className="mt-1 bg-white pl-9"
                         placeholder="012-3456789"
                       />
                     </div>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Matric Number</Label>
+                  <Label className="text-xs text-gray-500">Matric Number</Label>
                   <div className="flex gap-2 mt-1">
                     <Input
                       value={newReport.reporterMatricNo}
@@ -560,7 +560,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         setNewReport({...newReport, reporterMatricNo: e.target.value});
                         setFoundStudent(null);
                       }}
-                      className="bg-white flex-1 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="bg-white flex-1"
                       placeholder="e.g., 2226488"
                     />
                     <Button
@@ -569,14 +569,14 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       size="sm"
                       onClick={searchStudentByMatric}
                       disabled={isSearchingStudent || !newReport.reporterMatricNo}
-                      className="shrink-0 gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                      className="shrink-0 gap-2"
                     >
                       {isSearchingStudent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                       Search
                     </Button>
                   </div>
                   {foundStudent && (
-                    <p className="text-xs text-green-600 mt-1 dark:text-green-400">
+                    <p className="text-xs text-green-600 mt-1">
                       ✓ Registered student found. Information auto-filled.
                     </p>
                   )}
@@ -586,57 +586,57 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Incident Details */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Incident Details</span>
+                <AlertCircle className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Incident Details</span>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Category *</Label>
+                    <Label className="text-xs text-gray-500">Category *</Label>
                     <Select
                       value={newReport.category}
                       onValueChange={handleCategoryChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(categoryLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Urgency Level *</Label>
+                    <Label className="text-xs text-gray-500">Urgency Level *</Label>
                     <Select
                       value={newReport.urgency}
                       onValueChange={handleUrgencyChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(urgencyLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Status</Label>
+                    <Label className="text-xs text-gray-500">Status</Label>
                     <Select value={newReport.status} onValueChange={(v) => setNewReport({...newReport, status: v})}>
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(statusLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -645,21 +645,21 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
                 {/* Description */}
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Description *</Label>
+                  <Label className="text-xs text-gray-500">Description *</Label>
                   <Textarea
                     value={newReport.description}
                     onChange={(e) => setNewReport({...newReport, description: e.target.value})}
-                    className="mt-1 bg-white min-h-[100px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[100px]"
                     placeholder="Describe the incident in detail... AI will automatically analyze and suggest category & urgency!"
                   />
                 </div>
 
                 {/* AI Suggestion Display */}
                 {isAnalyzing && (
-                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">AI analyzing description...</span>
+                      <span className="text-sm text-gray-500">AI analyzing description...</span>
                     </div>
                   </div>
                 )}
@@ -667,32 +667,32 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 {aiSuggestion && !isAnalyzing && (
                   <div className={`p-3 rounded-lg border ${
                     aiSuggestion.confidence > 0.7
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                      : 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800'
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-yellow-50 border-yellow-200'
                   }`}>
                     <div className="flex items-start gap-2">
                       <Sparkles className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                          <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">🤖 AI SUGGESTION</p>
+                          <p className="text-xs font-semibold text-purple-700">🤖 AI SUGGESTION</p>
                           {aiSuggestion.applied ? (
-                            <Badge variant="outline" className="text-green-600 border-green-300 text-xs dark:text-green-400 dark:border-green-700">
+                            <Badge variant="outline" className="text-green-600 border-green-300 text-xs">
                               ✓ Applied - You can still change below
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs dark:text-purple-400 dark:border-purple-700">
+                            <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs">
                               Click to apply
                             </Badge>
                           )}
                         </div>
                         <div className="text-sm mt-1">
-                            <span className="text-gray-600 dark:text-gray-400">Category:</span>{' '}
-                            <strong className="text-gray-800 dark:text-gray-200">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
+                            <span className="text-gray-600">Category:</span>{' '}
+                            <strong className="text-gray-800">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
                             {' • '}
-                            <span className="text-gray-600 dark:text-gray-400">Urgency:</span>{' '}
-                            <strong className="text-gray-800 dark:text-gray-200">{urgencyLabels[aiSuggestion.urgency]}</strong>
+                            <span className="text-gray-600">Urgency:</span>{' '}
+                            <strong className="text-gray-800">{urgencyLabels[aiSuggestion.urgency]}</strong>
                             {aiSuggestion.confidence > 0.7 && (
-                                <Badge variant="outline" className="ml-2 text-green-600 border-green-300 text-[10px] dark:text-green-400 dark:border-green-700">
+                                <Badge variant="outline" className="ml-2 text-green-600 border-green-300 text-[10px]">
                                 ✓ High confidence
                                 </Badge>
                             )}
@@ -710,7 +710,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-gray-500 text-xs h-7 px-2 dark:text-gray-400 dark:hover:bg-slate-700"
+                              className="text-gray-500 text-xs h-7 px-2"
                               onClick={() => setAiSuggestion(null)}
                             >
                               Dismiss
@@ -718,7 +718,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                           </div>
                         )}
                         {aiSuggestion.applied && (
-                          <p className="text-xs text-gray-500 mt-2 italic dark:text-gray-400">
+                          <p className="text-xs text-gray-500 mt-2 italic">
                             Suggestion applied. You can still change category or urgency using the dropdowns above.
                           </p>
                         )}
@@ -730,21 +730,21 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 {/* Date & Time */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Date *</Label>
+                    <Label className="text-xs text-gray-500">Incident Date *</Label>
                     <Input
                       type="date"
                       value={newReport.incidentDate}
                       onChange={(e) => setNewReport({...newReport, incidentDate: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Time *</Label>
+                    <Label className="text-xs text-gray-500">Incident Time *</Label>
                     <Input
                       type="time"
                       value={newReport.incidentTime}
                       onChange={(e) => setNewReport({...newReport, incidentTime: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white"
                     />
                   </div>
                 </div>
@@ -752,62 +752,62 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 {/* Location Section */}
                 <div className="space-y-3">
                   {/* Location Area */}
-                    <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400">Location Area *</Label>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                            Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
-                        </p>
-                        <Select
-                            value={newReport.locationArea || ""}
-                            onValueChange={handleLocationAreaChange}
-                        >
-                            <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
-                            <SelectValue placeholder="Select location area" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                            {Object.entries(locationLabels).map(([groupName, locations]) => (
-                                <Fragment key={groupName}>
-                                <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
-                                    {groupName}
-                                </div>
-                                {Object.entries(locations).map(([key, label]) => (
-                                    <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                                    {label}
-                                    </SelectItem>
-                                ))}
-                                </Fragment>
+                  <div>
+                    <Label className="text-xs text-gray-500">Location Area *</Label>
+                    <p className="text-[10px] text-gray-500">
+                      Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
+                    </p>
+                    <Select
+                      value={newReport.locationArea || ""}
+                      onValueChange={handleLocationAreaChange}
+                    >
+                      <SelectTrigger className="mt-1 bg-white">
+                        <SelectValue placeholder="Select location area" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(locationLabels).map(([groupName, locations]) => (
+                          <Fragment key={groupName}>
+                            <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50">
+                              {groupName}
+                            </div>
+                            {Object.entries(locations).map(([key, label]) => (
+                              <SelectItem key={key} value={label}>
+                                {label}
+                              </SelectItem>
                             ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                          </Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {/* Specific Address */}
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
+                    <Label className="text-xs text-gray-500">Specific Address (Building/Room/Block)</Label>
                     <div className="flex items-start gap-1.5 mt-1 mb-1">
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      <p className="text-[10px] text-gray-500">
                         Enter the specific location where the incident happened (building name/number, room/block, landmarks)
                       </p>
                     </div>
                     <Textarea
                       value={newReport.building || ''}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="mt-1 bg-white text-sm"
                       placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
                       rows={2}
                     />
-                    <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
+                    <p className="text-[10px] text-blue-600 mt-1">
                       💡 Tip: Be as specific as possible to help security personnel locate the exact spot
                     </p>
                   </div>
 
                   {/* Full Address (Combined) */}
                   {newReport.fullAddress && (
-                    <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+                    <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Full Address:</span>
+                        <MapPin className="w-3 h-3 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-700">Full Address:</span>
                       </div>
-                      <p className="text-sm text-amber-800 mt-1 dark:text-amber-300">{newReport.fullAddress}</p>
+                      <p className="text-sm text-amber-800 mt-1">{newReport.fullAddress}</p>
                     </div>
                   )}
                 </div>
@@ -816,28 +816,28 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Injuries & Damages */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Injuries & Damages</span>
+                <AlertCircle className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Injuries & Damages</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Injuries</Label>
+                  <Label className="text-xs text-gray-500">Injuries</Label>
                   <Textarea
                     value={newReport.injuries}
                     onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px]"
                     placeholder="Describe any injuries sustained..."
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Damages</Label>
+                  <Label className="text-xs text-gray-500">Damages</Label>
                   <Textarea
                     value={newReport.damages}
                     onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px]"
                     placeholder="Describe any property damage..."
                   />
                 </div>
@@ -846,18 +846,18 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Suspect Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suspect Information (if applicable)</span>
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Suspect Information (if applicable)</span>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</Label>
+                <Label className="text-xs text-gray-500">Suspect Description</Label>
                 <Textarea
                   value={newReport.suspectDescription}
                   onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
-                  className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                  className="mt-1 bg-white min-h-[80px]"
                   placeholder="Describe the suspect (height, build, clothing, distinguishing features)..."
                 />
               </div>
@@ -865,13 +865,13 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Attachments */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Image className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <Image className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">Attachments</span>
+                  <span className="text-xs text-gray-500">
                     ({attachmentUrls.length} files)
                     {pendingFiles.length > 0 && ` (${pendingFiles.length} pending)`}
                   </span>
@@ -892,7 +892,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading || isUploadingOnSubmit}
-                    className="gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="gap-2"
                   >
                     <Upload className="w-4 h-4" />
                     Select Files
@@ -908,7 +908,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     const isImage = isImageFile(url);
 
                     return (
-                      <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-white dark:border-slate-700 dark:bg-slate-800">
+                      <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-white">
                         {isImage && (isValidUrl || isPending) ? (
                           <img
                             src={getOptimizedImageUrl(url)}
@@ -921,9 +921,9 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                             }}
                           />
                         ) : (
-                          <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-700">
+                          <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50">
                             {getFileIcon(url)}
-                            <span className="text-xs text-gray-500 mt-1 truncate px-1 dark:text-gray-400">
+                            <span className="text-xs text-gray-500 mt-1 truncate px-1">
                               {url.split('/').pop()?.slice(0, 15) || `File ${index + 1}`}
                             </span>
                           </div>
@@ -960,59 +960,59 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   })}
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30 dark:border-slate-700 dark:bg-slate-800/30">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2 dark:text-gray-500" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No attachments</p>
-                  <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Click "Select Files" to add images or PDFs</p>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No attachments</p>
+                  <p className="text-xs text-gray-500 mt-1">Click "Select Files" to add images or PDFs</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Assignment & Notes */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Assignment & Notes</span>
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Assignment & Notes</span>
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</Label>
+                  <Label className="text-xs text-gray-500">Assigned Officer</Label>
                   <Select
                     value={newReport.assignedOfficer || "unassigned"}
                     onValueChange={(value) => {
                       setNewReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }));
                     }}
                   >
-                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                    <SelectTrigger className="mt-1 bg-white">
                       <SelectValue placeholder={isLoadingOfficers ? "Loading officers..." : "Select officer to assign"}>
                         {getOfficerDisplayName(newReport.assignedOfficer)}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="unassigned" className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                        <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
+                    <SelectContent>
+                      <SelectItem value="unassigned">
+                        <span className="text-gray-500">None (Not Assigned)</span>
                       </SelectItem>
                       {officersList.map((officer) => (
-                        <SelectItem key={officer.officerId} value={officer.officerId} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
+                        <SelectItem key={officer.officerId} value={officer.officerId}>
                           {officer.officerName}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {newReport.assignedOfficer && (
-                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 mt-1">
                       Assigned: {getOfficerDisplayName(newReport.assignedOfficer)}
                     </p>
                   )}
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Internal Notes</Label>
+                  <Label className="text-xs text-gray-500">Internal Notes</Label>
                   <Textarea
                     value={newReport.officerNotes}
                     onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
-                    className="mt-1 bg-white min-h-[60px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[60px]"
                     placeholder="Add internal notes..."
                   />
                 </div>
@@ -1024,7 +1024,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="outline"
-              className="rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+              className="rounded-xl"
               onClick={handleClose}
               disabled={isSubmitting}
             >
