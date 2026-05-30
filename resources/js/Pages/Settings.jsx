@@ -42,57 +42,91 @@ const Settings = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [codeError, setCodeError] = useState('');
 
-  // Preferences - Load from database, fallback to localStorage
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Notification Preferences
-  const [notifications, setNotifications] = useState(() => ({
-    weeklyDigest: localStorage.getItem('weeklyDigest') === 'true',
-    monthlyDigest: localStorage.getItem('monthlyDigest') === 'true',
-    incidentAlerts: localStorage.getItem('incidentAlerts') !== 'false',
-  }));
+  // Preferences - Start with null, then load from database
+  const [darkMode, setDarkMode] = useState(null);
+  const [notifications, setNotifications] = useState(null);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [sendingDigest, setSendingDigest] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Load dark mode preference from database
+  // Load ALL preferences from database on component mount
   useEffect(() => {
-    const loadDarkMode = async () => {
+    const loadAllPreferences = async () => {
       try {
-        const response = await axios.get('/settings/dark-mode', {
-          headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        // Load dark mode preference
+        const darkModeResponse = await axios.get('/settings/dark-mode', {
+          headers: { 'X-CSRF-TOKEN': csrfToken }
         });
 
-        if (response.data && typeof response.data.dark_mode !== 'undefined') {
-          setDarkMode(response.data.dark_mode);
+        // Load notification preferences
+        const notifResponse = await axios.get('/settings/notification-preferences', {
+          headers: { 'X-CSRF-TOKEN': csrfToken }
+        });
+
+        // Set dark mode from database
+        const darkModeValue = darkModeResponse.data.dark_mode ?? false;
+        setDarkMode(darkModeValue);
+
+        // Apply dark mode to DOM
+        if (darkModeValue) {
+          document.documentElement.classList.add('dark');
         } else {
-          // Fallback to localStorage if no database preference
-          const saved = localStorage.getItem('darkMode');
-          setDarkMode(saved !== null ? saved === 'true' : document.documentElement.classList.contains('dark'));
+          document.documentElement.classList.remove('dark');
         }
+
+        // Set notifications from database
+        setNotifications({
+          weeklyDigest: false, // Default values
+          monthlyDigest: false,
+          incidentAlerts: notifResponse.data.incident_alerts ?? true,
+        });
+
+        // Update localStorage as backup
+        localStorage.setItem('darkMode', darkModeValue);
+        localStorage.setItem('incidentAlerts', notifResponse.data.incident_alerts ?? true);
+
       } catch (error) {
-        console.error('Failed to load dark mode preference:', error);
-        // Fallback to localStorage
-        const saved = localStorage.getItem('darkMode');
-        setDarkMode(saved !== null ? saved === 'true' : document.documentElement.classList.contains('dark'));
+        console.error('Failed to load preferences:', error);
+        // Fallback to localStorage or defaults
+        const savedDarkMode = localStorage.getItem('darkMode');
+        const darkModeValue = savedDarkMode === 'true';
+        setDarkMode(darkModeValue);
+
+        const savedIncidentAlerts = localStorage.getItem('incidentAlerts');
+        setNotifications({
+          weeklyDigest: false,
+          monthlyDigest: false,
+          incidentAlerts: savedIncidentAlerts !== 'false',
+        });
+
+        if (darkModeValue) {
+          document.documentElement.classList.add('dark');
+        }
+      } finally {
+        setIsLoadingPreferences(false);
       }
     };
 
-    loadDarkMode();
+    loadAllPreferences();
   }, []);
 
   // Save dark mode to database when changed
   const handleDarkModeToggle = async (checked) => {
-    // Save to localStorage as backup
+    if (darkMode === null) return; // Don't save until loaded
+
+    // Save to localStorage immediately as backup
     localStorage.setItem('darkMode', checked);
 
     // Apply dark mode to DOM immediately
     if (checked) {
-        document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark');
     } else {
-        document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
     }
 
     // Update UI immediately
@@ -100,67 +134,70 @@ const Settings = () => {
 
     // Save to database
     try {
-        const response = await axios.post('/settings/dark-mode', {
+      const response = await axios.post('/settings/dark-mode', {
         dark_mode: checked
-        }, {
+      }, {
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-        });
+      });
 
-        // Only show success if the server confirms it worked
-        if (response.data && response.data.success === true) {
+      if (response.data && response.data.success === true) {
         showToast('Dark mode preference saved');
-        } else {
+      } else {
         throw new Error('Server did not confirm save');
-        }
+      }
     } catch (error) {
-        console.error('Failed to save dark mode preference:', error);
-        // Revert the UI change
-        const revertMode = !checked;
-        setDarkMode(revertMode);
-        if (revertMode) {
+      console.error('Failed to save dark mode preference:', error);
+      // Revert the UI change
+      const revertMode = !checked;
+      setDarkMode(revertMode);
+      if (revertMode) {
         document.documentElement.classList.add('dark');
-        } else {
+      } else {
         document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('darkMode', revertMode);
-        showToast('Failed to save preference', 'error');
+      }
+      localStorage.setItem('darkMode', revertMode);
+      showToast('Failed to save preference', 'error');
     }
   };
 
-  // Load notification preferences from database
-  useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const response = await axios.get('/settings/notification-preferences', {
-          headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-        });
+  // Toggle Incident Alerts
+  const handleToggleIncidentAlerts = async (checked) => {
+    if (notifications === null) return; // Don't save until loaded
 
-        if (response.data && typeof response.data.incident_alerts !== 'undefined') {
-          setNotifications(prev => ({
-            ...prev,
-            incidentAlerts: response.data.incident_alerts
-          }));
-        }
-      } catch (error) {
-        console.error('Failed to load preferences:', error);
+    // Save previous state in case we need to revert
+    const previousState = notifications.incidentAlerts;
+
+    // Update localStorage immediately
+    localStorage.setItem('incidentAlerts', checked);
+
+    // Update UI immediately
+    setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
+
+    try {
+      const response = await axios.post('/settings/notification-preferences', {
+        incident_alerts: checked
+      }, {
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      });
+
+      if (response.data && response.data.success === true) {
+        showToast('Notification preference saved');
+
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('notification-preference-changed', {
+          detail: { enabled: checked }
+        }));
+      } else {
+        throw new Error('Server did not confirm save');
       }
-    };
-
-    loadPreferences();
-  }, []);
-
-  // Save notification preferences to localStorage (backup)
-  useEffect(() => {
-    localStorage.setItem('weeklyDigest', notifications.weeklyDigest);
-    localStorage.setItem('monthlyDigest', notifications.monthlyDigest);
-    localStorage.setItem('incidentAlerts', notifications.incidentAlerts);
-  }, [notifications]);
-
-  // Load saved avatar
-  useEffect(() => {
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (savedAvatar) setAvatarPreview(savedAvatar);
-  }, []);
+    } catch (error) {
+      console.error('Failed to save preference:', error);
+      // Revert UI change
+      setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
+      localStorage.setItem('incidentAlerts', previousState);
+      showToast('Failed to save preference', 'error');
+    }
+  };
 
   const showToast = (message, type = 'success') => {
     const toast = document.createElement('div');
@@ -228,40 +265,6 @@ const Settings = () => {
       showToast(message, 'error');
     } finally {
       setSendingDigest(null);
-    }
-  };
-
-  // Toggle Incident Alerts
-  const handleToggleIncidentAlerts = async (checked) => {
-    // Save previous state in case we need to revert
-    const previousState = notifications.incidentAlerts;
-
-    // Update UI immediately
-    setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
-
-    try {
-        const response = await axios.post('/settings/notification-preferences', {
-        incident_alerts: checked
-        }, {
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
-        });
-
-        // Only show success if server confirms
-        if (response.data && response.data.success === true) {
-        showToast('Notification preference saved');
-
-        // Dispatch event for other components
-        window.dispatchEvent(new CustomEvent('notification-preference-changed', {
-            detail: { enabled: checked }
-        }));
-        } else {
-        throw new Error('Server did not confirm save');
-        }
-    } catch (error) {
-        console.error('Failed to save preference:', error);
-        // Revert UI change
-        setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
-        showToast('Failed to save preference', 'error');
     }
   };
 
@@ -393,10 +396,30 @@ const Settings = () => {
       });
       setAvatarPreview(null);
 
+      // Also reset in database
+      axios.post('/settings/dark-mode', { dark_mode: false }, {
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      }).catch(console.error);
+
+      axios.post('/settings/notification-preferences', { incident_alerts: true }, {
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+      }).catch(console.error);
+
       showToast('All settings reset to default');
       setTimeout(() => window.location.reload(), 1000);
     }
   };
+
+  // Show loading while fetching preferences
+  if (isLoadingPreferences || darkMode === null || notifications === null) {
+    return (
+      <DashboardLayout title="Settings" subtitle="Manage your account preferences">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D4A853]" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Settings" subtitle="Manage your account preferences">
@@ -418,7 +441,7 @@ const Settings = () => {
           </div>
         </TabsList>
 
-        {/* Profile Tab */}
+        {/* Profile Tab - Keep your existing code */}
         <TabsContent value="profile">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
@@ -525,7 +548,7 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* Security Tab */}
+        {/* Security Tab - Keep your existing code */}
         <TabsContent value="security">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
