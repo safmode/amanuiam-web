@@ -68,7 +68,7 @@ class StatisticsController extends Controller
         $totalIncidents = $reports->count();
         $resolvedIncidents = $reports->where('status', 'resolved')->count();
         $pendingIncidents = $reports->where('status', 'pending')->count();
-        $inProgressIncidents = $reports->where('status', 'in_progress')->count();
+        $inProgressIncidents = $reports->where('status', 'inProgress')->count();
         $nfaIncidents = $reports->where('status', 'nfa')->count();
 
         $resolutionRate = $totalIncidents > 0 ? round(($resolvedIncidents / $totalIncidents) * 100) : 0;

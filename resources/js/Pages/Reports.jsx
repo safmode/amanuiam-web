@@ -219,7 +219,7 @@ const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) 
 // MAIN COMPONENT
 // ============================================
 const Reports = () => {
-  const { reports = { data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 }, statusCounts: initialStatusCounts = { pending: 0, in_progress: 0, resolved: 0 }, uniqueLocations = [], filters: serverFilters = {} } = usePage().props;
+  const { reports = { data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 }, statusCounts: initialStatusCounts = { pending: 0, inProgress: 0, resolved: 0 }, uniqueLocations = [], filters: serverFilters = {} } = usePage().props;
 
   // ============================================
   // STATE MANAGEMENT
@@ -699,7 +699,7 @@ const Reports = () => {
             bVal = urgencyOrder[b.urgency] || 999;
             break;
         case 'status':
-            const statusOrder = { pending: 1, in_progress: 2, resolved: 3 };
+            const statusOrder = { pending: 1, inProgress: 2, resolved: 3 };
             aVal = statusOrder[a.status] || 999;
             bVal = statusOrder[b.status] || 999;
             break;
@@ -849,7 +849,7 @@ const Reports = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold text-[#60A8FA] dark:text-blue-400">
-                {localStatusCounts?.in_progress ?? 0}
+                {localStatusCounts?.inProgress ?? 0}
               </p>
               <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
             </div>

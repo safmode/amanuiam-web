@@ -481,7 +481,7 @@ class ReportController extends Controller
 
         $statusCounts = [
             'pending'     => Report::where('status', 'pending')->count(),
-            'in_progress' => Report::where('status', 'in_progress')->count(),
+            'inProgress' => Report::where('status', 'inProgress')->count(),
             'resolved'    => Report::where('status', 'resolved')->count(),
             'nfa'         => Report::where('status', 'nfa')->count(),
         ];
@@ -743,7 +743,7 @@ class ReportController extends Controller
             'stats' => [
                 'totalReports' => Report::count(),
                 'pendingReports' => Report::where('status', 'pending')->count(),
-                'inProgressReports' => Report::where('status', 'in_progress')->count(),
+                'inProgressReports' => Report::where('status', 'inProgress')->count(),
                 'resolvedReports' => Report::where('status', 'resolved')->count(),
                 'nfaReports' => Report::where('status', 'nfa')->count(),
                 'emergencyAlerts' => Report::where('urgency', 'urgent')->where('status', '!=', 'resolved')->count(),
@@ -787,7 +787,7 @@ class ReportController extends Controller
             $oldAssignedOfficer = $report->assignedOfficer;
 
             $validated = $request->validate([
-                'status' => 'sometimes|string|in:pending,in_progress,resolved,nfa',
+                'status' => 'sometimes|string|in:pending,inProgress,resolved,nfa',
                 'urgency' => 'sometimes|string|in:general,urgent',
                 'incidentCategory' => 'sometimes|string',
                 'assignedOfficer' => 'nullable|string',
@@ -959,7 +959,7 @@ class ReportController extends Controller
             // Status change notification
             if ($oldStatus !== $report->status) {
                 try {
-                    $statusLabels = ['pending' => 'Pending', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'nfa' => 'No Further Action'];
+                    $statusLabels = ['pending' => 'Pending', 'inProgress' => 'In Progress', 'resolved' => 'Resolved', 'nfa' => 'No Further Action'];
                     $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
                     Http::post($nodeServerUrl . '/api/notify-status-change', [
                         'reportId' => $report->reportId,

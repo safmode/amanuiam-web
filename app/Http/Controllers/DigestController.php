@@ -181,7 +181,7 @@ class DigestController extends Controller
 
         $statusStats = [
             'pending' => $reports->where('status', 'pending')->count(),
-            'in_progress' => $reports->where('status', 'in_progress')->count(),
+            'inProgress' => $reports->where('status', 'inProgress')->count(),
             'resolved' => $reports->where('status', 'resolved')->count(),
             'nfa' => $reports->where('status', 'nfa')->count(),
         ];

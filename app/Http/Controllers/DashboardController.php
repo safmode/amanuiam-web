@@ -155,7 +155,7 @@ class DashboardController extends Controller
         // Get ALL statistics for dashboard - Reports stats
         $statusCounts = [
             'pending' => Report::where('status', 'pending')->count(),
-            'in_progress' => Report::where('status', 'in_progress')->count(),
+            'inProgress' => Report::where('status', 'inProgress')->count(),
             'resolved' => Report::where('status', 'resolved')->count(),
             'nfa' => Report::where('status', 'nfa')->count(),
         ];
@@ -170,7 +170,7 @@ class DashboardController extends Controller
         $stats = [
             'totalReports' => array_sum($statusCounts),
             'pendingReports' => $statusCounts['pending'],
-            'inProgressReports' => $statusCounts['in_progress'],
+            'inProgressReports' => $statusCounts['inProgress'],
             'resolvedReports' => $statusCounts['resolved'],
             'nfaReports' => $statusCounts['nfa'],
             'emergencyAlerts' => $emergencyAlerts,
