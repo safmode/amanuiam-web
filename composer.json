@@ -17,6 +17,7 @@
         "php-open-source-saver/jwt-auth": "^2.8",
         "pragmarx/google2fa": "^9.0",
         "pusher/pusher-php-server": "^7.2",
+        "resend/resend-laravel": "^1.4",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
