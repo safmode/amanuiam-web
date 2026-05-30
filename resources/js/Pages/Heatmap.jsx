@@ -11,10 +11,10 @@ import { Progress } from '@/components/ui/progress';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
-// Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import 'leaflet.heat';
+
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
