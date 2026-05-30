@@ -146,30 +146,44 @@ const Settings = () => {
     );
   };
 
-  // Toggle Incident Alerts using Inertia
+  // Toggle Incident Alerts
   const handleToggleIncidentAlerts = (checked) => {
-    if (isLoadingPreferences) return;
+  if (isLoadingPreferences) return;
 
-    const previousState = notifications.incidentAlerts;
+  const previousState = notifications.incidentAlerts;
 
-    // Optimistically update UI
-    setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
-    localStorage.setItem('incidentAlerts', checked);
+  // Update UI immediately
+  setNotifications(prev => ({ ...prev, incidentAlerts: checked }));
+  localStorage.setItem('incidentAlerts', checked);
 
-    // Use Inertia router
-    router.post('/settings/notification-preferences',
-      { incident_alerts: checked },
-      {
-        preserveScroll: true,
-        preserveState: true,
-        onError: () => {
-          // Revert on error
-          setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
-          localStorage.setItem('incidentAlerts', previousState);
-          showToast('Failed to save preference', 'error');
-        }
-      }
-    );
+  // Send update to server without page reload
+  fetch('/settings/notification-preferences', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({ incident_alerts: checked })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Notification preference saved');
+      // Dispatch event for other components
+      window.dispatchEvent(new CustomEvent('notification-preference-changed', {
+        detail: { enabled: checked }
+      }));
+    } else {
+      throw new Error('Failed to save');
+    }
+  })
+  .catch(() => {
+    // Revert on error
+    setNotifications(prev => ({ ...prev, incidentAlerts: previousState }));
+    localStorage.setItem('incidentAlerts', previousState);
+    showToast('Failed to save preference', 'error');
+  });
   };
 
   const showToast = (message, type = 'success') => {
