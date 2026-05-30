@@ -14,7 +14,7 @@ import { AddEmergencyReport } from '@/Components/dashboard/AddEmergencyReport';
 import { DecisionModal } from '@/Components/dashboard/DecisionModal';
 import { ConfirmationModal } from '@/Components/dashboard/ConfirmationModal';
 
-// Location labels (unchanged)
+// Location labels
 const locationLabels = {
   'Mahallahs': {
     'Asiah': 'Mahallah Asiah',
@@ -66,7 +66,7 @@ const formatLocationName = (locationKey) => {
   return locationKey;
 };
 
-// Simple Dropdown Component (unchanged)
+// Simple Dropdown Component
 const SimpleDropdown = ({ trigger, children, isOpen, onClose, align = 'left' }) => {
   const dropdownRef = useRef(null);
 
@@ -101,6 +101,11 @@ const showToast = (message, type = 'success') => {
   toast.innerHTML = `<div class="flex items-center gap-2">${type === 'success' ? '✓' : '✗'}<span>${message}</span></div>`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+};
+
+// Helper to get CSRF token
+const getCsrfToken = () => {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 };
 
 // Stat Card Component
@@ -141,12 +146,7 @@ const StatusBadge = ({ status }) => {
   return <Badge className={`${className} text-white text-[11px]`}>{label}</Badge>;
 };
 
-// Helper to get CSRF token
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-};
-
-// Alert Card Component (unchanged)
+// Alert Card Component
 const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTimeAgo, formatDate, onDelete }) => {
   const getAlertCardStyle = (status) => {
     switch (status) {
@@ -294,24 +294,230 @@ const AlertCard = ({ alert, onClick, onAction, isDispatching, isReverting, getTi
   );
 };
 
-// Alert Detail Modal (unchanged - too long, keep your existing)
+// Alert Detail Modal
 const AlertDetailModal = ({ alert, open, onClose, onAction, formatDate, getTimeAgo, isDispatching, isReverting, onDelete }) => {
-  // ... keep your existing implementation (it's fine)
-  // (I'm omitting it for brevity, but keep your existing AlertDetailModal)
+  const getHeaderColor = () => {
+    switch (alert?.status) {
+      case 'active':     return 'bg-red-500';
+      case 'responding': return 'bg-amber-500';
+      case 'resolved':   return 'bg-green-500';
+      default:           return 'bg-gray-500';
+    }
+  };
 
-  // Simplified version to show structure - REPLACE WITH YOUR EXISTING CODE
+  const getActionButtons = () => {
+    if (!alert) return null;
+
+    if (alert.status === 'active') {
+      return (
+        <Button
+          className="bg-red-500 hover:bg-red-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
+          onClick={() => onAction('dispatch', alert)}
+          disabled={isDispatching}
+        >
+          {isDispatching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          Dispatch Officer
+        </Button>
+      );
+    } else if (alert.status === 'responding') {
+      return (
+        <Button
+          className="bg-green-500 hover:bg-green-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
+          onClick={() => onAction('resolve', alert)}
+        >
+          <CheckCircle className="w-4 h-4" />
+          Mark as Resolved
+        </Button>
+      );
+    } else if (alert.status === 'resolved') {
+      return (
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="rounded-lg gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 h-10 text-sm dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30">
+                <Undo2 className="w-4 h-4" />
+                Revert
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-lg min-w-[170px] p-1">
+              <DropdownMenuItem
+                onClick={() => onAction('revertToResponding', alert)}
+                className="gap-2 text-amber-600 text-sm cursor-pointer rounded-md dark:text-amber-400"
+                disabled={isReverting}
+              >
+                <Undo2 className="w-4 h-4" /> To Responding
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onAction('revertToActive', alert)}
+                className="gap-2 text-red-600 text-sm cursor-pointer rounded-md dark:text-red-400"
+                disabled={isReverting}
+              >
+                <Undo2 className="w-4 h-4" /> To Active
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="outline"
+            className="rounded-lg gap-1.5 border-red-300 text-red-600 hover:bg-red-50 h-10 text-sm dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+            onClick={() => onDelete(alert)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </Button>
+          <Button
+            className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg gap-2 px-5 h-10 text-sm font-medium"
+            onClick={() => onAction('createReport', alert)}
+          >
+            <FileText className="w-4 h-4" />
+            Create Report
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (!alert) return null;
+
+  const displayLocation = alert.determined_location
+    ? formatLocationName(alert.determined_location)
+    : (alert.address || alert.location?.mahallah || alert.location || 'Unknown');
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <div>Alert Detail Modal - Your existing code here</div>
+      <DialogContent className="sm:max-w-[500px] rounded-xl p-0 overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
+        <div className={`px-6 py-4 ${getHeaderColor()} flex items-center justify-between`}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              {alert.status === 'active' && <AlertTriangle className="w-4 h-4 text-white" />}
+              {alert.status === 'responding' && <Radio className="w-4 h-4 text-white" />}
+              {alert.status === 'resolved' && <CheckCircle className="w-4 h-4 text-white" />}
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold text-white">Emergency Alert</DialogTitle>
+              <p className="text-white/70 text-xs">ID: {alert._id?.slice(-8) || alert.id?.slice(-8) || 'N/A'}</p>
+            </div>
+          </div>
+          <StatusBadge status={alert.status} />
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Reporter Information */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/30">
+                <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Reporter Information</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-gray-500 dark:text-gray-400">Name:</span>{' '}
+                <span className="font-medium text-gray-900 dark:text-gray-200">{alert.student?.name || alert.reporterName || 'Unknown'}</span>
+              </p>
+              {alert.student?.matrixNumber && (
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-500 dark:text-gray-400">Matrix:</span>{' '}
+                  <span className="font-mono text-gray-900 dark:text-gray-200">{alert.student.matrixNumber}</span>
+                </p>
+              )}
+              {alert.student?.phone && (
+                <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-gray-400" />
+                  <span>{alert.student.phone}</span>
+                </p>
+              )}
+              {alert.student?.email && (
+                <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5 col-span-2">
+                  <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span className="truncate">{alert.student.email}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Location & Time */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center dark:bg-red-900/30">
+                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Location & Time</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-gray-500 dark:text-gray-400">Location:</span>{' '}
+                <span className="font-medium text-gray-900 dark:text-gray-200">{displayLocation}</span>
+              </p>
+              {alert.address && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">{alert.address}</p>
+              )}
+              {alert.location?.building && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 pl-1">🏢 {alert.location.building}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-500 dark:text-gray-400">Triggered:</span>{' '}
+                  <span>{formatDate(alert.triggeredAt)}</span>
+                </p>
+                <p className="text-xs text-gray-400">({getTimeAgo(alert.triggeredAt)})</p>
+              </div>
+              {alert.resolvedAt && (
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-500 dark:text-gray-400">Resolved:</span>{' '}
+                  <span>{formatDate(alert.resolvedAt)}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Assigned Officer */}
+          {alert.assigned_officer_name && (
+            <div className="bg-white rounded-lg p-4 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-900/30">
+                  <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Assigned Officer</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-500 dark:text-gray-400">Officer:</span>{' '}
+                  <span className="font-medium text-gray-900 dark:text-gray-200">{alert.assigned_officer_name}</span>
+                </p>
+                {alert.dispatched_at && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-500 dark:text-gray-400">Dispatched:</span>{' '}
+                    <span>{formatDate(alert.dispatched_at)}</span>
+                  </p>
+                )}
+                {alert.dispatch_notes && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 mb-1.5 dark:text-gray-400">Dispatch Notes:</p>
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-gray-300 max-h-28 overflow-y-auto whitespace-pre-wrap">
+                      {alert.dispatch_notes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-slate-700 mt-2">
+            <Button variant="outline" className="rounded-lg h-10 px-5 text-sm text-gray-700 border-gray-300 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+              Close
+            </Button>
+            {getActionButtons()}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
 // ============================================================
-// MAIN ALERTS COMPONENT - CONVERTED (No Axios)
+// MAIN ALERTS COMPONENT - NO AXIOS
 // ============================================================
 
 const Alerts = () => {
@@ -379,7 +585,7 @@ const Alerts = () => {
     }
   }, [alertsData, emergencyStats]);
 
-  // Fetch emergencies with filters using Fetch (GET requests)
+  // Fetch emergencies with filters using Fetch (GET)
   const fetchEmergencies = async (page = 1, perPage = pagination.per_page) => {
     setLoading(true);
     const params = new URLSearchParams();
@@ -407,7 +613,7 @@ const Alerts = () => {
     }
   };
 
-  // Fetch global stats using Fetch
+  // Fetch global stats using Fetch (GET)
   const fetchGlobalStats = async () => {
     try {
       const response = await fetch('/api/emergencies/counts', {
@@ -428,8 +634,8 @@ const Alerts = () => {
     }
   };
 
-  // Delete emergency using Inertia (DELETE request)
-  const handleDeleteEmergency = async (alert) => {
+  // Delete emergency using Inertia (DELETE)
+  const handleDeleteEmergency = (alert) => {
     const alertId = alert._id || alert.id;
     if (confirm('Are you sure you want to delete this emergency record? This action cannot be undone.')) {
       setIsDeleting(true);
@@ -449,8 +655,8 @@ const Alerts = () => {
     }
   };
 
-  // Revert status using Inertia (PUT request)
-  const handleRevertStatus = async (alert, newStatus) => {
+  // Revert status using Inertia (PUT)
+  const handleRevertStatus = (alert, newStatus) => {
     const alertId = alert._id || alert.id;
     setIsReverting(true);
     // Optimistic update
@@ -473,8 +679,8 @@ const Alerts = () => {
     });
   };
 
-  // Dispatch officer using Inertia (PUT request)
-  const handleDispatchOfficer = async (dispatchData) => {
+  // Dispatch officer using Inertia (PUT)
+  const handleDispatchOfficer = (dispatchData) => {
     if (!selectedAlertForDispatch) return;
     const alertId = selectedAlertForDispatch._id || selectedAlertForDispatch.id;
     setIsDispatching(true);
@@ -495,8 +701,8 @@ const Alerts = () => {
     });
   };
 
-  // Resolve emergency using Inertia (PUT request)
-  const handleConfirmResolve = async () => {
+  // Resolve emergency using Inertia (PUT)
+  const handleConfirmResolve = () => {
     if (!alertToResolve) return;
     const alertId = alertToResolve._id || alertToResolve.id;
     setIsResolving(true);
@@ -518,8 +724,8 @@ const Alerts = () => {
     });
   };
 
-  // Save report using Inertia (POST request)
-  const handleSaveReport = async (reportData) => {
+  // Save report using Inertia (POST)
+  const handleSaveReport = (reportData) => {
     setIsSubmitting(true);
     router.post('/Reports', reportData, {
       preserveScroll: true,
@@ -580,6 +786,15 @@ const Alerts = () => {
     return pages;
   };
 
+  const buildQueryParams = (page = 1, perPage = pagination.per_page) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('per_page', perPage);
+    if (filters.status.length > 0) params.append('status', filters.status.join(','));
+    if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
+    return params;
+  };
+
   const toggleFilter = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
@@ -618,13 +833,13 @@ const Alerts = () => {
   const handleDecisionYes = () => { setShowDecisionModal(false); setShowAddReportModal(true); };
   const handleDecisionNo  = () => { setShowDecisionModal(false); setAlertForReport(null); showToast('Report creation skipped', 'success'); };
 
-  const handleAction = async (action, alert) => {
+  const handleAction = (action, alert) => {
     switch (action) {
       case 'dispatch':          setSelectedAlertForDispatch(alert); setShowDispatchModal(true); break;
       case 'resolve':           handleResolveClick(alert); setSelectedAlert(null); break;
       case 'createReport':      setAlertForReport(alert); setShowAddReportModal(true); break;
-      case 'revertToResponding': await handleRevertStatus(alert, 'responding'); break;
-      case 'revertToActive':    await handleRevertStatus(alert, 'active'); break;
+      case 'revertToResponding': handleRevertStatus(alert, 'responding'); break;
+      case 'revertToActive':    handleRevertStatus(alert, 'active'); break;
     }
   };
 
@@ -648,7 +863,7 @@ const Alerts = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Client-side search + date filtering on the current page
+  // Client-side search + date filtering
   const filteredAlerts = alerts.filter(alert => {
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -696,8 +911,251 @@ const Alerts = () => {
 
       <Card className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border-border">
         <CardContent className="p-6">
-          {/* Filter Bar - Keep your existing JSX */}
-          {/* ... (keep your existing filter UI) ... */}
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <Input
+                placeholder="Search alerts..."
+                className="pl-10 bg-gray-50 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Filters Dropdown */}
+            <SimpleDropdown
+              isOpen={showFilterDropdown}
+              onClose={() => setShowFilterDropdown(false)}
+              align="left"
+              trigger={
+                <Button
+                  variant={getFilterCount() > 0 ? 'default' : 'outline'}
+                  className={`gap-2 rounded-xl relative ${getFilterCount() > 0 ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  {getFilterCount() > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {getFilterCount()}
+                    </span>
+                  )}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              }
+            >
+              <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+                {/* Status Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
+                    {filters.status.length > 0 && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, status: [] }))}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {statusOptions.map(option => (
+                      <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={filters.status.includes(option.value)}
+                          onChange={() => toggleFilter('status', option.value)}
+                          className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                {/* Locations Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Locations</Label>
+                    {filters.locations.length > 0 && (
+                      <button onClick={() => setFilters(prev => ({ ...prev, locations: [] }))} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(locationLabels).map(([groupName, locationsGroup]) => (
+                      <div key={groupName}>
+                        <Label className="text-xs font-semibold text-gray-500 mb-2 block dark:text-gray-400">{groupName}</Label>
+                        <div className="space-y-2 pl-2">
+                          {Object.entries(locationsGroup).map(([key, label]) => (
+                            <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded dark:hover:bg-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={filters.locations.includes(key)}
+                                onChange={() => toggleFilter('locations', key)}
+                                className="rounded border-gray-300 bg-white dark:border-slate-600 dark:bg-slate-700 text-[#D4A853]"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-3">
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={() => { setFilters({ status: [], locations: [] }); setShowFilterDropdown(false); }}
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              </div>
+            </SimpleDropdown>
+
+            {/* Date Range Dropdown */}
+            <SimpleDropdown
+              isOpen={showDateDropdown}
+              onClose={() => setShowDateDropdown(false)}
+              align="right"
+              trigger={
+                <Button
+                  variant={(datePreset !== 'all' || customDateFrom || customDateTo) ? 'default' : 'outline'}
+                  className={`gap-2 rounded-xl relative ${(datePreset !== 'all' || customDateFrom || customDateTo) ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  onClick={() => setShowDateDropdown(!showDateDropdown)}
+                >
+                  <Calendar className="w-4 h-4" />
+                  {getDateFilterLabel()}
+                  {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">1</span>
+                  )}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              }
+            >
+              <div className="p-4 min-w-[260px] space-y-4 max-h-[400px] overflow-y-auto">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Time Period</Label>
+                    {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                      <button onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); setShowDateDropdown(false); }} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400">Clear</button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { value: 'today', label: 'Today' },
+                      { value: 'week',  label: 'This Week' },
+                      { value: 'month', label: 'This Month' },
+                      { value: 'all',   label: 'All Time' },
+                    ].map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => {
+                          const today = new Date();
+                          if (value === 'today') {
+                            const d = today.toISOString().split('T')[0];
+                            setCustomDateFrom(d); setCustomDateTo(d);
+                          } else if (value === 'week') {
+                            const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+                            const end   = new Date(today); end.setDate(today.getDate() + (6 - today.getDay()));
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else if (value === 'month') {
+                            const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                            const end   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                            setCustomDateFrom(start.toISOString().split('T')[0]);
+                            setCustomDateTo(end.toISOString().split('T')[0]);
+                          } else {
+                            setCustomDateFrom(''); setCustomDateTo('');
+                          }
+                          setDatePreset(value);
+                          setShowDateDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          datePreset === value
+                            ? 'bg-[#D4A853] text-white'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700" />
+
+                <div>
+                  <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-200">Custom Range</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">From</Label>
+                      <Input type="date" value={customDateFrom} onChange={(e) => { setCustomDateFrom(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block dark:text-gray-400">To</Label>
+                      <Input type="date" value={customDateTo} onChange={(e) => { setCustomDateTo(e.target.value); setDatePreset('custom'); }} className="bg-gray-50 border-gray-200 rounded-lg text-sm h-9 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" className="flex-1 rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300" onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); setDatePreset('all'); setShowDateDropdown(false); }}>Clear</Button>
+                      <Button className="flex-1 bg-[#D4A853] hover:bg-[#C49A48] rounded-lg text-white" onClick={() => setShowDateDropdown(false)}>Apply</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </SimpleDropdown>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" className="gap-2 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30" onClick={clearAllFilters}>
+                <X className="w-4 h-4" />Clear All
+              </Button>
+            )}
+          </div>
+
+          {/* Active Filter Tags */}
+          {hasActiveFilters && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {filters.status.map(s => (
+                <Badge key={s} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  {s === 'active' ? 'Active' : s === 'responding' ? 'Responding' : 'Resolved'}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('status', s)} />
+                </Badge>
+              ))}
+              {filters.locations.map(l => {
+                let displayName = l;
+                for (const group of Object.values(locationLabels)) {
+                  if (group[l]) { displayName = group[l]; break; }
+                }
+                return (
+                  <Badge key={l} variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                    <MapPin className="w-3 h-3" />
+                    {displayName}
+                    <X className="w-3 h-3 cursor-pointer" onClick={() => toggleFilter('locations', l)} />
+                  </Badge>
+                );
+              })}
+              {(datePreset !== 'all' || customDateFrom || customDateTo) && (
+                <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  <Calendar className="w-3 h-3" />{getDateFilterLabel()}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => { setDatePreset('all'); setCustomDateFrom(''); setCustomDateTo(''); }} />
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="gap-1 px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600">
+                  Search: {searchQuery}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchQuery('')} />
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Alerts List */}
           {loading ? (
@@ -727,12 +1185,63 @@ const Alerts = () => {
             </div>
           )}
 
-          {/* Pagination - Keep your existing JSX */}
-          {/* ... (keep your existing pagination UI) ... */}
+          {/* Pagination */}
+          {pagination.total > 0 && (
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {pagination.from} to {pagination.to} of {pagination.total} alerts
+              </p>
+              {pagination.last_page > 1 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mr-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
+                    <select
+                      value={pagination.per_page}
+                      onChange={(e) => handlePerPageChange(parseInt(e.target.value))}
+                      className="px-2 py-1 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 text-gray-700 dark:text-gray-300 text-sm"
+                    >
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1 || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="flex gap-1">
+                    {getPageNumbers().map((page, idx) =>
+                      page === '...' ? (
+                        <span key={idx} className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">...</span>
+                      ) : (
+                        <Button
+                          key={page}
+                          variant={pagination.current_page === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          disabled={loading}
+                          className={`rounded-lg min-w-[36px] ${
+                            pagination.current_page === page
+                              ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white'
+                              : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === pagination.last_page || loading} className="rounded-lg border-gray-200 text-gray-700 dark:border-slate-700 dark:text-gray-300">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Modals - Keep your existing JSX */}
+      {/* Modals */}
       <AlertDetailModal
         alert={selectedAlert}
         open={!!selectedAlert}
