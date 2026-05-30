@@ -116,23 +116,14 @@ class SettingsController extends Controller
             'incident_alerts' => 'required|boolean',
         ]);
 
-        // Merge with existing preferences or create new
         $currentPreferences = $admin->notification_preferences ?? [];
         $admin->notification_preferences = array_merge($currentPreferences, [
             'incident_alerts' => $validated['incident_alerts'],
         ]);
         $admin->save();
 
-        Log::info('Notification preferences updated', [
-            'admin_id' => (string)$admin->_id,
-            'admin_email' => $admin->email,
-            'preferences' => $admin->notification_preferences
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification preferences updated successfully'
-        ]);
+        // Return redirect instead of JSON
+        return redirect()->back()->with('success', 'Notification preferences updated successfully');
     }
 
     /**
@@ -157,8 +148,6 @@ class SettingsController extends Controller
      */
     public function updateDarkMode(Request $request)
     {
-        \Log::info('Dark mode update called', ['request_data' => $request->all()]);
-
         $admin = Auth::user();
 
         $validated = $request->validate([
@@ -171,14 +160,10 @@ class SettingsController extends Controller
         ]);
         $admin->save();
 
-        \Log::info('Dark mode saved', ['new_value' => $validated['dark_mode']]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Dark mode preference updated successfully',
-            'dark_mode' => $validated['dark_mode']
-        ]);
+        // Return redirect instead of JSON
+        return redirect()->back()->with('success', 'Dark mode preference updated successfully');
     }
+
 
     /**
      * Get dark mode preference for the authenticated admin
