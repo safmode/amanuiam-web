@@ -737,6 +737,27 @@ Route::post('/telegram/webhook', function (Request $request) {
 });
 
 // ============================================
+// API ROUTES
+// ============================================
+
+Route::post('/api/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
+Route::get('/api/students/search', function (Request $request) {
+    $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
+    if ($student) {
+        return response()->json([
+            'student' => [
+                '_id' => (string)$student->_id,
+                'name' => $student->name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'matrixNumber' => $student->matrixNumber,
+            ]
+        ]);
+    }
+    return response()->json(['student' => null]);
+});
+
+// ============================================
 // PUBLIC ROUTES
 // ============================================
 
@@ -766,23 +787,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/upload-attachments', [ReportController::class, 'uploadAttachments'])->name('reports.upload.attachments');
     Route::post('/reports/upload-for-new', [ReportController::class, 'uploadForNewReport'])->name('reports.upload-for-new');
     Route::delete('/reports/delete-attachment', [ReportController::class, 'deleteAttachment'])->name('reports.delete.attachment');
-
-    Route::post('/api/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
-    Route::get('/api/students/search', function (Request $request) {
-        $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
-        if ($student) {
-            return response()->json([
-                'student' => [
-                    '_id' => (string)$student->_id,
-                    'name' => $student->name,
-                    'email' => $student->email,
-                    'phone' => $student->phone,
-                    'matrixNumber' => $student->matrixNumber,
-                ]
-            ]);
-        }
-        return response()->json(['student' => null]);
-    });
 
     Route::get('/Officers', [OfficerController::class, 'index'])->name('officers');
     Route::post('/Officers', [OfficerController::class, 'store'])->name('officers.store');
