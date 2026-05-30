@@ -287,8 +287,8 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
   return (
     <>
       <Dialog open={isOpen && !isEditingOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 dark:bg-slate-800 dark:border-slate-700">
-          <DialogHeader className="p-6 pb-2 border-b border-gray-100 dark:border-slate-700">
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-slate-800 dark:border-slate-700">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
                 <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -305,7 +305,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
 
           <div className="p-6 space-y-5">
             {/* Reporter Information */}
-            <Card className="border-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:to-slate-800">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
@@ -315,7 +315,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-start gap-2">
-                    <User className="w-4 h-4 text-orange-400 mt-0.5 dark:text-orange-500" />
+                    <User className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Full Name</p>
                       <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
@@ -324,7 +324,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Mail className="w-4 h-4 text-orange-400 mt-0.5 dark:text-orange-500" />
+                    <Mail className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Email Address</p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 break-all">
@@ -334,7 +334,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                   </div>
                   {localReport.studentMatrix && (
                     <div className="flex items-start gap-2">
-                      <div className="w-4 h-4 text-orange-400 mt-0.5 flex items-center justify-center dark:text-orange-500">
+                      <div className="w-4 h-4 text-gray-500 mt-0.5 flex items-center justify-center dark:text-gray-400">
                         <span className="text-xs font-bold">#</span>
                       </div>
                       <div>
@@ -347,7 +347,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                   )}
                   {localReport.studentPhone && (
                     <div className="flex items-start gap-2">
-                      <Phone className="w-4 h-4 text-orange-400 mt-0.5 dark:text-orange-500" />
+                      <Phone className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Phone Number</p>
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -361,7 +361,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
             </Card>
 
             {/* Incident Details */}
-            <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -389,7 +389,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> Incident Location
                     </p>
-                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                       {incidentLocation && incidentLocation !== 'No address specified' ? (
                         <>
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
@@ -398,7 +398,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                           {/* Show reporter's residence if different from incident location */}
                           {reporterResidence && reporterResidence !== 'Unknown Location' &&
                            !incidentLocation.toLowerCase().includes(reporterResidence.toLowerCase()) && (
-                            <p className="text-xs text-gray-400 mt-2 pt-1 border-t border-gray-100 dark:text-gray-500 dark:border-slate-700">
+                            <p className="text-xs text-gray-500 mt-2 pt-1 border-t border-gray-100 dark:text-gray-400 dark:border-slate-700">
                               👤 Reporter's residence: {getLocationAreaName(reporterResidence)}
                             </p>
                           )}
@@ -409,7 +409,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                             ⚠️ No specific location provided
                           </p>
                           {reporterResidence && reporterResidence !== 'Unknown Location' && (
-                            <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">
+                            <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                               Reported from: {getLocationAreaName(reporterResidence)} area
                             </p>
                           )}
@@ -421,31 +421,33 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                   {/* Description */}
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Description</p>
-                    <p className="text-sm whitespace-pre-wrap mt-1 bg-white p-3 rounded-lg border border-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300">
-                      {rawReport.description || localReport.description || '—'}
-                    </p>
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {rawReport.description || localReport.description || '—'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Injuries & Damages */}
-            <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Injuries & Damages</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-3 border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Injuries</p>
-                    <p className="text-sm font-medium mt-1 text-red-600 dark:text-red-400">
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
                       {rawReport.injuries || localReport.injuries || 'None reported'}
                     </p>
                   </div>
-                  <div className="bg-white rounded-lg p-3 border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Damages</p>
-                    <p className="text-sm font-medium mt-1 text-amber-600 dark:text-amber-400">
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
                       {rawReport.damages || localReport.damages || 'None reported'}
                     </p>
                   </div>
@@ -455,7 +457,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
 
             {/* Suspect Information */}
             {(rawReport.suspectDescription || localReport.suspectDescription) && (
-              <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+              <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -463,16 +465,18 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</p>
-                    <p className="text-sm whitespace-pre-wrap mt-1 bg-white p-3 rounded-lg border border-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300">
-                      {rawReport.suspectDescription || localReport.suspectDescription}
-                    </p>
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {rawReport.suspectDescription || localReport.suspectDescription}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {/* Attachments */}
-            <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Image className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -522,7 +526,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                     })}
                   </div>
                 ) : (
-                  <div className="border border-gray-200 rounded-xl p-6 text-center bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30 dark:border-slate-700 dark:bg-slate-800/30">
                     <Image className="w-8 h-8 text-gray-400 mx-auto mb-2 dark:text-gray-500" />
                     <p className="text-sm text-gray-500 dark:text-gray-400">No attachments</p>
                   </div>
@@ -531,14 +535,14 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
             </Card>
 
             {/* Status & Assignment */}
-            <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status & Assignment</span>
                 </div>
                 <div className="space-y-3">
-                  <div className="bg-white rounded-lg p-3 border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</p>
                     <p className="text-sm font-medium mt-1 flex items-center gap-2 text-gray-800 dark:text-gray-200">
                       <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -558,14 +562,14 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
             </Card>
 
             {/* Report Metadata */}
-            <Card className="bg-gray-50/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700">
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Report Metadata</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-3 border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Reported At</p>
                     <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
                       {rawReport.reportedAt || localReport.reportedAt
@@ -573,7 +577,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                         : '—'}
                     </p>
                   </div>
-                  <div className="bg-white rounded-lg p-3 border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Last Updated</p>
                     <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
                       {rawReport.updatedAt || localReport.updatedAt
@@ -589,7 +593,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
             <div className="flex justify-end gap-3 pt-2">
               <Button
                 variant="outline"
-                className="rounded-xl gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                className="text-gray-700 border-gray-700 rounded-xl gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                 onClick={() => setIsEditingOpen(true)}
               >
                 <Edit className="w-4 h-4" />
