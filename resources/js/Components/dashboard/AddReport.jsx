@@ -604,7 +604,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       </SelectTrigger>
                       <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(categoryLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -621,7 +621,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       </SelectTrigger>
                       <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(urgencyLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -635,7 +635,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       </SelectTrigger>
                       <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(statusLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -770,7 +770,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                               {groupName}
                             </div>
                             {Object.entries(locations).map(([key, label]) => (
-                              <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
+                              <SelectItem key={key} value={label} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                                 {label}
                               </SelectItem>
                             ))}
@@ -990,11 +990,11 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="unassigned" className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
+                      <SelectItem value="unassigned" className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                         <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
                       </SelectItem>
                       {officersList.map((officer) => (
-                        <SelectItem key={officer.officerId} value={officer.officerId} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
+                        <SelectItem key={officer.officerId} value={officer.officerId} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                           {officer.officerName}
                         </SelectItem>
                       ))}
