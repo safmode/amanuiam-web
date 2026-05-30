@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 // FORCE HTTPS - Fix for Render deployment
 const forceHTTPS = (url) => {
     if (typeof url === 'string' && url.startsWith('http://')) {
@@ -7,22 +5,6 @@ const forceHTTPS = (url) => {
     }
     return url;
 };
-
-// Configure axios
-window.axios = axios;
-window.axios.defaults.baseURL = window.location.origin;
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-// Intercept all axios requests to force HTTPS
-window.axios.interceptors.request.use(config => {
-    if (config.url) {
-        config.url = forceHTTPS(config.url);
-    }
-    if (config.baseURL) {
-        config.baseURL = forceHTTPS(config.baseURL);
-    }
-    return config;
-});
 
 // Intercept all fetch requests to force HTTPS
 const originalFetch = window.fetch;
