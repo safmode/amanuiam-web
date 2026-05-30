@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Emergencies;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -30,6 +31,11 @@ class HandleInertiaRequests extends Middleware
                     'status' => $user->status,
                     'role' => $user->role ?? 'admin',
                 ] : null,
+            ],
+            // Add emergency counts for sidebar badge
+            'emergencyCounts' => [
+                'active' => Emergencies::where('status', 'active')->count(),
+                'responding' => Emergencies::where('status', 'responding')->count(),
             ],
         ]);
     }
