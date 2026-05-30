@@ -39,9 +39,9 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     urgency: 'general',
     status: 'pending',
     description: '',
-    locationArea: '',  // Store the selected locationArea label
+    locationArea: '',
     building: '',
-    fullAddress: '',   // Combined preview
+    fullAddress: '',
     damages: '',
     suspectDescription: '',
     injuries: '',
@@ -61,7 +61,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleLocationAreaChange = (value) => {
-    // value is already the display label (e.g., "Mahallah Aminah")
     const newFullAddress = updateFullAddress(value, newReport.building);
     setNewReport(prev => ({
         ...prev,
@@ -413,7 +412,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         officerNotes: newReport.officerNotes || null,
         attachmentUrls: finalUrls,
         attachmentPublicIds: finalPublicIds,
-        location: locationObj  // ONLY send location object
+        location: locationObj
       };
 
       console.log('Sending payload:', payload);
@@ -465,16 +464,16 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (analysisTimeout) {
         clearTimeout(analysisTimeout);
     }
-        };
+  };
 
-    const handleClose = () => {
-        attachmentUrls.forEach(url => {
-        if (url.startsWith('blob:')) {
-            URL.revokeObjectURL(url);
-        }
-        });
-        resetForm();
-        onClose();
+  const handleClose = () => {
+    attachmentUrls.forEach(url => {
+      if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+      }
+    });
+    resetForm();
+    onClose();
   };
 
   const getOptimizedImageUrl = (url) => {
@@ -488,7 +487,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-slate-800 dark:border-slate-700">
         <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
@@ -505,7 +504,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
         <div className="p-6 space-y-5">
           {/* Reporter Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
@@ -515,7 +514,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Full Name *</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Full Name *</Label>
                   <Input
                     value={newReport.reporterName}
                     onChange={(e) => setNewReport({...newReport, reporterName: e.target.value})}
@@ -525,7 +524,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Email Address *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Email Address *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                       <Input
@@ -538,7 +537,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Phone Number *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Phone Number *</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                       <Input
@@ -552,7 +551,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Matric Number</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Matric Number</Label>
                   <div className="flex gap-2 mt-1">
                     <Input
                       value={newReport.reporterMatricNo}
@@ -586,7 +585,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Incident Details */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -595,7 +594,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Category *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Category *</Label>
                     <Select
                       value={newReport.category}
                       onValueChange={handleCategoryChange}
@@ -612,7 +611,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </div>
 
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Urgency Level *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Urgency Level *</Label>
                     <Select
                       value={newReport.urgency}
                       onValueChange={handleUrgencyChange}
@@ -629,7 +628,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </div>
 
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Status</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Status</Label>
                     <Select value={newReport.status} onValueChange={(v) => setNewReport({...newReport, status: v})}>
                       <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
@@ -645,7 +644,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
                 {/* Description */}
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Description *</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Description *</Label>
                   <Textarea
                     value={newReport.description}
                     onChange={(e) => setNewReport({...newReport, description: e.target.value})}
@@ -730,7 +729,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 {/* Date & Time */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Date *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Date *</Label>
                     <Input
                       type="date"
                       value={newReport.incidentDate}
@@ -739,7 +738,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Time *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Time *</Label>
                     <Input
                       type="time"
                       value={newReport.incidentTime}
@@ -752,39 +751,39 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 {/* Location Section */}
                 <div className="space-y-3">
                   {/* Location Area */}
-                    <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400">Location Area *</Label>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                            Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
-                        </p>
-                        <Select
-                            value={newReport.locationArea || ""}
-                            onValueChange={handleLocationAreaChange}
-                        >
-                            <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
-                            <SelectValue placeholder="Select location area" />
-                            </SelectTrigger>
-                            <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                            {Object.entries(locationLabels).map(([groupName, locations]) => (
-                                <Fragment key={groupName}>
-                                <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
-                                    {groupName}
-                                </div>
-                                {Object.entries(locations).map(([key, label]) => (
-                                    <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                                    {label}
-                                    </SelectItem>
-                                ))}
-                                </Fragment>
+                  <div>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Location Area *</Label>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-400">
+                      Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
+                    </p>
+                    <Select
+                      value={newReport.locationArea || ""}
+                      onValueChange={handleLocationAreaChange}
+                    >
+                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                        <SelectValue placeholder="Select location area" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                        {Object.entries(locationLabels).map(([groupName, locations]) => (
+                          <Fragment key={groupName}>
+                            <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
+                              {groupName}
+                            </div>
+                            {Object.entries(locations).map(([key, label]) => (
+                              <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
+                                {label}
+                              </SelectItem>
                             ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                          </Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {/* Specific Address */}
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
                     <div className="flex items-start gap-1.5 mt-1 mb-1">
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      <p className="text-[10px] text-gray-600 dark:text-gray-400">
                         Enter the specific location where the incident happened (building name/number, room/block, landmarks)
                       </p>
                     </div>
@@ -816,7 +815,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Injuries & Damages */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -824,7 +823,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Injuries</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Injuries</Label>
                   <Textarea
                     value={newReport.injuries}
                     onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
@@ -833,7 +832,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Damages</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Damages</Label>
                   <Textarea
                     value={newReport.damages}
                     onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
@@ -846,14 +845,14 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Suspect Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suspect Information (if applicable)</span>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</Label>
+                <Label className="text-xs text-gray-700 dark:text-gray-400">Suspect Description</Label>
                 <Textarea
                   value={newReport.suspectDescription}
                   onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
@@ -865,7 +864,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Attachments */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -970,7 +969,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           </Card>
 
           {/* Assignment & Notes */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -978,7 +977,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Assigned Officer</Label>
                   <Select
                     value={newReport.assignedOfficer || "unassigned"}
                     onValueChange={(value) => {
@@ -1008,7 +1007,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   )}
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Internal Notes</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Internal Notes</Label>
                   <Textarea
                     value={newReport.officerNotes}
                     onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
