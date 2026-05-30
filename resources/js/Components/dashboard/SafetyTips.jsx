@@ -1,15 +1,16 @@
-// components/dashboard/SafetyTips.jsx - Fixed Version
+// components/dashboard/SafetyTips.jsx - Using ONLY Inertia Router
 import { useState, useEffect } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Send, Loader2, Plus, X, Bell, Shield, History, Megaphone, Flag } from 'lucide-react';
-import axios from 'axios';
+import { Send, Loader2, Plus, X, Bell, History, Megaphone } from 'lucide-react';
 
 const SafetyTips = () => {
+  const { flash } = usePage().props;
   const [tips, setTips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -18,7 +19,7 @@ const SafetyTips = () => {
     title: '',
     message: '',
     type: 'announcement',
-    priority: 'normal'  // ADD THIS - default priority
+    priority: 'normal'
   });
 
   // Pre-defined templates
@@ -29,41 +30,62 @@ const SafetyTips = () => {
     { title: "Weather Alert", message: "Heavy rain expected. Drive carefully and avoid driving recklessly.", type: "reminder", priority: "normal" },
   ];
 
+  // Load history using Inertia
   useEffect(() => {
-    fetchHistory();
+    // Use Inertia's visit for GET requests
+    router.visit('/api/safety-tips/history', {
+      method: 'get',
+      preserveScroll: true,
+      preserveState: false,
+      only: ['safetyTips'], // Only update the safetyTips prop
+      onSuccess: (page) => {
+        setTips(page.props.safetyTips?.data || []);
+        setLoading(false);
+      },
+      onError: () => {
+        setLoading(false);
+      }
+    });
   }, []);
 
-  const fetchHistory = async () => {
-    try {
-      const res = await axios.get('/api/safety-tips/history');
-      setTips(res.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch history:', error);
-    } finally {
-      setLoading(false);
+  // Show flash messages
+  useEffect(() => {
+    if (flash?.success) {
+      alert(flash.success);
     }
-  };
+    if (flash?.error) {
+      alert(`❌ ${flash.error}`);
+    }
+  }, [flash]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!newTip.title || !newTip.message) {
       alert('Please fill in title and message');
       return;
     }
 
     setSending(true);
-    try {
-      await axios.post('/api/safety-tips/send', newTip);
-      alert('✅ Announcement sent to all students!');
-      setNewTip({ title: '', message: '', type: 'announcement', priority: 'normal' });
-      setShowForm(false);
-      fetchHistory();
-    } catch (error) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to send announcement';
-      alert(`❌ ${errorMsg}`);
-      console.error('Send error:', error.response?.data || error);
-    } finally {
-      setSending(false);
-    }
+
+    // Use Inertia router for POST - CSRF handled automatically!
+    router.post('/api/safety-tips/send', newTip, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        alert('✅ Announcement sent to all students!');
+        setNewTip({ title: '', message: '', type: 'announcement', priority: 'normal' });
+        setShowForm(false);
+        // Refresh the list
+        router.reload({ only: ['safetyTips'] });
+      },
+      onError: (errors) => {
+        const errorMsg = errors.error || errors.message || 'Failed to send announcement';
+        alert(`❌ ${errorMsg}`);
+        console.error('Send error:', errors);
+      },
+      onFinish: () => {
+        setSending(false);
+      }
+    });
   };
 
   const getTypeIcon = (type) => {
@@ -137,7 +159,7 @@ const SafetyTips = () => {
             </div>
           )}
 
-          {/* Send Form - Fixed */}
+          {/* Send Form */}
           {showForm && (
             <div className="mb-6 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-xl">
               <div className="flex justify-between items-center mb-4">
