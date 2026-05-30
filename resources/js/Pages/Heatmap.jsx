@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { AlertTriangle, Calendar, MapPin, BarChart3, ChevronDown, Filter, X, Frown } from 'lucide-react';
+import { AlertTriangle, Calendar, MapPin, BarChart3, ChevronDown, Filter, X, Frown, Layers } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -24,8 +24,8 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Heatmap Layer Component
-const HeatmapLayer = ({ points }) => {
+// Heatmap Layer Component - with show/hide control
+const HeatmapLayer = ({ points, show }) => {
   const map = useMap();
   const heatLayerRef = useRef(null);
 
@@ -36,8 +36,8 @@ const HeatmapLayer = ({ points }) => {
       heatLayerRef.current = null;
     }
 
-    // Only create if we have points
-    if (!points || points.length === 0) {
+    // Only create if we have points AND show is true
+    if (!show || !points || points.length === 0) {
       return;
     }
 
@@ -57,22 +57,23 @@ const HeatmapLayer = ({ points }) => {
       maxZoom: 17,
       minOpacity: 0.4,
       gradient: {
-        0.2: '#22c55e',  // Green - low intensity
-        0.4: '#f59e0b',  // Amber - medium intensity
-        0.6: '#ef4444',  // Red - high intensity
-        0.8: '#dc2626',  // Darker red
-        1.0: '#b91c1c'   // Darkest red
+        0.0: '#22c55e',  // Green starts at 0
+        0.33: '#22c55e', // Green stays until 33%
+        0.34: '#f59e0b', // Yellow/Amber from 34-66%
+        0.66: '#f59e0b',
+        0.67: '#ef4444', // Red from 67-100%
+        1.0: '#ef4444'
       }
     }).addTo(map);
 
-    // Cleanup on unmount
+    // Cleanup on unmount or when show changes
     return () => {
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
         heatLayerRef.current = null;
       }
     };
-  }, [points, map]); // Re-run when points or map changes
+  }, [points, map, show]); // Re-run when points, map, or show changes
 
   return null;
 };
@@ -140,36 +141,49 @@ const Heatmap = () => {
   const [filters, setFilters] = useState({
     category: [],
   });
+  const [showHeatmap, setShowHeatmap] = useState(true); // New state for heatmap toggle
 
   // Generate heatmap points from filtered hotspots
   const heatmapPoints = useMemo(() => {
     const points = [];
+    if (filteredHotspotsData.length === 0) return points;
+
     const maxIncidents = Math.max(...filteredHotspotsData.map(h => h.incidents), 1);
+    const minIncidents = Math.min(...filteredHotspotsData.map(h => h.incidents), 0);
 
     filteredHotspotsData.forEach(hotspot => {
-      if (hotspot.lat && hotspot.lng) {
-        const intensity = Math.min(hotspot.incidents / maxIncidents, 1.0);
+        if (hotspot.lat && hotspot.lng) {
+        // Better intensity calculation that spreads values
+        let intensity;
+        if (maxIncidents === minIncidents) {
+            intensity = 0.5;
+        } else {
+            // Normalize between 0.1 and 1.0
+            intensity = 0.1 + ((hotspot.incidents - minIncidents) / (maxIncidents - minIncidents)) * 0.9;
+        }
 
         points.push({
-          lat: hotspot.lat,
-          lng: hotspot.lng,
-          intensity: intensity,
+            lat: hotspot.lat,
+            lng: hotspot.lng,
+            intensity: intensity,
         });
 
-        const scatterCount = Math.min(Math.floor(hotspot.incidents / 2), 15);
+        // Add scatter points for better heat distribution
+        const scatterCount = Math.min(Math.floor(hotspot.incidents / 2), 10);
         for (let i = 0; i < scatterCount; i++) {
-          const latOffset = (Math.random() - 0.5) * 0.001;
-          const lngOffset = (Math.random() - 0.5) * 0.001;
-          const scatterIntensity = intensity * (0.3 + Math.random() * 0.5);
+            const latOffset = (Math.random() - 0.5) * 0.0008;
+            const lngOffset = (Math.random() - 0.5) * 0.0008;
+            const scatterIntensity = Math.max(0.05, intensity * (0.2 + Math.random() * 0.3));
 
-          points.push({
+            points.push({
             lat: hotspot.lat + latOffset,
             lng: hotspot.lng + lngOffset,
             intensity: scatterIntensity,
-          });
+            });
         }
-      }
+        }
     });
+
     return points;
   }, [filteredHotspotsData]);
 
@@ -539,6 +553,16 @@ const Heatmap = () => {
                   </div>
                 </SimpleDropdown>
 
+                {/* Heatmap Toggle Button */}
+                <Button
+                  variant={showHeatmap ? "default" : "outline"}
+                  className={`gap-2 rounded-xl ${showHeatmap ? 'bg-[#D4A853] hover:bg-[#C49A48] text-white' : 'border-gray-200 text-gray-700'} dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700`}
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                >
+                  <Layers className="w-4 h-4" />
+                  Heatmap {showHeatmap ? 'ON' : 'OFF'}
+                </Button>
+
                 {hasActiveFilters && (
                   <Button
                     variant="ghost"
@@ -576,7 +600,7 @@ const Heatmap = () => {
                 </div>
               )}
 
-              {/* Leaflet Map with Heatmap Layer - Always on */}
+              {/* Leaflet Map with Heatmap Layer - Toggleable */}
               <div className="rounded-xl border border-gray-200 overflow-hidden relative dark:border-slate-600" style={{ height: '500px', position: 'relative', zIndex: 0 }}>
                 {hasNoData ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-800">
@@ -601,9 +625,9 @@ const Heatmap = () => {
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {/* Heatmap Layer - Always on */}
-                    {heatmapPoints.length > 0 && (
-                      <HeatmapLayer points={heatmapPoints} />
+                    {/* Heatmap Layer - Only shows when showHeatmap is true */}
+                    {heatmapPoints.length > 0 && showHeatmap && (
+                      <HeatmapLayer points={heatmapPoints} show={showHeatmap} />
                     )}
 
                     {/* Circle Markers */}
