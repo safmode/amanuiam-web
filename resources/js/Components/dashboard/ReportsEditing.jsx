@@ -12,6 +12,27 @@ import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels, formatLocationName } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
 
+// Helper function to get CSRF token from cookie (MOST RELIABLE)
+const getCsrfToken = () => {
+  // Method 1: Try cookie first (always available)
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value);
+    }
+  }
+
+  // Method 2: Fallback to meta tag
+  const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (metaToken) {
+    return metaToken;
+  }
+
+  // Method 3: Return null if no token found
+  return null;
+};
+
 // Helper function to extract location data from report
 const extractLocationData = (report) => {
   if (!report) return { locationArea: '', building: '', specificPlace: '', fullAddress: '' };
@@ -253,7 +274,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   }, [report, isOpen]);
 
-  // === Debounced description analysis ===
+  // === Debounced description analysis with CSRF cookie fix ===
   useEffect(() => {
     if (analysisTimeout) {
       clearTimeout(analysisTimeout);
@@ -285,22 +306,72 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
 
     try {
+      // Get CSRF token from cookie (reliable method)
+      const csrfToken = getCsrfToken();
+
+      if (!csrfToken) {
+        console.error('No CSRF token found');
+        throw new Error('Unable to get CSRF token');
+      }
+
+      console.log('AI Analysis - CSRF Token found:', csrfToken.substring(0, 20) + '...');
+
       const response = await fetch('/api/ai/analyze-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ description })
       });
 
+      if (!response.ok) {
+        if (response.status === 419) {
+          console.error('CSRF token expired');
+          // Try to get a fresh token and retry
+          const freshToken = getCsrfToken();
+          if (freshToken && freshToken !== csrfToken) {
+            const retryResponse = await fetch('/api/ai/analyze-report', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': freshToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({ description })
+            });
+
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              if (retryData.success) {
+                setAiSuggestion({
+                  category: retryData.category,
+                  urgency: retryData.urgency,
+                  confidence: retryData.confidence || 0.8
+                });
+              }
+              setIsAnalyzing(false);
+              return;
+            }
+          }
+          throw new Error('CSRF token expired. Please refresh the page.');
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('AI Analysis response:', data);
 
       if (data.success) {
         setAiSuggestion({
           category: data.category,
           urgency: data.urgency,
-          confidence: data.confidence
+          confidence: data.confidence || 0.8
         });
       } else {
         setAiSuggestion(null);
@@ -435,7 +506,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   };
 
-  // Upload pending files to Cloudinary
+  // Upload pending files to Cloudinary with CSRF cookie
   const uploadPendingFiles = async () => {
     if (pendingFiles.length === 0) return { urls: [], publicIds: [] };
 
@@ -447,10 +518,12 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     formData.append('reportId', editedReport.reportId);
 
     try {
+      const csrfToken = getCsrfToken();
+
       const response = await fetch('/reports/upload-attachments', {
         method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'X-CSRF-TOKEN': csrfToken,
         },
         body: formData,
       });
@@ -476,17 +549,19 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   };
 
-  // Delete pending deletions from Cloudinary
+  // Delete pending deletions from Cloudinary with CSRF cookie
   const processPendingDeletions = async () => {
     if (pendingDeletions.length === 0) return;
 
     for (const deletion of pendingDeletions) {
       try {
+        const csrfToken = getCsrfToken();
+
         const response = await fetch('/reports/delete-attachment', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            'X-CSRF-TOKEN': csrfToken,
           },
           body: JSON.stringify({
             reportId: editedReport.reportId,

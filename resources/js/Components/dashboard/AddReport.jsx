@@ -24,7 +24,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   // === AI FEATURE: State for AI suggestion ===
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const analysisTimeoutRef = useRef(null); // Use ref for timeout
+  const analysisTimeoutRef = useRef(null);
 
   // Store pending files that need to be uploaded on submit
   const [pendingFiles, setPendingFiles] = useState([]);
@@ -50,6 +50,27 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     incidentDate: '',
     incidentTime: '',
   });
+
+  // Helper function to get CSRF token from cookie (MOST RELIABLE)
+  const getCsrfToken = () => {
+    // Method 1: Try cookie first (always available)
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'XSRF-TOKEN') {
+        return decodeURIComponent(value);
+      }
+    }
+
+    // Method 2: Fallback to meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (metaToken) {
+      return metaToken;
+    }
+
+    // Method 3: Return null if no token found
+    return null;
+  };
 
   // Update full address when locationArea or building changes
   const updateFullAddress = (locationAreaVal, buildingVal) => {
@@ -83,7 +104,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     fetchOfficers();
   }, []);
 
-  // === FIXED: Debounced description analysis ===
+  // Debounced description analysis
   useEffect(() => {
     // Clear existing timeout
     if (analysisTimeoutRef.current) {
@@ -111,7 +132,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         clearTimeout(analysisTimeoutRef.current);
       }
     };
-  }, [newReport.description]); // Only depend on description
+  }, [newReport.description]);
 
   const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
@@ -120,19 +141,64 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
 
     try {
-      console.log('Analyzing description:', description);
+      console.log('Analyzing description:', description.substring(0, 50) + '...');
+
+      // Get CSRF token from cookie (reliable method)
+      const csrfToken = getCsrfToken();
+
+      if (!csrfToken) {
+        console.error('No CSRF token found');
+        throw new Error('Unable to get CSRF token');
+      }
+
+      console.log('CSRF Token found:', csrfToken.substring(0, 20) + '...');
 
       const response = await fetch('/api/ai/analyze-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
           'Accept': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ description })
       });
 
       if (!response.ok) {
+        if (response.status === 419) {
+          console.error('CSRF token expired');
+          // Try to get a fresh token from cookie again
+          const freshToken = getCsrfToken();
+          if (freshToken && freshToken !== csrfToken) {
+            // Retry with fresh token
+            const retryResponse = await fetch('/api/ai/analyze-report', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': freshToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({ description })
+            });
+
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              if (retryData.success) {
+                setAiSuggestion({
+                  category: retryData.category,
+                  urgency: retryData.urgency,
+                  confidence: retryData.confidence || 0.8
+                });
+              }
+              setIsAnalyzing(false);
+              return;
+            }
+          }
+          throw new Error('CSRF token expired. Please refresh the page.');
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -301,10 +367,11 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     });
 
     try {
+      const csrfToken = getCsrfToken();
       const response = await fetch('/reports/upload-for-new', {
         method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'X-CSRF-TOKEN': csrfToken,
           'Accept': 'application/json',
         },
         body: formData,
@@ -344,11 +411,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (!confirm('Are you sure you want to delete this attachment?')) return;
 
     try {
+      const csrfToken = getCsrfToken();
       const response = await fetch('/reports/delete-attachment', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+          'X-CSRF-TOKEN': csrfToken,
         },
         body: JSON.stringify({
           attachmentUrl: url,
