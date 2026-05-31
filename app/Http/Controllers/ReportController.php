@@ -225,10 +225,22 @@ class ReportController extends Controller
 
         $urgency = $this->aiDetectUrgency($description, $category);
 
-        return response()->json([
-            'success' => true,
-            'category' => $category ?? 'other',
-            'urgency' => $urgency,
+        // For Inertia, you can return a proper response
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'category' => $category ?? 'other',
+                'urgency' => $urgency,
+            ]);
+        }
+
+        // For Inertia visits, share the data
+        return back()->with([
+            'aiAnalysis' => [
+                'success' => true,
+                'category' => $category ?? 'other',
+                'urgency' => $urgency,
+            ]
         ]);
     }
 
