@@ -10,6 +10,7 @@ use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class EmergencyController extends Controller
 {
@@ -124,6 +125,7 @@ class EmergencyController extends Controller
 
     /**
      * Get all emergencies with pagination - WITH LOCATION MATCHING
+     * This returns JSON for API calls, not Inertia responses
      */
     public function index(Request $request)
     {
@@ -310,6 +312,7 @@ class EmergencyController extends Controller
 
     /**
      * Get single emergency by ID
+     * Returns JSON for API calls
      */
     public function show($id)
     {
@@ -368,6 +371,7 @@ class EmergencyController extends Controller
 
     /**
      * Dispatch an officer to an emergency
+     * Returns JSON for API calls, or redirect for Inertia
      */
     public function dispatch(Request $request, $id)
     {
@@ -384,7 +388,10 @@ class EmergencyController extends Controller
             $emergency = Emergencies::find($id);
             if (!$emergency) {
                 Log::error('Emergency not found: ' . $id);
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                }
+                return redirect()->back()->with('error', 'Emergency not found');
             }
 
             $oldStatus = $emergency->status;
@@ -456,17 +463,30 @@ class EmergencyController extends Controller
                 Log::error('Failed to notify mobile server for emergency dispatch: ' . $e->getMessage());
             }
 
-            return response()->json(['success' => true, 'emergency' => $emergency]);
+            // Check if this is an Inertia request or API request
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'emergency' => $emergency]);
+            }
+
+            // For Inertia requests, redirect back with success message
+            return redirect()->back()->with('success', 'Officer dispatched successfully');
+
         } catch (\Exception $e) {
             Log::error('Failed to dispatch officer: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to dispatch officer: ' . $e->getMessage()], 500);
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'error' => 'Failed to dispatch officer: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to dispatch officer: ' . $e->getMessage());
         }
     }
 
     /**
      * Resolve an emergency
+     * Returns JSON for API calls, or redirect for Inertia
      */
-    public function resolve($id)
+    public function resolve(Request $request, $id)
     {
         Log::info('Resolve method called for ID: ' . $id);
 
@@ -474,7 +494,10 @@ class EmergencyController extends Controller
             $emergency = Emergencies::find($id);
             if (!$emergency) {
                 Log::error('Emergency not found: ' . $id);
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                }
+                return redirect()->back()->with('error', 'Emergency not found');
             }
 
             $oldStatus = $emergency->status;
@@ -535,17 +558,30 @@ class EmergencyController extends Controller
                 Log::error('Failed to notify mobile server for emergency resolution: ' . $e->getMessage());
             }
 
-            return response()->json(['success' => true, 'emergency' => $emergency]);
+            // Check if this is an Inertia request or API request
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'emergency' => $emergency]);
+            }
+
+            // For Inertia requests, redirect back with success message
+            return redirect()->back()->with('success', 'Emergency resolved successfully');
+
         } catch (\Exception $e) {
             Log::error('Failed to resolve emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to resolve emergency: ' . $e->getMessage()], 500);
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'error' => 'Failed to resolve emergency: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to resolve emergency: ' . $e->getMessage());
         }
     }
 
     /**
      * Delete an emergency record
+     * Returns JSON for API calls, or redirect for Inertia
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         Log::info('Delete method called for ID: ' . $id);
 
@@ -554,7 +590,10 @@ class EmergencyController extends Controller
 
             if (!$emergency) {
                 Log::error('Emergency not found for deletion: ' . $id);
-                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+                }
+                return redirect()->back()->with('error', 'Emergency not found');
             }
 
             $studentId = (string)$emergency->studentId;
@@ -581,15 +620,28 @@ class EmergencyController extends Controller
                 Log::warning('Failed to send deletion notification: ' . $e->getMessage());
             }
 
-            return response()->json(['success' => true, 'message' => 'Emergency record deleted successfully']);
+            // Check if this is an Inertia request or API request
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'message' => 'Emergency record deleted successfully']);
+            }
+
+            // For Inertia requests, redirect back with success message
+            return redirect()->back()->with('success', 'Emergency record deleted successfully');
+
         } catch (\Exception $e) {
             Log::error('Failed to delete emergency: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to delete emergency: ' . $e->getMessage()], 500);
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'error' => 'Failed to delete emergency: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to delete emergency: ' . $e->getMessage());
         }
     }
 
     /**
      * Bulk delete emergencies
+     * Returns JSON for API calls, or redirect for Inertia
      */
     public function bulkDelete(Request $request)
     {
@@ -622,20 +674,33 @@ class EmergencyController extends Controller
                 'failed_ids' => $failedIds
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => "Successfully deleted {$deletedCount} emergency records",
-                'deleted_count' => $deletedCount,
-                'failed_ids' => $failedIds
-            ]);
+            // Check if this is an Inertia request or API request
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Successfully deleted {$deletedCount} emergency records",
+                    'deleted_count' => $deletedCount,
+                    'failed_ids' => $failedIds
+                ]);
+            }
+
+            // For Inertia requests, redirect back with success message
+            return redirect()->back()->with('success', "Successfully deleted {$deletedCount} emergency records");
+
         } catch (\Exception $e) {
             Log::error('Failed to perform bulk delete: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to delete emergencies: ' . $e->getMessage()], 500);
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'error' => 'Failed to delete emergencies: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to delete emergencies: ' . $e->getMessage());
         }
     }
 
     /**
      * Revert an emergency status
+     * Returns JSON for API calls, or redirect for Inertia
      */
     public function revert(Request $request, $id)
     {
@@ -644,12 +709,18 @@ class EmergencyController extends Controller
         try {
             $emergency = Emergencies::find($id);
             if (!$emergency) {
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                }
+                return redirect()->back()->with('error', 'Emergency not found');
             }
 
             $newStatus = $request->input('status');
             if (!in_array($newStatus, ['active', 'responding', 'resolved'])) {
-                return response()->json(['error' => 'Invalid status', 'success' => false], 400);
+                if ($request->wantsJson() || $request->is('api/*')) {
+                    return response()->json(['error' => 'Invalid status', 'success' => false], 400);
+                }
+                return redirect()->back()->with('error', 'Invalid status');
             }
 
             $oldStatus = $emergency->status;
@@ -719,10 +790,106 @@ class EmergencyController extends Controller
                 Log::error('Failed to send Telegram revert notification to assigned officer: ' . $e->getMessage());
             }
 
-            return response()->json(['success' => true, 'emergency' => $emergency]);
+            // Check if this is an Inertia request or API request
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'emergency' => $emergency]);
+            }
+
+            // For Inertia requests, redirect back with success message
+            return redirect()->back()->with('success', 'Emergency status reverted successfully');
+
         } catch (\Exception $e) {
             Log::error('Failed to revert emergency status: ' . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Failed to revert emergency status: ' . $e->getMessage()], 500);
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'error' => 'Failed to revert emergency status: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to revert emergency status: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update live location of an emergency
+     */
+    public function updateLiveLocation(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'address' => 'nullable|string'
+            ]);
+
+            $emergency = Emergencies::find($id);
+            if (!$emergency) {
+                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+            }
+
+            $emergency->latitude = $validated['latitude'];
+            $emergency->longitude = $validated['longitude'];
+            $emergency->address = $validated['address'] ?? $emergency->address;
+
+            // Update location field for GeoJSON queries
+            $emergency->location = [
+                'type' => 'Point',
+                'coordinates' => [(float)$validated['longitude'], (float)$validated['latitude']]
+            ];
+
+            $emergency->save();
+
+            return response()->json(['success' => true, 'emergency' => $emergency]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update live location: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get live location of an emergency
+     */
+    public function getLiveLocation($id)
+    {
+        try {
+            $emergency = Emergencies::find($id);
+            if (!$emergency) {
+                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'latitude' => $emergency->latitude,
+                    'longitude' => $emergency->longitude,
+                    'address' => $emergency->address,
+                    'updated_at' => $emergency->updated_at
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get live location: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Start live tracking for an emergency
+     */
+    public function startLiveTracking(Request $request, $id)
+    {
+        try {
+            $emergency = Emergencies::find($id);
+            if (!$emergency) {
+                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+            }
+
+            $emergency->live_tracking = true;
+            $emergency->live_tracking_started_at = now();
+            $emergency->save();
+
+            return response()->json(['success' => true, 'message' => 'Live tracking started']);
+        } catch (\Exception $e) {
+            Log::error('Failed to start live tracking: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 }

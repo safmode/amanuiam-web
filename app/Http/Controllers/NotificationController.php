@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Events\NotificationSent;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
@@ -120,7 +121,7 @@ class NotificationController extends Controller
     /**
      * Mark all notifications as read
      */
-    public function markAllAsRead(): JsonResponse
+    public function markAllAsRead()
     {
         try {
             $admin = Auth::user();
@@ -137,17 +138,17 @@ class NotificationController extends Controller
                 }
             }
 
-            return response()->json(['success' => true, 'unread_count' => 0]);
+            return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Failed to mark all as read: ' . $e->getMessage());
-            return response()->json(['success' => false, 'unread_count' => 0], 500);
+            return redirect()->back();
         }
     }
 
     /**
      * Mark a single notification as read
      */
-    public function markAsRead($id): JsonResponse
+    public function markAsRead($id)
     {
         try {
             $admin = Auth::user();
@@ -164,10 +165,10 @@ class NotificationController extends Controller
                 }
             }
 
-            return response()->json(['success' => true]);
+            return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Failed to mark as read: ' . $e->getMessage());
-            return response()->json(['success' => false], 500);
+            return redirect()->back();
         }
     }
 
