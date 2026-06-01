@@ -388,10 +388,11 @@ class EmergencyController extends Controller
             $emergency = Emergencies::find($id);
             if (!$emergency) {
                 Log::error('Emergency not found: ' . $id);
-                if ($request->wantsJson() || $request->is('api/*')) {
-                    return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                // For Inertia requests, return back with error
+                if (!$request->wantsJson() && !$request->is('api/*')) {
+                    return redirect()->back()->with('error', 'Emergency not found');
                 }
-                return redirect()->back()->with('error', 'Emergency not found');
+                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
             }
 
             $oldStatus = $emergency->status;
@@ -463,18 +464,24 @@ class EmergencyController extends Controller
                 Log::error('Failed to notify mobile server for emergency dispatch: ' . $e->getMessage());
             }
 
-            // Check if this is an Inertia request or API request
-            if ($request->wantsJson() || $request->is('api/*')) {
+            // IMPORTANT FIX: Check for Inertia request properly
+            // Inertia requests have a special header 'X-Inertia' = true
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
+                // This is a pure API JSON request
                 return response()->json(['success' => true, 'emergency' => $emergency]);
             }
 
-            // For Inertia requests, redirect back with success message
+            // For Inertia requests, ALWAYS return a redirect (Inertia will handle it)
             return redirect()->back()->with('success', 'Officer dispatched successfully');
 
         } catch (\Exception $e) {
             Log::error('Failed to dispatch officer: ' . $e->getMessage());
 
-            if ($request->wantsJson() || $request->is('api/*')) {
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
                 return response()->json(['success' => false, 'error' => 'Failed to dispatch officer: ' . $e->getMessage()], 500);
             }
 
@@ -559,7 +566,8 @@ class EmergencyController extends Controller
             }
 
             // Check if this is an Inertia request or API request
-            if ($request->wantsJson() || $request->is('api/*')) {
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+            if ($request->wantsJson() && !$isInertiaRequest) {
                 return response()->json(['success' => true, 'emergency' => $emergency]);
             }
 
@@ -590,10 +598,11 @@ class EmergencyController extends Controller
 
             if (!$emergency) {
                 Log::error('Emergency not found for deletion: ' . $id);
-                if ($request->wantsJson() || $request->is('api/*')) {
-                    return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
+                // For Inertia requests, return back with error
+                if (!$request->wantsJson() && !$request->is('api/*')) {
+                    return redirect()->back()->with('error', 'Emergency not found');
                 }
-                return redirect()->back()->with('error', 'Emergency not found');
+                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
             }
 
             $studentId = (string)$emergency->studentId;
@@ -620,18 +629,24 @@ class EmergencyController extends Controller
                 Log::warning('Failed to send deletion notification: ' . $e->getMessage());
             }
 
-            // Check if this is an Inertia request or API request
-            if ($request->wantsJson() || $request->is('api/*')) {
+            // IMPORTANT FIX: Check for Inertia request properly
+            // Inertia requests have a special header 'X-Inertia' = true
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
+                // This is a pure API JSON request
                 return response()->json(['success' => true, 'message' => 'Emergency record deleted successfully']);
             }
 
-            // For Inertia requests, redirect back with success message
+            // For Inertia requests, ALWAYS return a redirect (Inertia will handle it)
             return redirect()->back()->with('success', 'Emergency record deleted successfully');
 
         } catch (\Exception $e) {
             Log::error('Failed to delete emergency: ' . $e->getMessage());
 
-            if ($request->wantsJson() || $request->is('api/*')) {
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
                 return response()->json(['success' => false, 'error' => 'Failed to delete emergency: ' . $e->getMessage()], 500);
             }
 
@@ -674,8 +689,12 @@ class EmergencyController extends Controller
                 'failed_ids' => $failedIds
             ]);
 
-            // Check if this is an Inertia request or API request
-            if ($request->wantsJson() || $request->is('api/*')) {
+            // IMPORTANT FIX: Check for Inertia request properly
+            // Inertia requests have a special header 'X-Inertia' = true
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
+                // This is a pure API JSON request
                 return response()->json([
                     'success' => true,
                     'message' => "Successfully deleted {$deletedCount} emergency records",
@@ -684,13 +703,15 @@ class EmergencyController extends Controller
                 ]);
             }
 
-            // For Inertia requests, redirect back with success message
+            // For Inertia requests, ALWAYS return a redirect (Inertia will handle it)
             return redirect()->back()->with('success', "Successfully deleted {$deletedCount} emergency records");
 
         } catch (\Exception $e) {
             Log::error('Failed to perform bulk delete: ' . $e->getMessage());
 
-            if ($request->wantsJson() || $request->is('api/*')) {
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+
+            if ($request->wantsJson() && !$isInertiaRequest) {
                 return response()->json(['success' => false, 'error' => 'Failed to delete emergencies: ' . $e->getMessage()], 500);
             }
 
@@ -791,7 +812,8 @@ class EmergencyController extends Controller
             }
 
             // Check if this is an Inertia request or API request
-            if ($request->wantsJson() || $request->is('api/*')) {
+            $isInertiaRequest = $request->header('X-Inertia') === 'true';
+            if ($request->wantsJson() && !$isInertiaRequest) {
                 return response()->json(['success' => true, 'emergency' => $emergency]);
             }
 
