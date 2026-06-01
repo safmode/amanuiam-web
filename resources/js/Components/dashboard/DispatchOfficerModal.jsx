@@ -62,7 +62,12 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
 
   const handleSubmit = async () => {
     if (!selectedOfficer) {
-      alert('Please select an officer to dispatch');
+      // Show toast instead of alert
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 bg-red-500';
+      toast.textContent = 'Please select an officer to dispatch';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
       return;
     }
 
@@ -77,6 +82,11 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
       onClose();
     } catch (error) {
       console.error('Failed to dispatch officer:', error);
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 bg-red-500';
+      toast.textContent = 'Failed to dispatch officer';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +96,7 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[550px] rounded-xl p-0 overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
         <div className="px-6 py-4 bg-red-50 border-b border-red-100 dark:bg-red-950/20 dark:border-red-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center dark:bg-red-900/30">
@@ -94,7 +104,7 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
             </div>
             <div>
               <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">Dispatch Officer</DialogTitle>
-              <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
+              <p className="text-xs text-gray-600 mt-0.5 dark:text-gray-400">
                 Assign an officer to respond to this emergency alert
               </p>
             </div>
@@ -109,12 +119,20 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
               <div className="flex-1">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Emergency Details</p>
                 <div className="mt-2 space-y-1 text-sm">
-                  <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500 dark:text-gray-400">Location:</span> {alert.address || alert.location?.mahallah || alert.location || 'Unknown'}</p>
-                  <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500 dark:text-gray-400">Reporter:</span> {alert.student?.name || alert.reporterName || 'Unknown'}</p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Location:</span> {alert.address || alert.location?.mahallah || alert.location || 'Unknown'}
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Reporter:</span> {alert.student?.name || alert.reporterName || 'Unknown'}
+                  </p>
                   {alert.student?.phone && (
-                    <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500 dark:text-gray-400">Contact:</span> {alert.student.phone}</p>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      <span className="text-gray-600 dark:text-gray-400">Contact:</span> {alert.student.phone}
+                    </p>
                   )}
-                  <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500 dark:text-gray-400">Time:</span> {new Date(alert.triggeredAt).toLocaleString()}</p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Time:</span> {new Date(alert.triggeredAt).toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -131,19 +149,19 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
               </div>
             ) : (
               <Select value={selectedOfficer} onValueChange={handleOfficerSelect}>
-                <SelectTrigger className="bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                <SelectTrigger className="bg-white text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                   <SelectValue placeholder="Choose an officer to dispatch" />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                <SelectContent className="bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                   {officers.length === 0 ? (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                       No officers available. Please add officers first.
                     </div>
                   ) : (
                     officers.map((officer) => (
-                      <SelectItem key={officer.officerId} value={officer.officerId} className="dark:text-gray-300 dark:focus:bg-slate-700">
+                      <SelectItem key={officer.officerId} value={officer.officerId} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                         <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
+                          <Shield className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                           <span>{officer.officerName}</span>
                           {officer.rank && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">({officer.rank})</span>
@@ -165,13 +183,35 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
                 <span className="text-sm font-medium text-green-800 dark:text-green-300">Assigned Officer Details</span>
               </div>
               <div className="space-y-2 text-sm">
-                <p><span className="text-gray-500 dark:text-gray-400">Name:</span> <span className="font-medium text-gray-700 dark:text-gray-300">{officerDetails.officerName}</span></p>
-                {officerDetails.rank && <p><span className="text-gray-500 dark:text-gray-400">Rank:</span> <span className="text-gray-700 dark:text-gray-300">{officerDetails.rank}</span></p>}
-                {officerDetails.department && <p><span className="text-gray-500 dark:text-gray-400">Department:</span> <span className="text-gray-700 dark:text-gray-300">{officerDetails.department}</span></p>}
-                {officerDetails.phone && (
-                  <p className="flex items-center gap-1"><span className="text-gray-500 dark:text-gray-400">Phone:</span> <Phone className="w-3 h-3" /><span className="text-gray-700 dark:text-gray-300">{officerDetails.phone}</span></p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-600 dark:text-gray-400">Name:</span>{' '}
+                  <span className="font-medium text-gray-900 dark:text-gray-200">{officerDetails.officerName}</span>
+                </p>
+                {officerDetails.rank && (
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Rank:</span>{' '}
+                    <span className="text-gray-700 dark:text-gray-300">{officerDetails.rank}</span>
+                  </p>
                 )}
-                {officerDetails.email && <p><span className="text-gray-500 dark:text-gray-400">Email:</span> <span className="text-xs break-all text-gray-700 dark:text-gray-300">{officerDetails.email}</span></p>}
+                {officerDetails.department && (
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Department:</span>{' '}
+                    <span className="text-gray-700 dark:text-gray-300">{officerDetails.department}</span>
+                  </p>
+                )}
+                {officerDetails.phone && (
+                  <p className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                    <Phone className="w-3 h-3 text-gray-500" />
+                    <span className="text-gray-700 dark:text-gray-300">{officerDetails.phone}</span>
+                  </p>
+                )}
+                {officerDetails.email && (
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <span className="text-gray-600 dark:text-gray-400">Email:</span>{' '}
+                    <span className="text-xs break-all text-gray-600 dark:text-gray-400">{officerDetails.email}</span>
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -185,13 +225,17 @@ export const DispatchOfficerModal = ({ open, onClose, onDispatch, alert }) => {
               value={dispatchNotes}
               onChange={(e) => setDispatchNotes(e.target.value)}
               placeholder="Add any specific instructions or notes for the responding officer..."
-              className="min-h-[120px] bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+              className="min-h-[120px] bg-white text-gray-700 border-gray-200 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" className="flex-1 rounded-lg h-10 text-sm dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+            <Button
+              variant="outline"
+              className="flex-1 rounded-lg h-10 text-sm text-gray-700 border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+              onClick={onClose}
+            >
               Cancel
             </Button>
             <Button

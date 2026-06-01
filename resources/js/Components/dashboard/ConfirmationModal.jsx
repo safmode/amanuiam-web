@@ -40,7 +40,7 @@ export const ConfirmationModal = ({ open, onClose, onConfirm, title, description
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[420px] rounded-xl p-0 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[420px] rounded-xl p-0 overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
         <div className={`px-6 py-4 ${colors.bg} border-b border-gray-100 dark:border-slate-700`}>
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center`}>
@@ -51,23 +51,31 @@ export const ConfirmationModal = ({ open, onClose, onConfirm, title, description
         </div>
 
         <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-400">{description}</p>
 
           {alert && (
-            <div className="bg-gray-50 rounded-lg p-3 dark:bg-slate-800/50 dark:border dark:border-slate-700">
+            <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-red-500 dark:text-red-400" />
-                <span className="text-gray-700 dark:text-gray-300">{alert.address || alert.location?.mahallah || alert.location}</span>
+                <span className="text-gray-800 dark:text-gray-200">
+                  {alert.address || alert.location?.mahallah || alert.location || 'Unknown location'}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm mt-1">
                 <User className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                <span className="text-gray-700 dark:text-gray-300">{alert.student?.name || 'Unknown Student'}</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  {alert.student?.name || alert.reporterName || 'Unknown Student'}
+                </span>
               </div>
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1 rounded-lg h-10 text-sm dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={onClose}>
+            <Button
+              variant="outline"
+              className="flex-1 rounded-lg h-10 text-sm text-gray-700 border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+              onClick={onClose}
+            >
               Cancel
             </Button>
             <Button
