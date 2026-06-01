@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, MapPin, Clock, AlertTriangle, Sparkles, Search } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-import axios from 'axios';
+import api from '@/lib/axios';
 
 export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) => {
   const fileInputRef = useRef(null);
@@ -84,7 +84,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
     setIsSearchingStudent(true);
     try {
-      const response = await axios.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
+      const response = await api.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
       const data = response.data;
 
       if (data.student) {
@@ -205,7 +205,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const response = await axios.get('/api/officers/list');
+      const response = await api.get('/api/officers/list');
       setOfficersList(response.data);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
@@ -246,7 +246,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
 
     try {
-      const response = await axios.post('/api/ai/analyze-report', {
+      const response = await api.post('/api/ai/analyze-report', {
         description: description
       });
 
@@ -344,7 +344,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     });
 
     try {
-      const response = await axios.post('/reports/upload-attachments', formData, {
+      const response = await api.post('/reports/upload-attachments', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -367,7 +367,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     if (!confirm('Are you sure you want to delete this attachment?')) return;
 
     try {
-      await axios.delete('/reports/delete-attachment', {
+      await api.delete('/reports/delete-attachment', {
         data: {
           attachmentUrl: url,
           attachmentPublicId: attachmentPublicIds[index],

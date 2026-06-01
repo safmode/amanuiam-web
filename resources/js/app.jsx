@@ -5,22 +5,9 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
-import axios from 'axios';
+// Don't configure global axios here - use the custom instance in components
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
-// ===== SIMPLE AXIOS CONFIGURATION =====
-// Only set basic defaults - NO interceptor that interferes with Inertia
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-axios.defaults.headers.common['Accept'] = 'application/json';
-
-// Get CSRF token from meta tag if available
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-if (csrfToken) {
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-}
-// ===== END OF AXIOS CONFIGURATION =====
 
 // Function to keep app alive
 function AppWithKeepAlive({ children }) {

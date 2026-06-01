@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye, Trash2, Calendar, Mail, Phone, MapPin, Sparkles } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels, formatLocationName } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-import axios from 'axios'; // ADD THIS IMPORT
+import api from '@/lib/axios';
 
 // Helper function to extract location data from report
 const extractLocationData = (report) => {
@@ -146,7 +146,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const response = await axios.get('/api/officers/list');
+      const response = await api.get('/api/officers/list');
       const officers = response.data;
       setOfficersList(officers);
 
@@ -287,7 +287,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
     try {
       // Axios automatically handles CSRF - no manual token needed!
-      const response = await axios.post('/api/ai/analyze-report', {
+      const response = await api.post('/api/ai/analyze-report', {
         description: description
       });
 
@@ -445,7 +445,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     formData.append('reportId', editedReport.reportId);
 
     try {
-      const response = await axios.post('/reports/upload-attachments', formData, {
+      const response = await api.post('/reports/upload-attachments', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -473,7 +473,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
     for (const deletion of pendingDeletions) {
       try {
-        await axios.delete('/reports/delete-attachment', {
+        await api.delete('/reports/delete-attachment', {
           data: {
             reportId: editedReport.reportId,
             attachmentUrl: deletion.url,
