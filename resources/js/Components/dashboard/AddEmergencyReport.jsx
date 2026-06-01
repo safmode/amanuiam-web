@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, MapPin, Clock, AlertTriangle, Sparkles, Search } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-import axios from 'axios'; // ← THIS IS KEY - Axios handles CSRF automatically
+import axios from 'axios';
 
 export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) => {
   const fileInputRef = useRef(null);
@@ -75,7 +75,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }));
   };
 
-  // Search student by matric number - USING AXIOS (NO CSRF ISSUES)
+  // Search student by matric number
   const searchStudentByMatric = async () => {
     if (!newReport.reporterMatricNo) {
       showToast('Please enter a matric number', 'error');
@@ -197,7 +197,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
   }, [emergencyData, isOpen]);
 
-  // Fetch officers for dropdown - USING AXIOS
+  // Fetch officers for dropdown
   useEffect(() => {
     fetchOfficers();
   }, []);
@@ -239,7 +239,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     };
   }, [newReport.description]);
 
-  // THE FIXED AI ANALYSIS - USING AXIOS (NO CSRF ERRORS!)
   const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
       setIsAnalyzing(false);
@@ -247,7 +246,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
 
     try {
-      // Axios automatically includes the CSRF token - no manual handling needed!
       const response = await axios.post('/api/ai/analyze-report', {
         description: description
       });
@@ -265,7 +263,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
-      // Silent fail - better UX, no error message to user
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -493,7 +490,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 dark:bg-slate-800 dark:border-slate-700">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-slate-800 dark:border-slate-700">
         <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center dark:bg-red-900/20">
@@ -501,7 +498,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
             </div>
             <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               Create Report from Emergency Alert
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs font-medium text-gray-600 mt-1 dark:text-gray-400">
                 Converting emergency from {emergencyData.address || 'Unknown Location'}
               </p>
             </DialogTitle>
@@ -510,7 +507,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
         <div className="p-6 space-y-5">
           {/* Reporter Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
@@ -520,45 +517,45 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Full Name *</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Full Name *</Label>
                   <Input
                     value={newReport.reporterName}
                     onChange={(e) => setNewReport({...newReport, reporterName: e.target.value})}
-                    className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                    className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Enter full name"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Email Address *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Email Address *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                       <Input
                         type="email"
                         value={newReport.reporterEmail}
                         onChange={(e) => setNewReport({...newReport, reporterEmail: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                        className="mt-1 bg-white pl-9 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="student@example.com"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Phone Number *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Phone Number *</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                       <Input
                         type="tel"
                         value={newReport.reporterPhone}
                         onChange={(e) => setNewReport({...newReport, reporterPhone: e.target.value})}
-                        className="mt-1 bg-white pl-9 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                        className="mt-1 bg-white pl-9 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                         placeholder="012-3456789"
                       />
                     </div>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Matric Number</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Matric Number</Label>
                   <div className="flex gap-2 mt-1">
                     <Input
                       value={newReport.reporterMatricNo}
@@ -566,7 +563,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                         setNewReport({...newReport, reporterMatricNo: e.target.value});
                         setFoundStudent(null);
                       }}
-                      className="bg-white flex-1 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="bg-white flex-1 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="e.g., 2226488"
                     />
                     <Button
@@ -575,7 +572,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                       size="sm"
                       onClick={searchStudentByMatric}
                       disabled={isSearchingStudent || !newReport.reporterMatricNo}
-                      className="shrink-0 gap-2 dark:border-slate-700 dark:text-gray-300"
+                      className="shrink-0 gap-2 text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                     >
                       {isSearchingStudent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                       Search
@@ -592,7 +589,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
           </Card>
 
           {/* Incident Details */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -601,40 +598,40 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Category *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Category *</Label>
                     <Select value={newReport.category} onValueChange={handleCategoryChange}>
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(categoryLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Urgency Level *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Urgency Level *</Label>
                     <Select value={newReport.urgency} onValueChange={handleUrgencyChange}>
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(urgencyLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Status</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Status</Label>
                     <Select value={newReport.status} onValueChange={(v) => setNewReport({...newReport, status: v})}>
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(statusLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="dark:text-gray-300 dark:focus:bg-slate-700">{label}</SelectItem>
+                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -643,21 +640,21 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Date *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Date *</Label>
                     <Input
                       type="date"
                       value={newReport.incidentDate}
                       onChange={(e) => setNewReport({...newReport, incidentDate: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Incident Time *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Time *</Label>
                     <Input
                       type="time"
                       value={newReport.incidentTime}
                       onChange={(e) => setNewReport({...newReport, incidentTime: e.target.value})}
-                      className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
+                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                     />
                   </div>
                 </div>
@@ -665,25 +662,25 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                 {/* Location Section */}
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Location Area *</Label>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Location Area *</Label>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-400">
                       Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
                     </p>
                     <Select
                       value={newReport.locationArea || ""}
                       onValueChange={handleLocationAreaChange}
                     >
-                      <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select location area" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(locationLabels).map(([groupName, locations]) => (
                           <Fragment key={groupName}>
                             <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
                               {groupName}
                             </div>
                             {Object.entries(locations).map(([key, label]) => (
-                              <SelectItem key={key} value={label} className="dark:text-gray-300 dark:focus:bg-slate-700">
+                              <SelectItem key={key} value={label} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                                 {label}
                               </SelectItem>
                             ))}
@@ -694,16 +691,16 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                   </div>
 
                   <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
                     <div className="flex items-start gap-1.5 mt-1 mb-1">
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      <p className="text-[10px] text-gray-600 dark:text-gray-400">
                         Enter the specific location where the incident happened (building name/number, room/block, landmarks)
                       </p>
                     </div>
                     <Textarea
                       value={newReport.building || ''}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 bg-white text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="mt-1 bg-white text-sm text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                       placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
                       rows={2}
                     />
@@ -726,7 +723,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                 {/* Description with AI Feature */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <Label className="text-xs text-gray-500 dark:text-gray-400">Description *</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Description *</Label>
                     {isAnalyzing && (
                       <div className="flex items-center gap-1">
                         <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
@@ -737,7 +734,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                   <Textarea
                     value={newReport.description}
                     onChange={(e) => setNewReport({...newReport, description: e.target.value})}
-                    className="mt-1 bg-white min-h-[100px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[100px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe the incident in detail... AI will automatically analyze and suggest category & urgency!"
                   />
                 </div>
@@ -819,7 +816,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
           </Card>
 
           {/* Injuries & Damages */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -827,20 +824,20 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Injuries</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Injuries</Label>
                   <Textarea
                     value={newReport.injuries}
                     onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe any injuries sustained..."
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Damages</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Damages</Label>
                   <Textarea
                     value={newReport.damages}
                     onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Describe any property damage..."
                   />
                 </div>
@@ -849,18 +846,18 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
           </Card>
 
           {/* Suspect Information */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suspect Information (if applicable)</span>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</Label>
+                <Label className="text-xs text-gray-700 dark:text-gray-400">Suspect Description</Label>
                 <Textarea
                   value={newReport.suspectDescription}
                   onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
-                  className="mt-1 bg-white min-h-[80px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                  className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                   placeholder="Describe the suspect..."
                 />
               </div>
@@ -868,7 +865,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
           </Card>
 
           {/* Attachments */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -892,7 +889,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="gap-2 text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
                   >
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {uploading ? 'Uploading...' : 'Select Files'}
@@ -958,7 +955,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
           </Card>
 
           {/* Assignment & Notes */}
-          <Card className="border-gray-200 dark:bg-slate-800/50 dark:border-slate-700">
+          <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -966,22 +963,22 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Assigned Officer</Label>
                   <Select
                     value={newReport.assignedOfficer || "unassigned"}
                     onValueChange={(value) => {
                       setNewReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }));
                     }}
                   >
-                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                    <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                       <SelectValue placeholder={isLoadingOfficers ? "Loading officers..." : "Select officer to assign"} />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="unassigned" className="dark:text-gray-300 dark:focus:bg-slate-700">
+                    <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
+                      <SelectItem value="unassigned" className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                         <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
                       </SelectItem>
                       {officersList.map((officer) => (
-                        <SelectItem key={officer.officerId} value={officer.officerId} className="dark:text-gray-300 dark:focus:bg-slate-700">
+                        <SelectItem key={officer.officerId} value={officer.officerId} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
                           {officer.officerName}
                         </SelectItem>
                       ))}
@@ -994,11 +991,11 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                   )}
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400">Internal Notes</Label>
+                  <Label className="text-xs text-gray-700 dark:text-gray-400">Internal Notes</Label>
                   <Textarea
                     value={newReport.officerNotes}
                     onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
-                    className="mt-1 bg-white min-h-[60px] dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    className="mt-1 bg-white min-h-[60px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
                     placeholder="Add internal notes..."
                   />
                 </div>
@@ -1008,7 +1005,12 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" className="rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={handleClose} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              className="text-gray-700 border-gray-300 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button

@@ -5,38 +5,72 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
-import axios from 'axios'; // ADD THIS IMPORT
+import axios from 'axios';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// ===== ADD THIS AXIOS CONFIGURATION SECTION =====
-// This configures axios once for your entire application
+// ===== AXIOS CONFIGURATION =====
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
 
-// Get CSRF token from meta tag (Laravel sets this automatically on every page load)
+// Get CSRF token from meta tag
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 if (csrfToken) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
     console.log('✅ Axios configured with CSRF protection');
 }
 
-// Optional: Add response interceptor to handle 419 errors gracefully
+// Function to refresh CSRF token without reloading the page
+const refreshCsrfToken = async () => {
+    try {
+        await axios.get('/sanctum/csrf-cookie');
+        const newToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (newToken) {
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            console.log('✅ CSRF token refreshed');
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to refresh CSRF token:', error);
+    }
+    return false;
+};
+
+// Response interceptor - DON'T auto-reload on 419
 axios.interceptors.response.use(
     response => response,
-    error => {
-        if (error.response?.status === 419) {
-            console.warn('CSRF token expired, refreshing...');
-            // Refresh the page to get new token (better than showing error)
-            window.location.reload();
+    async (error) => {
+        const originalRequest = error.config;
+
+        // If it's a 419 error and we haven't retried yet
+        if (error.response?.status === 419 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            console.warn('CSRF token expired, attempting to refresh...');
+
+            // Try to refresh the token
+            const refreshed = await refreshCsrfToken();
+
+            if (refreshed) {
+                // Update the original request with new token
+                originalRequest.headers['X-CSRF-TOKEN'] = axios.defaults.headers.common['X-CSRF-TOKEN'];
+                // Retry the request
+                return axios(originalRequest);
+            } else {
+                // If refresh failed, redirect to login page
+                console.warn('CSRF refresh failed, redirecting to login');
+                window.location.href = '/login';
+                return Promise.reject(error);
+            }
         }
+
         return Promise.reject(error);
     }
 );
 // ===== END OF AXIOS CONFIGURATION =====
 
-// Function to keep app alive (your existing code)
+// Function to keep app alive
 function AppWithKeepAlive({ children }) {
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -45,10 +79,10 @@ function AppWithKeepAlive({ children }) {
             try {
                 const response = await fetch('/health');
                 if (response.ok) {
-                    console.log('🏓 Self-ping successful at', new Date().toLocaleTimeString());
+                    console.log('🏓 Self-ping successful');
                 }
             } catch (error) {
-                console.debug('Self-ping failed (app might be offline)');
+                console.debug('Self-ping failed');
             }
         }, 10 * 60 * 1000);
 

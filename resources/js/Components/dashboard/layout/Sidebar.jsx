@@ -19,6 +19,7 @@ import {
 export const Sidebar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeAlertCount, setActiveAlertCount] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { url, props } = usePage();
 
   const admin = props.auth?.admins;
@@ -89,11 +90,26 @@ export const Sidebar = () => {
   };
 
   const handleLogout = () => {
-    // Use Inertia router for logout - CSRF handled automatically!
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    // Use Inertia router for logout
     router.post('/logout', {}, {
-      onSuccess: () => {},
+        onError: (errors) => {
+        console.error('Logout error:', errors);
+        setIsLoggingOut(false);
+
+        // If CSRF error, force redirect to login
+        if (errors && (errors.message?.includes('419') || errors.status === 419)) {
+            window.location.href = '/login';
+        }
+        },
+        onSuccess: () => {
+        setIsLoggingOut(false);
+        },
     });
-  };
+ };
 
   const getInitials = (name) =>
     name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'NA';
@@ -187,10 +203,18 @@ export const Sidebar = () => {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              disabled={isLoggingOut}
+              className={cn(
+                "p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors",
+                isLoggingOut && "opacity-50 cursor-not-allowed"
+              )}
               title="Logout"
             >
-              <LogOut className="w-5 h-5" />
+              {isLoggingOut ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <LogOut className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
