@@ -1,4 +1,3 @@
-// resources/js/Components/dashboard/AddEmergencyReport.jsx
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,27 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, MapPin, Clock, AlertTriangle, Sparkles, Search } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-
-// Helper function to get CSRF token from cookie (MOST RELIABLE)
-const getCsrfToken = () => {
-  // Method 1: Try cookie first (always available)
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'XSRF-TOKEN') {
-      return decodeURIComponent(value);
-    }
-  }
-
-  // Method 2: Fallback to meta tag
-  const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
-  if (metaToken) {
-    return metaToken;
-  }
-
-  // Method 3: Return null if no token found
-  return null;
-};
+import axios from 'axios'; // ← THIS IS KEY - Axios handles CSRF automatically
 
 export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) => {
   const fileInputRef = useRef(null);
@@ -43,7 +22,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const [isSearchingStudent, setIsSearchingStudent] = useState(false);
   const [foundStudent, setFoundStudent] = useState(null);
 
-  // === AI FEATURE: State for AI suggestion ===
+  // AI Feature State
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisTimeout, setAnalysisTimeout] = useState(null);
@@ -96,7 +75,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }));
   };
 
-  // Search student by matric number
+  // Search student by matric number - USING AXIOS (NO CSRF ISSUES)
   const searchStudentByMatric = async () => {
     if (!newReport.reporterMatricNo) {
       showToast('Please enter a matric number', 'error');
@@ -105,15 +84,8 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
     setIsSearchingStudent(true);
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch(`/api/students/search?matric=${newReport.reporterMatricNo}`, {
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-      });
-      const data = await response.json();
+      const response = await axios.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
+      const data = response.data;
 
       if (data.student) {
         setFoundStudent(data.student);
@@ -140,7 +112,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const extractLocationAreaFromAddress = (address) => {
     if (!address) return '';
 
-    // Try to match against location labels
     for (const group of Object.values(locationLabels)) {
       for (const [key, label] of Object.entries(group)) {
         if (address.toLowerCase().includes(key.toLowerCase()) ||
@@ -150,7 +121,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       }
     }
 
-    // Check for common mahallah names
     const mahallahNames = ['Asiah', 'Aminah', 'Safiyyah', 'Maryam', 'Ruqayyah', 'Ali', 'Faruq', 'Bilal', 'Asma', 'Hafsah', 'Halimah', 'Siddiq', 'Salahuddin', 'Uthman', 'Nusaibah', 'Zubair', 'Sumayyah'];
     for (const name of mahallahNames) {
       if (address.toLowerCase().includes(name.toLowerCase())) {
@@ -161,18 +131,13 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     return address;
   };
 
-  // Helper function to extract building from emergency address
   const extractBuildingFromAddress = (address, locationArea) => {
     if (!address) return '';
-
-    // Remove the location area part from the address to get the building part
     if (locationArea && address.toLowerCase().includes(locationArea.toLowerCase())) {
       let remaining = address.replace(new RegExp(locationArea, 'i'), '').trim();
-      // Remove any leading commas or dashes
       remaining = remaining.replace(/^[,-\s]+/, '');
       if (remaining) return remaining;
     }
-
     return '';
   };
 
@@ -183,30 +148,22 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       const formattedDate = date.toISOString().split('T')[0];
       const formattedTime = date.toTimeString().slice(0, 5);
 
-      // Get address from emergency data (this is the stored address field)
       const emergencyAddress = emergencyData.address || '';
-
-      // Extract location area from the address
       let matchedLocationArea = extractLocationAreaFromAddress(emergencyAddress);
-
-      // Extract building from the address
       let extractedBuilding = extractBuildingFromAddress(emergencyAddress, matchedLocationArea);
 
-      // If we have a location object with building, use that
       if (emergencyData.location && emergencyData.location.building) {
         extractedBuilding = emergencyData.location.building;
       }
 
-      // If we couldn't match to a predefined location, use the raw address or a default
       if (!matchedLocationArea || matchedLocationArea === emergencyAddress) {
-        matchedLocationArea = 'Mahallah Asiah'; // Default fallback
+        matchedLocationArea = 'Mahallah Asiah';
       }
 
       const fullAddress = extractedBuilding
         ? `${matchedLocationArea}, ${extractedBuilding}`
         : matchedLocationArea;
 
-      // Check if the emergency already has a student object
       if (emergencyData.student) {
         setFoundStudent(emergencyData.student);
       }
@@ -232,7 +189,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
         incidentTime: formattedTime,
       });
 
-      // Reset AI suggestion when new emergency data comes in
       setAiSuggestion(null);
       setIsAnalyzing(false);
       if (analysisTimeout) {
@@ -241,7 +197,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
   }, [emergencyData, isOpen]);
 
-  // Fetch officers for dropdown
+  // Fetch officers for dropdown - USING AXIOS
   useEffect(() => {
     fetchOfficers();
   }, []);
@@ -249,16 +205,8 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch('/api/officers/list', {
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-      });
-      const officers = await response.json();
-      setOfficersList(officers);
+      const response = await axios.get('/api/officers/list');
+      setOfficersList(response.data);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
     } finally {
@@ -266,7 +214,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
   };
 
-  // === Debounced description analysis with CSRF cookie fix ===
+  // Debounced description analysis
   useEffect(() => {
     if (analysisTimeout) {
       clearTimeout(analysisTimeout);
@@ -291,6 +239,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     };
   }, [newReport.description]);
 
+  // THE FIXED AI ANALYSIS - USING AXIOS (NO CSRF ERRORS!)
   const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
       setIsAnalyzing(false);
@@ -298,66 +247,12 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
 
     try {
-      // Get CSRF token from cookie (reliable method)
-      const csrfToken = getCsrfToken();
-
-      if (!csrfToken) {
-        console.error('No CSRF token found');
-        throw new Error('Unable to get CSRF token');
-      }
-
-      console.log('AI Analysis - CSRF Token found:', csrfToken.substring(0, 20) + '...');
-
-      const response = await fetch('/api/ai/analyze-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ description })
+      // Axios automatically includes the CSRF token - no manual handling needed!
+      const response = await axios.post('/api/ai/analyze-report', {
+        description: description
       });
 
-      if (!response.ok) {
-        if (response.status === 419) {
-          console.error('CSRF token expired');
-          // Try to get a fresh token and retry
-          const freshToken = getCsrfToken();
-          if (freshToken && freshToken !== csrfToken) {
-            const retryResponse = await fetch('/api/ai/analyze-report', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': freshToken,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({ description })
-            });
-
-            if (retryResponse.ok) {
-              const retryData = await retryResponse.json();
-              if (retryData.success) {
-                setAiSuggestion({
-                  category: retryData.category,
-                  urgency: retryData.urgency,
-                  confidence: retryData.confidence || 0.8
-                });
-              }
-              setIsAnalyzing(false);
-              return;
-            }
-          }
-          throw new Error('CSRF token expired. Please refresh the page.');
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('AI Analysis response:', data);
+      const data = response.data;
 
       if (data.success) {
         setAiSuggestion({
@@ -370,6 +265,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
+      // Silent fail - better UX, no error message to user
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -408,13 +304,11 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
   };
 
-  // Helper function to get officer display name
   const getOfficerDisplayName = (officerId) => {
     const officer = officersList.find(o => o.officerId === officerId);
     return officer ? officer.officerName : 'Not Assigned';
   };
 
-  // Attachment helpers
   const isImageFile = (url) => {
     const extension = url.split('.').pop()?.toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension);
@@ -441,6 +335,7 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     setTimeout(() => toast.remove(), 3000);
   };
 
+  // File upload with AXIOS
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -452,19 +347,13 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     });
 
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch('/reports/upload-attachments', {
-        method: 'POST',
+      const response = await axios.post('/reports/upload-attachments', formData, {
         headers: {
-          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'multipart/form-data',
         },
-        credentials: 'include',
-        body: formData,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
-
-      const data = await response.json();
+      const data = response.data;
       setAttachmentUrls(prev => [...prev, ...data.urls]);
       setAttachmentPublicIds(prev => [...prev, ...data.publicIds]);
       showToast('Files uploaded successfully', 'success');
@@ -481,21 +370,12 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     if (!confirm('Are you sure you want to delete this attachment?')) return;
 
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch('/reports/delete-attachment', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+      await axios.delete('/reports/delete-attachment', {
+        data: {
           attachmentUrl: url,
           attachmentPublicId: attachmentPublicIds[index],
-        }),
+        }
       });
-
-      if (!response.ok) throw new Error('Delete failed');
 
       setAttachmentUrls(prev => prev.filter((_, i) => i !== index));
       setAttachmentPublicIds(prev => prev.filter((_, i) => i !== index));
@@ -528,7 +408,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const handleSubmit = () => {
     setIsSubmitting(true);
 
-    // Build location object using locationArea and building (same as ReportsEditing)
     const combinedAddress = (newReport.locationArea && newReport.building)
       ? `${newReport.locationArea}, ${newReport.building}`
       : (newReport.locationArea || '');
@@ -785,7 +664,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
 
                 {/* Location Section */}
                 <div className="space-y-3">
-                  {/* Location Area Dropdown */}
                   <div>
                     <Label className="text-xs text-gray-500 dark:text-gray-400">Location Area *</Label>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400">
@@ -815,7 +693,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                     </Select>
                   </div>
 
-                  {/* Specific Address (Building/Room/Block) */}
                   <div>
                     <Label className="text-xs text-gray-500 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
                     <div className="flex items-start gap-1.5 mt-1 mb-1">
@@ -835,7 +712,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
                     </p>
                   </div>
 
-                  {/* Full Address (Combined) */}
                   {newReport.fullAddress && (
                     <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                       <div className="flex items-center gap-2">

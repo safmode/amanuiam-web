@@ -11,27 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye, Trash2, Calendar, Mail, Phone, MapPin, Sparkles } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels, formatLocationName } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-
-// Helper function to get CSRF token from cookie (MOST RELIABLE)
-const getCsrfToken = () => {
-  // Method 1: Try cookie first (always available)
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'XSRF-TOKEN') {
-      return decodeURIComponent(value);
-    }
-  }
-
-  // Method 2: Fallback to meta tag
-  const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
-  if (metaToken) {
-    return metaToken;
-  }
-
-  // Method 3: Return null if no token found
-  return null;
-};
+import axios from 'axios'; // ADD THIS IMPORT
 
 // Helper function to extract location data from report
 const extractLocationData = (report) => {
@@ -158,7 +138,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisTimeout, setAnalysisTimeout] = useState(null);
 
-  // Fetch officers for dropdown
+  // Fetch officers for dropdown - USING AXIOS
   useEffect(() => {
     fetchOfficers();
   }, []);
@@ -166,8 +146,8 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const response = await fetch('/api/officers/list');
-      const officers = await response.json();
+      const response = await axios.get('/api/officers/list');
+      const officers = response.data;
       setOfficersList(officers);
 
       const options = {};
@@ -274,7 +254,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   }, [report, isOpen]);
 
-  // === Debounced description analysis with CSRF cookie fix ===
+  // === Debounced description analysis - USING AXIOS (NO CSRF ERRORS!) ===
   useEffect(() => {
     if (analysisTimeout) {
       clearTimeout(analysisTimeout);
@@ -306,66 +286,12 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
 
     try {
-      // Get CSRF token from cookie (reliable method)
-      const csrfToken = getCsrfToken();
-
-      if (!csrfToken) {
-        console.error('No CSRF token found');
-        throw new Error('Unable to get CSRF token');
-      }
-
-      console.log('AI Analysis - CSRF Token found:', csrfToken.substring(0, 20) + '...');
-
-      const response = await fetch('/api/ai/analyze-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ description })
+      // Axios automatically handles CSRF - no manual token needed!
+      const response = await axios.post('/api/ai/analyze-report', {
+        description: description
       });
 
-      if (!response.ok) {
-        if (response.status === 419) {
-          console.error('CSRF token expired');
-          // Try to get a fresh token and retry
-          const freshToken = getCsrfToken();
-          if (freshToken && freshToken !== csrfToken) {
-            const retryResponse = await fetch('/api/ai/analyze-report', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': freshToken,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({ description })
-            });
-
-            if (retryResponse.ok) {
-              const retryData = await retryResponse.json();
-              if (retryData.success) {
-                setAiSuggestion({
-                  category: retryData.category,
-                  urgency: retryData.urgency,
-                  confidence: retryData.confidence || 0.8
-                });
-              }
-              setIsAnalyzing(false);
-              return;
-            }
-          }
-          throw new Error('CSRF token expired. Please refresh the page.');
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('AI Analysis response:', data);
+      const data = response.data;
 
       if (data.success) {
         setAiSuggestion({
@@ -378,6 +304,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
+      // Silent fail - better UX, no error message to user
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -506,7 +433,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   };
 
-  // Upload pending files to Cloudinary with CSRF cookie
+  // Upload pending files to Cloudinary - USING AXIOS
   const uploadPendingFiles = async () => {
     if (pendingFiles.length === 0) return { urls: [], publicIds: [] };
 
@@ -518,22 +445,13 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     formData.append('reportId', editedReport.reportId);
 
     try {
-      const csrfToken = getCsrfToken();
-
-      const response = await fetch('/reports/upload-attachments', {
-        method: 'POST',
+      const response = await axios.post('/reports/upload-attachments', formData, {
         headers: {
-          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       tempPreviews.forEach(url => URL.revokeObjectURL(url));
       setPendingFiles([]);
@@ -549,30 +467,19 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
   };
 
-  // Delete pending deletions from Cloudinary with CSRF cookie
+  // Delete pending deletions from Cloudinary - USING AXIOS
   const processPendingDeletions = async () => {
     if (pendingDeletions.length === 0) return;
 
     for (const deletion of pendingDeletions) {
       try {
-        const csrfToken = getCsrfToken();
-
-        const response = await fetch('/reports/delete-attachment', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-          },
-          body: JSON.stringify({
+        await axios.delete('/reports/delete-attachment', {
+          data: {
             reportId: editedReport.reportId,
             attachmentUrl: deletion.url,
             attachmentPublicId: deletion.publicId,
-          }),
+          }
         });
-
-        if (!response.ok) {
-          console.error('Failed to delete:', deletion.url);
-        }
       } catch (error) {
         console.error('Delete error:', error);
       }

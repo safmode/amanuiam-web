@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, Search, Sparkles, MapPin } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
+import axios from 'axios'; // ← IMPORTANT: Add axios import
 
 export const AddReport = ({ isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
@@ -51,27 +52,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     incidentTime: '',
   });
 
-  // Helper function to get CSRF token from cookie (MOST RELIABLE)
-  const getCsrfToken = () => {
-    // Method 1: Try cookie first (always available)
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'XSRF-TOKEN') {
-        return decodeURIComponent(value);
-      }
-    }
-
-    // Method 2: Fallback to meta tag
-    const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    if (metaToken) {
-      return metaToken;
-    }
-
-    // Method 3: Return null if no token found
-    return null;
-  };
-
   // Update full address when locationArea or building changes
   const updateFullAddress = (locationAreaVal, buildingVal) => {
     let full = locationAreaVal || '';
@@ -99,34 +79,41 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
-  // Fetch officers for dropdown
+  // Fetch officers for dropdown - USING AXIOS
   useEffect(() => {
     fetchOfficers();
   }, []);
 
-  // Debounced description analysis
+  const fetchOfficers = async () => {
+    setIsLoadingOfficers(true);
+    try {
+      const response = await axios.get('/api/officers/list');
+      setOfficersList(response.data);
+    } catch (error) {
+      console.error('Failed to fetch officers:', error);
+    } finally {
+      setIsLoadingOfficers(false);
+    }
+  };
+
+  // Debounced description analysis - USING AXIOS (NO CSRF ERRORS!)
   useEffect(() => {
-    // Clear existing timeout
     if (analysisTimeoutRef.current) {
       clearTimeout(analysisTimeoutRef.current);
     }
 
-    // Don't analyze if description is too short
     if (!newReport.description || newReport.description.length < 15) {
       setAiSuggestion(null);
       setIsAnalyzing(false);
       return;
     }
 
-    // Set analyzing state
     setIsAnalyzing(true);
 
-    // Set new timeout
     analysisTimeoutRef.current = setTimeout(() => {
       analyzeDescription(newReport.description);
     }, 1200);
 
-    // Cleanup function
     return () => {
       if (analysisTimeoutRef.current) {
         clearTimeout(analysisTimeoutRef.current);
@@ -141,69 +128,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
 
     try {
-      console.log('Analyzing description:', description.substring(0, 50) + '...');
-
-      // Get CSRF token from cookie (reliable method)
-      const csrfToken = getCsrfToken();
-
-      if (!csrfToken) {
-        console.error('No CSRF token found');
-        throw new Error('Unable to get CSRF token');
-      }
-
-      console.log('CSRF Token found:', csrfToken.substring(0, 20) + '...');
-
-      const response = await fetch('/api/ai/analyze-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ description })
+      // Axios automatically handles CSRF - no manual token needed!
+      const response = await axios.post('/api/ai/analyze-report', {
+        description: description
       });
 
-      if (!response.ok) {
-        if (response.status === 419) {
-          console.error('CSRF token expired');
-          // Try to get a fresh token from cookie again
-          const freshToken = getCsrfToken();
-          if (freshToken && freshToken !== csrfToken) {
-            // Retry with fresh token
-            const retryResponse = await fetch('/api/ai/analyze-report', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': freshToken,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({ description })
-            });
-
-            if (retryResponse.ok) {
-              const retryData = await retryResponse.json();
-              if (retryData.success) {
-                setAiSuggestion({
-                  category: retryData.category,
-                  urgency: retryData.urgency,
-                  confidence: retryData.confidence || 0.8
-                });
-              }
-              setIsAnalyzing(false);
-              return;
-            }
-          }
-          throw new Error('CSRF token expired. Please refresh the page.');
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('AI Analysis response:', data);
+      const data = response.data;
 
       if (data.success) {
         setAiSuggestion({
@@ -212,11 +142,11 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
           confidence: data.confidence || 0.8
         });
       } else {
-        console.error('AI analysis failed:', data.error);
         setAiSuggestion(null);
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
+      // Silent fail - no error message to user
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -233,10 +163,8 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         setNewReport(prev => ({ ...prev, ...updates }));
         showToast(`AI suggestion applied: ${categoryLabels[aiSuggestion.category] || aiSuggestion.category} / ${urgencyLabels[aiSuggestion.urgency]}`, 'success');
 
-        // Mark as applied but keep showing for a moment
         setAiSuggestion(prev => prev ? { ...prev, applied: true } : null);
 
-        // Clear the suggestion after 3 seconds
         setTimeout(() => {
           setAiSuggestion(prev => prev?.applied ? null : prev);
         }, 3000);
@@ -246,7 +174,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   const handleCategoryChange = (value) => {
     setNewReport(prev => ({ ...prev, category: value }));
-    // Clear AI suggestion when manually selecting
     if (aiSuggestion && !aiSuggestion.applied) {
       setAiSuggestion(null);
       showToast('Manual selection made, AI suggestion cleared', 'info');
@@ -255,23 +182,9 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   const handleUrgencyChange = (value) => {
     setNewReport(prev => ({ ...prev, urgency: value }));
-    // Clear AI suggestion when manually selecting
     if (aiSuggestion && !aiSuggestion.applied) {
       setAiSuggestion(null);
       showToast('Manual selection made, AI suggestion cleared', 'info');
-    }
-  };
-
-  const fetchOfficers = async () => {
-    setIsLoadingOfficers(true);
-    try {
-      const response = await fetch('/api/officers/list');
-      const officers = await response.json();
-      setOfficersList(officers);
-    } catch (error) {
-      console.error('Failed to fetch officers:', error);
-    } finally {
-      setIsLoadingOfficers(false);
     }
   };
 
@@ -280,6 +193,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     return officer ? officer.officerName : 'Not Assigned';
   };
 
+  // Search student by matric - USING AXIOS
   const searchStudentByMatric = async () => {
     if (!newReport.reporterMatricNo) {
       showToast('Please enter a matric number', 'error');
@@ -288,8 +202,8 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
     setIsSearchingStudent(true);
     try {
-      const response = await fetch(`/api/students/search?matric=${newReport.reporterMatricNo}`);
-      const data = await response.json();
+      const response = await axios.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
+      const data = response.data;
 
       if (data.student) {
         setFoundStudent(data.student);
@@ -357,6 +271,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Upload pending files - USING AXIOS
   const uploadPendingFiles = async () => {
     if (pendingFiles.length === 0) return { urls: [], publicIds: [] };
 
@@ -367,22 +282,13 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     });
 
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch('/reports/upload-for-new', {
-        method: 'POST',
+      const response = await axios.post('/reports/upload-for-new', formData, {
         headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      const data = await response.json();
+      const data = response.data;
       return { urls: data.urls, publicIds: data.publicIds };
     } catch (error) {
       console.error('Upload error:', error);
@@ -411,23 +317,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (!confirm('Are you sure you want to delete this attachment?')) return;
 
     try {
-      const csrfToken = getCsrfToken();
-      const response = await fetch('/reports/delete-attachment', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-        },
-        body: JSON.stringify({
+      await axios.delete('/reports/delete-attachment', {
+        data: {
           attachmentUrl: url,
           attachmentPublicId: attachmentPublicIds[index],
-        }),
+        }
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Delete failed');
-      }
 
       setAttachmentUrls(prev => prev.filter((_, i) => i !== index));
       setAttachmentPublicIds(prev => prev.filter((_, i) => i !== index));
@@ -471,12 +366,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       const finalUrls = [...existingUrls, ...newAttachments.urls];
       const finalPublicIds = [...existingPublicIds, ...newAttachments.publicIds];
 
-      // Build combined address from locationArea and building
       const combinedAddress = (newReport.locationArea && newReport.building)
         ? `${newReport.locationArea}, ${newReport.building}`
         : (newReport.locationArea || '');
 
-      // Build location object with locationArea, building, and combined address
       const locationObj = {
         locationArea: newReport.locationArea || '',
         building: newReport.building || '',
