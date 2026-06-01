@@ -91,25 +91,19 @@ export const Sidebar = () => {
 
   const handleLogout = () => {
     if (isLoggingOut) return;
-
     setIsLoggingOut(true);
 
-    // Use Inertia router for logout
     router.post('/logout', {}, {
-        onError: (errors) => {
-        console.error('Logout error:', errors);
+        onError: () => {
         setIsLoggingOut(false);
-
-        // If CSRF error, force redirect to login
-        if (errors && (errors.message?.includes('419') || errors.status === 419)) {
-            window.location.href = '/login';
-        }
+        // If error, just redirect to login
+        window.location.href = '/login';
         },
         onSuccess: () => {
         setIsLoggingOut(false);
         },
     });
- };
+    };
 
   const getInitials = (name) =>
     name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'NA';

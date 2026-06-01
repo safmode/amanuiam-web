@@ -9,65 +9,17 @@ import axios from 'axios';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// ===== AXIOS CONFIGURATION =====
+// ===== SIMPLE AXIOS CONFIGURATION =====
+// Only set basic defaults - NO interceptor that interferes with Inertia
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
 
-// Get CSRF token from meta tag
+// Get CSRF token from meta tag if available
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 if (csrfToken) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-    console.log('✅ Axios configured with CSRF protection');
 }
-
-// Function to refresh CSRF token without reloading the page
-const refreshCsrfToken = async () => {
-    try {
-        await axios.get('/sanctum/csrf-cookie');
-        const newToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (newToken) {
-            axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-            console.log('✅ CSRF token refreshed');
-            return true;
-        }
-    } catch (error) {
-        console.error('Failed to refresh CSRF token:', error);
-    }
-    return false;
-};
-
-// Response interceptor - DON'T auto-reload on 419
-axios.interceptors.response.use(
-    response => response,
-    async (error) => {
-        const originalRequest = error.config;
-
-        // If it's a 419 error and we haven't retried yet
-        if (error.response?.status === 419 && !originalRequest._retry) {
-            originalRequest._retry = true;
-
-            console.warn('CSRF token expired, attempting to refresh...');
-
-            // Try to refresh the token
-            const refreshed = await refreshCsrfToken();
-
-            if (refreshed) {
-                // Update the original request with new token
-                originalRequest.headers['X-CSRF-TOKEN'] = axios.defaults.headers.common['X-CSRF-TOKEN'];
-                // Retry the request
-                return axios(originalRequest);
-            } else {
-                // If refresh failed, redirect to login page
-                console.warn('CSRF refresh failed, redirecting to login');
-                window.location.href = '/login';
-                return Promise.reject(error);
-            }
-        }
-
-        return Promise.reject(error);
-    }
-);
 // ===== END OF AXIOS CONFIGURATION =====
 
 // Function to keep app alive
