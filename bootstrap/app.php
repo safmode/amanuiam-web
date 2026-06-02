@@ -12,11 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // 🔥 THIS ONE LINE fixes 419 errors for API calls
+        $middleware->statefulApi();
+
+        // Your existing web middleware
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // Your CSRF exceptions (keep as is)
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
             'webhook/emergency-alert',
@@ -28,6 +33,3 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
-
-
-
