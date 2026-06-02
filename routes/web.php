@@ -48,21 +48,7 @@ Route::get('/health', function () {
     ]);
 })->name('health.check');
 
-Route::get('/api/students/search', function (Request $request) {
-    $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
-    if ($student) {
-        return response()->json([
-            'student' => [
-                '_id' => (string)$student->_id,
-                'name' => $student->name,
-                'email' => $student->email,
-                'phone' => $student->phone,
-                'matrixNumber' => $student->matrixNumber,
-            ]
-        ]);
-    }
-    return response()->json(['student' => null]);
-});
+
 
 // ============================================
 // WEBHOOK ROUTES
@@ -109,52 +95,70 @@ Route::get('/webhook/new-report', function (Request $request) {
 
 // Webhook for emergency alerts
 Route::post('/webhook/emergency-alert', function (Request $request) {
-    Log::info('🚨 Emergency alert received:', $request->all());
+    Log::info('🚨 Emergency alert webhook received:', $request->all());
 
     try {
-        // Get data from Node.js (already has student name!)
         $studentId = $request->input('studentId');
-        $studentName = $request->input('studentName', 'Unknown Student');
-        $studentMatrix = $request->input('studentMatrix', 'N/A');
-        $studentPhone = $request->input('studentPhone', 'N/A');
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
         $address = $request->input('address');
+        $emergencyId = $request->input('emergencyId');
+        $timestamp = $request->input('timestamp', now());
 
         if (!$studentId || !$latitude || !$longitude) {
-            return response()->json(['success' => false, 'error' => 'Missing fields'], 400);
+            return response()->json([
+                'success' => false,
+                'error' => 'Missing required fields: studentId, latitude, longitude'
+            ], 400);
         }
 
-        // Create emergency with the name Node.js sent
-        $emergencyIdentifier = 'EMG-' . uniqid();
+        Log::info("🚨 EMERGENCY from student {$studentId} at {$address}");
 
+        // Fetch student details
+        $student = App\Models\Student::find($studentId);
+
+        if (!$student) {
+            Log::warning("Student not found: {$studentId}");
+            return response()->json([
+                'success' => false,
+                'error' => 'Student not found'
+            ], 400);
+        }
+
+        // Use emergencyId from Node.js if provided
+        $emergencyIdentifier = $emergencyId ?? 'EMG-' . uniqid();
+
+        // Create emergency record first
         $emergency = Emergencies::create([
             '_id' => $emergencyIdentifier,
-            'studentId' => $studentId,
-            'student_matrix' => $studentMatrix,
-            'student_phone' => $studentPhone,
+            'student_id' => $studentId,
+            'student_name' => $student->name,
+            'student_matrix' => $student->matrixNumber,
+            'student_phone' => $student->phone,
             'location' => [
                 'type' => 'Point',
                 'coordinates' => [(float)$longitude, (float)$latitude]
             ],
             'address' => $address,
             'status' => 'active',
-            'triggeredAt' => now()
+            'triggeredAt' => now(),
+            'assigned_officer_id' => null,
+            'assigned_officer_name' => null,
+            'assigned_at' => null,
+            'resolvedAt' => null,
+            'resolved_by_officer_id' => null,
+            'resolved_by_officer_name' => null
         ]);
 
-        Log::info("✅ Emergency created: {$emergencyIdentifier} - Student: {$studentName}");
+        // Create web dashboard notification
+        $notification = App\Http\Controllers\NotificationController::createEmergencyAlert($emergency, $student);
 
-        // Create dashboard notification
-        $notification = App\Http\Controllers\NotificationController::createEmergencyAlert($emergency, null);
+        Log::info("✅ Emergency created and waiting for dispatch: {$emergencyIdentifier}");
 
-        return response()->json([
-            'success' => true,
-            'emergency_id' => $emergencyIdentifier,
-            'student_name' => $studentName
-        ]);
-
+        return response()->json(['success' => true, 'emergency_id' => $emergencyIdentifier]);
     } catch (\Exception $e) {
-        Log::error('❌ Webhook error: ' . $e->getMessage());
+        Log::error('❌ Failed to process emergency webhook: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
