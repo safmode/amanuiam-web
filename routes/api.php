@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReportController;
 
 // ============================================
 // WEBHOOK FOR NODE.JS
@@ -25,5 +26,7 @@ Route::post('/webhook/new-report', function (Request $request) {
         return response()->json(['success' => false], 500);
     }
 });
+
+Route::post('/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
 
 // Your existing API routes can go here if you had any
