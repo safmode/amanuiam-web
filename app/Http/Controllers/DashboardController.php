@@ -30,6 +30,7 @@ class DashboardController extends Controller
         $legacyMatricNumbers = [];
 
         foreach ($recentReports as $report) {
+            // Check if report has reporter_type (new format)
             if (isset($report->reporter_type)) {
                 if ($report->reporter_type === 'registered' && $report->reporter_id) {
                     $studentIds[] = (string)$report->reporter_id;
@@ -37,10 +38,13 @@ class DashboardController extends Controller
                     $unregisteredIds[] = (string)$report->reporter_id;
                 }
             }
+            // Handle old reports that have studentId
             elseif (isset($report->studentId) && $report->studentId) {
+                // If studentId is 24 chars (MongoDB ObjectId format)
                 if (preg_match('/^[a-f0-9]{24}$/i', $report->studentId)) {
                     $studentIds[] = (string)$report->studentId;
                 } else {
+                    // Legacy reports with matric number as studentId
                     $legacyMatricNumbers[] = $report->studentId;
                 }
             }
@@ -137,24 +141,6 @@ class DashboardController extends Controller
             $report->studentMatrix = $reporterMatric;
             $report->reporter_type_display = $reporterTypeDisplay;
 
-            // ========== FIX: ADD LOCATION DATA ==========
-            // Extract location data from the location object
-            if (isset($report->location) && is_array($report->location)) {
-                $report->locationArea = $report->location['locationArea'] ?? null;
-                $report->building = $report->location['building'] ?? null;
-                $report->address = $report->location['address'] ?? null;
-                $report->specificPlace = $report->location['specificPlace'] ?? null;
-                $report->locationRaw = $report->location; // Keep original for reference
-            } else {
-                // Fallback to existing fields
-                $report->locationArea = $report->mahallah ?? null;
-                $report->building = $report->building ?? null;
-                $report->address = $report->address ?? null;
-                $report->specificPlace = null;
-                $report->locationRaw = null;
-            }
-            // ========== END FIX ==========
-
             // Load officer name from assignedOfficer
             if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
                 $officer = $officers[$report->assignedOfficer];
@@ -198,6 +184,7 @@ class DashboardController extends Controller
         ]);
     }
 
+    // In your DashboardController or wherever you render the Approvals page
     public function approvals()
     {
         $pendingAdmins = Admins::where('status', 'pending')

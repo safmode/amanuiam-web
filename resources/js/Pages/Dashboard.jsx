@@ -165,21 +165,16 @@ const Dashboard = () => {
   };
 
   // Transform report data to match your component's expected format
-  // In Dashboard.jsx, update the formattedReports mapping:
-
-const formattedReports = recentReports.map(report => ({
+  const formattedReports = recentReports.map(report => ({
     id: report.reportId,
     reportId: report.reportId,
     issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
     location: report.mahallah,
-    // ========== ADD THESE LOCATION FIELDS ==========
     locationArea: report.locationArea,
     building: report.building,
     address: report.address,
-    specificPlace: report.specificPlace,
-    locationRaw: report.locationRaw,
+    locationRaw: report.location,
     mahallah: report.mahallah,
-    // ========== END ==========
     status: report.status,
     urgency: report.urgency,
     date: new Date(report.incidentDateTime).toLocaleDateString(),
@@ -203,7 +198,7 @@ const formattedReports = recentReports.map(report => ({
     studentEmail: report.studentEmail,
     studentPhone: report.studentPhone,
     studentMatrix: report.studentMatrix
-}));
+  }));
 
   return (
     <DashboardLayout>
