@@ -1,4 +1,4 @@
-// Dashboard.jsx - Fixed endpoint and report creation
+// Dashboard.jsx - Fixed to preserve location data
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { RecentReports } from '@/components/dashboard/RecentReports';
@@ -51,6 +51,9 @@ const Dashboard = () => {
       const response = await fetch('/dashboard/recent-data');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
+      console.log('Raw API response:', data); // Debug log
+      console.log('Recent reports sample:', data.recentReports?.[0]); // Debug log
+
       setRecentReports(data.recentReports || []);
       setStats({
         totalReports: data.stats?.totalReports || 0,
@@ -100,7 +103,7 @@ const Dashboard = () => {
   // ✅ CREATE REPORT - Using the correct endpoint '/Reports'
   const createReport = async (reportData) => {
     try {
-      const response = await fetch('/Reports', {   // <-- FIXED: capital R
+      const response = await fetch('/Reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,23 +162,19 @@ const Dashboard = () => {
     fetchHotspotData();
   };
 
+  // FIXED: Preserve ALL report data including locationRaw
   const formattedReports = recentReports.map(report => ({
+    // Keep all original data
+    ...report,  // This spreads all original fields including locationRaw, locationArea, building, etc.
+
+    // Add/override specific fields for display
     id: report.reportId,
-    reportId: report.reportId,
     issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
-    location: report.mahallah,
-    locationArea: report.locationArea,
-    building: report.building,
-    status: report.status,
-    urgency: report.urgency,
-    date: new Date(report.incidentDateTime).toLocaleDateString(),
-    time: new Date(report.incidentDateTime).toLocaleTimeString(),
-    reporterName: report.studentName || 'Unknown',
-    description: report.description,
-    incidentCategory: report.incidentCategory,
-    attachmentUrls: report.attachmentUrls,
-    incidentDateTime: report.incidentDateTime,
+    date: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleDateString() : 'Unknown',
+    time: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleTimeString() : 'Unknown',
   }));
+
+  console.log('Formatted reports sample:', formattedReports[0]); // Debug log
 
   return (
     <DashboardLayout>

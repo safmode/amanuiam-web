@@ -141,6 +141,18 @@ class DashboardController extends Controller
             $report->studentMatrix = $reporterMatric;
             $report->reporter_type_display = $reporterTypeDisplay;
 
+            // CRITICAL FIX: Preserve location data
+            // Store the original location object for the frontend
+            if (isset($report->location) && is_array($report->location)) {
+                $report->locationRaw = $report->location;
+
+                // Also extract for easier access
+                $report->locationArea = $report->location['locationArea'] ?? null;
+                $report->building = $report->location['building'] ?? null;
+                $report->address = $report->location['address'] ?? null;
+                $report->specificPlace = $report->location['specificPlace'] ?? null;
+            }
+
             // Load officer name from assignedOfficer
             if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
                 $officer = $officers[$report->assignedOfficer];
