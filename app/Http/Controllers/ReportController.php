@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Http;
+use MongoDB\BSON\ObjectId;
 
 class ReportController extends Controller
 {
@@ -627,7 +628,14 @@ class ReportController extends Controller
 
         if ($registeredStudent) {
             $validated['reporter_type'] = 'registered';
-            $validated['reporter_id'] = (string)$registeredStudent->_id;
+            // Store _id as MongoDB ObjectId (not string) for mobile compatibility
+            $validated['reporter_id'] = new ObjectId($registeredStudent->_id);
+            // Also convert studentId to ObjectId if present
+            if (isset($validated['studentId'])) {
+                $validated['studentId'] = new ObjectId($validated['studentId']);
+            } else {
+                $validated['studentId'] = new ObjectId($registeredStudent->_id);
+            }
         } else {
             $existingReporter = null;
 
