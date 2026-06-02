@@ -13,7 +13,7 @@ class VerifyCsrfToken extends Middleware
         // 'api/emergencies',
         // 'api/emergencies/*',
         // 'digest/send',
-        '/api/ai/analyze-report',
+        'api/ai/analyze-report',
         // '*',
     ];
 }
