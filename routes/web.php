@@ -148,10 +148,10 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
         // ✅ CRITICAL: Make sure ALL fields are saved correctly
         $emergencyData = [
             '_id' => $emergencyIdentifier,
-            'student_id' => $studentId,
-            'student_name' => $studentName,        // ✅ Use the resolved name
-            'student_matrix' => $studentMatrix,    // ✅ Matrix number
-            'student_phone' => $studentPhone,      // ✅ Phone number
+            'studentId' => $studentId,
+            'studentName' => $studentName,        // ✅ Use the resolved name
+            'studentMatrix' => $studentMatrix,    // ✅ Matrix number
+            'studentPhone' => $studentPhone,      // ✅ Phone number
             'location' => [
                 'type' => 'Point',
                 'coordinates' => [(float)$longitude, (float)$latitude]
@@ -175,9 +175,9 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
         $savedEmergency = Emergencies::find($emergencyIdentifier);
         Log::info('✅ VERIFICATION - Saved emergency:', [
             'id' => $savedEmergency->_id,
-            'student_name' => $savedEmergency->student_name ?? 'MISSING',
-            'student_matrix' => $savedEmergency->student_matrix ?? 'MISSING',
-            'student_phone' => $savedEmergency->student_phone ?? 'MISSING'
+            'studentName' => $savedEmergency->student_name ?? 'MISSING',
+            'studentMatrix' => $savedEmergency->student_matrix ?? 'MISSING',
+            'studentPhone' => $savedEmergency->student_phone ?? 'MISSING'
         ]);
 
         // Create web dashboard notification - PASS THE STUDENT OBJECT
