@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, Fragment } from 'react';
 import { router } from '@inertiajs/react';
+import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, Search, Sparkles, MapPin } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
-import api from '@/lib/axios';
 
 export const AddReport = ({ isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
@@ -88,7 +88,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const response = await api.get('/api/officers/list');
+      const response = await router.get('/api/officers/list');
       setOfficersList(response.data);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
@@ -97,7 +97,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  // Debounced description analysis - USING INERTIA ROUTER (CHANGED)
+  // Debounced description analysis - NOW USING AXIOS ✅
   useEffect(() => {
     if (analysisTimeoutRef.current) {
       clearTimeout(analysisTimeoutRef.current);
@@ -122,40 +122,35 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     };
   }, [newReport.description]);
 
-  // CHANGED: Now using Inertia router instead of axios
-  const analyzeDescription = (description) => {
+  // ✅ CHANGED: Now using axios instead of Inertia router
+  const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
       setIsAnalyzing(false);
       return;
     }
 
-    // Use Inertia's router - handles CSRF automatically!
-    router.post('/api/ai/analyze-report', {
-      description: description
-    }, {
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: (page) => {
-        // The response data is in page.props
-        const data = page.props.aiAnalysis || page.props;
+    try {
+      const response = await axios.post('/api/ai/analyze-report', { description });
+      const data = response.data;
 
-        if (data.success) {
-          setAiSuggestion({
-            category: data.category,
-            urgency: data.urgency,
-            confidence: data.confidence || 0.8
-          });
-        } else {
-          setAiSuggestion(null);
-        }
-        setIsAnalyzing(false);
-      },
-      onError: (errors) => {
-        console.error('AI analysis failed:', errors);
+      if (data.success) {
+        setAiSuggestion({
+          category: data.category,
+          urgency: data.urgency,
+          confidence: data.confidence || 0.8
+        });
+      } else {
         setAiSuggestion(null);
-        setIsAnalyzing(false);
       }
-    });
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      if (error.response?.status === 419) {
+        console.warn('CSRF token expired – refresh the page if this persists');
+      }
+      setAiSuggestion(null);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const applyAiSuggestion = () => {
@@ -207,7 +202,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
     setIsSearchingStudent(true);
     try {
-      const response = await api.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
+      const response = await router.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
       const data = response.data;
 
       if (data.student) {
@@ -287,7 +282,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     });
 
     try {
-      const response = await api.post('/reports/upload-for-new', formData, {
+      const response = await router.post('/reports/upload-for-new', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -322,7 +317,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (!confirm('Are you sure you want to delete this attachment?')) return;
 
     try {
-      await api.delete('/reports/delete-attachment', {
+      await router.delete('/reports/delete-attachment', {
         data: {
           attachmentUrl: url,
           attachmentPublicId: attachmentPublicIds[index],
