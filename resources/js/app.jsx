@@ -10,7 +10,7 @@ import axios from 'axios';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// ===== FIXED AXIOS CONFIGURATION =====
+// ===== SIMPLE AXIOS CONFIGURATION =====
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
@@ -26,9 +26,8 @@ if (initialToken) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = initialToken;
 }
 
-// IMPORTANT: Add request interceptor to ALWAYS use the latest token
+// Request interceptor - always use latest token from meta tag
 axios.interceptors.request.use((config) => {
-    // Always use the current token from meta tag, not a cached one
     const currentToken = getCurrentCsrfToken();
     if (currentToken) {
         config.headers['X-CSRF-TOKEN'] = currentToken;
@@ -36,34 +35,18 @@ axios.interceptors.request.use((config) => {
     return config;
 });
 
-// Handle 419 errors by refreshing token and retrying once
+// Response interceptor - handle 419 by refreshing the page (last resort)
 axios.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
+        if (error.response?.status === 419 && !error.config._retry) {
+            error.config._retry = true;
 
-        if (error.response?.status === 419 && !originalRequest._retry) {
-            originalRequest._retry = true;
-
-            try {
-                // Refresh the CSRF cookie
-                await axios.get('/sanctum/csrf-cookie');
-
-                // Get the new token from meta tag (it should be updated by Laravel)
-                const newToken = getCurrentCsrfToken();
-                if (newToken) {
-                    axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-                    originalRequest.headers['X-CSRF-TOKEN'] = newToken;
-                }
-
-                // Retry the original request
-                return axios(originalRequest);
-            } catch (refreshError) {
-                console.error('Failed to refresh CSRF token', refreshError);
-                return Promise.reject(error);
-            }
+            // Don't call /sanctum/csrf-cookie - just reload the page
+            console.warn('CSRF token expired. Reloading page...');
+            window.location.reload();
+            return Promise.reject(error);
         }
-
         return Promise.reject(error);
     }
 );
