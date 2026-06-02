@@ -102,65 +102,39 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
         $longitude = $request->input('longitude');
         $address = $request->input('address');
         $emergencyId = $request->input('emergencyId');
-        $sosUniqueId = $request->input('sosUniqueId');
 
         if (!$studentId || !$latitude || !$longitude) {
             return response()->json([
                 'success' => false,
-                'error' => 'Missing required fields: studentId, latitude, longitude'
+                'error' => 'Missing required fields'
             ], 400);
         }
 
-        // Check for recent duplicate
-        $recentEmergency = Emergencies::where('studentId', $studentId)
-            ->where('triggeredAt', '>=', now()->subSeconds(30))
-            ->first();
-
-        if ($recentEmergency) {
-            Log::warning("⚠️ DUPLICATE: Student {$studentId} already has active emergency");
-            return response()->json([
-                'success' => false,
-                'error' => 'Emergency already exists',
-                'emergency_id' => $recentEmergency->_id
-            ], 429);
+        // Check if emergency already exists (to prevent duplicate)
+        $existingEmergency = Emergencies::where('_id', $emergencyId)->first();
+        if ($existingEmergency) {
+            Log::info("Emergency {$emergencyId} already exists, skipping creation");
+            return response()->json(['success' => true, 'emergency_id' => $emergencyId]);
         }
 
-        $emergencyIdentifier = $emergencyId ?? 'EMG-' . uniqid();
-
-        // ✅ SAVE ONLY studentId - NO name, matrix, phone
+        // Save ONLY studentId - NO name, matrix, phone
         $emergencyData = [
-            '_id' => $emergencyIdentifier,
+            '_id' => $emergencyId,
             'studentId' => $studentId,
             'latitude' => (float)$latitude,
             'longitude' => (float)$longitude,
             'address' => $address,
             'status' => 'active',
             'triggeredAt' => now(),
-            'assigned_officer_id' => null,
-            'assigned_officer_name' => null,
-            'assigned_at' => null,
-            'resolvedAt' => null,
-            'resolved_by_officer_id' => null,
-            'resolved_by_officer_name' => null
         ];
-
-        Log::info('📝 Saving emergency with data:', $emergencyData);
 
         $emergency = Emergencies::create($emergencyData);
 
-        Log::info("✅ Emergency created: {$emergencyIdentifier} - Student ID: {$studentId}");
-
-        // ✅ FORCE BROADCAST to all dashboard admins via Laravel's event system
-        try {
-            // This will trigger the dashboard notification
-            broadcast(new \App\Events\EmergencyAlertReceived($emergency))->toOthers();
-        } catch (\Exception $e) {
-            Log::warning('Broadcast failed but continuing: ' . $e->getMessage());
-        }
+        Log::info("✅ Emergency saved to Laravel DB: {$emergencyId}");
 
         return response()->json([
             'success' => true,
-            'emergency_id' => $emergencyIdentifier
+            'emergency_id' => $emergencyId
         ]);
 
     } catch (\Exception $e) {
