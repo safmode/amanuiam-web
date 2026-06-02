@@ -104,12 +104,11 @@ const Settings = () => {
   }, [flash]);
 
   // ============================================
-  // DARK MODE TOGGLE – fetch with CSRF token (original)
+  // DARK MODE TOGGLE – fetch with CSRF token
   // ============================================
   const handleDarkModeToggle = async (checked) => {
     if (isLoadingPreferences) return;
 
-    // Optimistic update
     setDarkMode(checked);
     if (checked) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
@@ -132,7 +131,6 @@ const Settings = () => {
         throw new Error('Failed to save dark mode preference');
       }
     } catch (error) {
-      // Revert on error
       const revertMode = !checked;
       setDarkMode(revertMode);
       if (revertMode) document.documentElement.classList.add('dark');
@@ -143,7 +141,7 @@ const Settings = () => {
   };
 
   // ============================================
-  // INCIDENT ALERTS TOGGLE – fetch with CSRF token (same as dark mode)
+  // INCIDENT ALERTS TOGGLE – fetch with CSRF token
   // ============================================
   const handleToggleIncidentAlerts = async (checked) => {
     if (isLoadingPreferences) return;
@@ -182,9 +180,6 @@ const Settings = () => {
     }
   };
 
-  // ------------------------------------------------------------
-  // All other handlers (identical to your original)
-  // ------------------------------------------------------------
   const showToast = (message, type = 'success') => {
     const toast = document.createElement('div');
     toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm ${
@@ -465,18 +460,187 @@ const Settings = () => {
           </div>
         </TabsList>
 
-        {/* Profile Tab – identical to original, omitted for brevity but you can copy from your working file */}
+        {/* Profile Tab */}
         <TabsContent value="profile">
           <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-6">
-              {/* ... your existing profile form JSX ... */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D4A853] to-[#B8923F] flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      getInitials()
+                    )}
+                  </div>
+                  <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <Button size="icon" variant="secondary" className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full dark:bg-slate-700 dark:hover:bg-slate-600" onClick={() => fileInputRef.current?.click()}>
+                    <Camera className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div>
+                  <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">{profile.name || admin?.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{profile.rank || admin?.rank || 'Security Officer'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Full Name</Label>
+                  <Input
+                    value={profile.name}
+                    onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))}
+                    className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Email Address</Label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <Input
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile(p => ({ ...p, email: e.target.value }))}
+                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Phone Number</Label>
+                  <div className="relative mt-1">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <Input
+                      value={profile.phone}
+                      onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))}
+                      className="pl-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Rank</Label>
+                  <Select
+                    value={profile.rank}
+                    onValueChange={(value) => setProfile(p => ({ ...p, rank: value }))}
+                  >
+                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectValue placeholder="Select rank" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-slate-800 dark:border-slate-700">
+                      <SelectItem value="Senior Security Officer" className="text-gray-900 dark:text-gray-300">Senior Security Officer</SelectItem>
+                      <SelectItem value="Security Officer" className="text-gray-900 dark:text-gray-300">Security Officer</SelectItem>
+                      <SelectItem value="Junior Officer" className="text-gray-900 dark:text-gray-300">Junior Officer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Department</Label>
+                  <Select
+                    value={profile.department}
+                    onValueChange={(value) => setProfile(p => ({ ...p, department: value }))}
+                  >
+                    <SelectTrigger className="mt-1 h-10 bg-white border-border rounded-xl text-sm text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-slate-800 dark:border-slate-700">
+                      <SelectItem value="Operations" className="text-gray-900 dark:text-gray-300">Operations</SelectItem>
+                      <SelectItem value="URB Unit" className="text-gray-900 dark:text-gray-300">URB Unit</SelectItem>
+                      <SelectItem value="Patrol Unit" className="text-gray-900 dark:text-gray-300">Patrol Unit</SelectItem>
+                      <SelectItem value="Operations Room" className="text-gray-900 dark:text-gray-300">Operations Room</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  className="mt-4 gap-2 bg-[#D4A853] hover:bg-[#C49A48] rounded-xl w-full text-white"
+                  onClick={handleSaveProfile}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Changes
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Security Tab – same as original */}
+        {/* Security Tab */}
         <TabsContent value="security">
-          {/* ... your existing security JSX ... */}
+          <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Key className="w-5 h-5 text-[#D4A853]" />
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Change Password</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Current Password"
+                        value={passwordData.current_password}
+                        onChange={(e) => setPasswordData(p => ({ ...p, current_password: e.target.value }))}
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      />
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
+                        onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="New Password (min 6 characters)"
+                        value={passwordData.new_password}
+                        onChange={(e) => setPasswordData(p => ({ ...p, new_password: e.target.value }))}
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      />
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
+                        onClick={() => setShowNewPassword(!showNewPassword)}>
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm New Password"
+                        value={passwordData.new_password_confirmation}
+                        onChange={(e) => setPasswordData(p => ({ ...p, new_password_confirmation: e.target.value }))}
+                        className="pr-10 h-10 bg-white border-border rounded-xl text-sm text-gray-900 placeholder:text-gray-400 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      />
+                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 dark:hover:bg-slate-700"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <Button className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl w-full text-white" onClick={handleChangePassword} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Update Password
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <LogOut className="w-5 h-5 text-red-500" />
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">Active Sessions</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Log out from all devices</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30" onClick={handleLogoutAllDevices} disabled={isLoading}>
+                      <RefreshCw className="w-4 h-4 mr-2" />Logout All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Preferences Tab */}
@@ -583,7 +747,7 @@ const Settings = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Password Change Verification Modal – unchanged */}
+      {/* Password Change Verification Modal */}
       {showCodeModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-[400px] max-w-[90vw] dark:bg-slate-800 dark:border-slate-700">
