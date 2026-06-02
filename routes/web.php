@@ -94,7 +94,6 @@ Route::get('/webhook/new-report', function (Request $request) {
 });
 
 // Webhook for emergency alerts
-// Webhook for emergency alerts
 Route::post('/webhook/emergency-alert', function (Request $request) {
     Log::info('🚨 Emergency alert webhook received:', $request->all());
 

@@ -54,6 +54,9 @@ const Dashboard = () => {
 
       const data = await response.json();
 
+      console.log('Raw API data:', data);
+      console.log('First report:', data.recentReports?.[0]);
+
       setRecentReports(data.recentReports || []);
       setStats({
         totalReports: data.stats?.totalReports || 0,
@@ -165,14 +168,10 @@ const Dashboard = () => {
   };
 
   // Transform report data to match your component's expected format
-  // In Dashboard.jsx, update the formattedReports mapping:
-
-// In Dashboard.jsx - REPLACE your formattedReports with this:
-
-const formattedReports = recentReports.map(report => ({
-    id: report.reportId,  // ← This is what RecentReports uses for the key and display
+  const formattedReports = recentReports.map(report => ({
+    id: report.reportId,
     reportId: report.reportId,
-    issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),  // ← RecentReports uses 'issue'
+    issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
     description: report.description,
     location: report.mahallah,
     locationArea: report.locationArea,
@@ -183,8 +182,8 @@ const formattedReports = recentReports.map(report => ({
     mahallah: report.mahallah,
     status: report.status,
     urgency: report.urgency,
-    date: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleDateString() : 'Unknown',  // ← RecentReports expects 'date'
-    time: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleTimeString() : 'Unknown',  // ← RecentReports expects 'time'
+    date: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleDateString() : 'Unknown',
+    time: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleTimeString() : 'Unknown',
     incidentDateTime: report.incidentDateTime,
     reportedAt: report.reportedAt,
     reporterName: report.studentName || 'Unknown Reporter',
@@ -203,13 +202,20 @@ const formattedReports = recentReports.map(report => ({
     assignedOfficer: report.assignedOfficer,
     officerName: report.officerName,
     attachmentUrls: report.attachmentUrls
-}));
+  }));
+
+  console.log('Formatted reports:', formattedReports);
+  if (formattedReports.length > 0) {
+    console.log('First formatted report location:', {
+      locationArea: formattedReports[0].locationArea,
+      address: formattedReports[0].address,
+      building: formattedReports[0].building,
+      locationRaw: formattedReports[0].locationRaw
+    });
+  }
 
   return (
     <DashboardLayout>
-      {/* Emergency Alert Banner - Add this back if you have it */}
-      {/* <EmergencyAlertBanner /> */}
-
       {/* Quick Statistics */}
       <StatsOverview stats={stats} loading={loading} />
 
