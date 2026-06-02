@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Your CSRF exceptions (keep as is)
         $middleware->validateCsrfTokens(except: [
+            'api/*',
             'webhook/*',
             'webhook/emergency-alert',
             'digest/send',
