@@ -6,8 +6,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
 
 // ============================================
-// WEBHOOK FOR NODE.JS
+// API ROUTES (Prefix: /api)
 // ============================================
+
 Route::post('/webhook/new-report', function (Request $request) {
     \Log::info('===== WEBHOOK HIT =====', $request->all());
 
@@ -29,5 +30,35 @@ Route::post('/webhook/new-report', function (Request $request) {
 
 Route::post('/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
 
+// ✅ THIS IS THE KEY ENDPOINT FOR EMERGENCY NOTIFICATIONS
+Route::post('/notifications/emergency', function (Request $request) {
+    \Log::info('📢 Emergency notification received:', $request->all());
 
-// Your existing API routes can go here if you had any
+    try {
+        $notification = new \App\Models\Notification();
+        $notification->type = $request->type;
+        $notification->title = $request->title;
+        $notification->message = $request->message;
+        $notification->report_id = $request->report_id;
+        $notification->report_title = $request->report_title;
+        $notification->status = $request->status;
+        $notification->student_id = $request->student_id;
+        $notification->student_name = $request->student_name;
+        $notification->student_matrix = $request->student_matrix;
+        $notification->student_phone = $request->student_phone;
+        $notification->location = $request->location;
+        $notification->latitude = $request->latitude;
+        $notification->longitude = $request->longitude;
+        $notification->read_by = [];
+        $notification->created_at = now();
+        $notification->updated_at = now();
+        $notification->save();
+
+        \Log::info('✅ Emergency notification saved with ID: ' . $notification->_id);
+
+        return response()->json(['success' => true, 'notification' => $notification]);
+    } catch (\Exception $e) {
+        \Log::error('Failed to save notification: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
