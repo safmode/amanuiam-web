@@ -9,8 +9,6 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Tailwind CSS CDN -->
-        <script src="https://cdn.tailwindcss.com"></script>
         @vite('resources/css/app.css')
 
         <!-- Fonts -->
@@ -20,7 +18,7 @@
         <!-- Scripts -->
         @routes
         @viteReactRefresh
-        @vite(['resources/js/app.jsx'])
+        @vite(['resources/js/app.jsx', 'resources/css/app.css'])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

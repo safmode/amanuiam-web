@@ -10,10 +10,10 @@ class VerifyCsrfToken extends Middleware
         'webhook/*',
         'webhook/new-report',
         '/telegram/webhook',
-        'api/emergencies',
-        'api/emergencies/*',
-        'digest/send',
-        '/api/ai/analyze-report',
-        '*',
+        // 'api/emergencies',
+        // 'api/emergencies/*',
+        // 'digest/send',
+        // '/api/ai/analyze-report',
+        // '*',
     ];
 }

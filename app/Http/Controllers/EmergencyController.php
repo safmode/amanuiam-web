@@ -375,9 +375,6 @@ class EmergencyController extends Controller
      */
     public function dispatch(Request $request, $id)
     {
-        Log::info('Dispatch method called for ID: ' . $id);
-        Log::info('Dispatch data:', $request->all());
-
         try {
             $validated = $request->validate([
                 'officerId' => 'required|string',
@@ -387,25 +384,13 @@ class EmergencyController extends Controller
 
             $emergency = Emergencies::find($id);
             if (!$emergency) {
-                Log::error('Emergency not found: ' . $id);
-                // For Inertia requests, return back with error
-                if (!$request->wantsJson() && !$request->is('api/*')) {
+                if ($request->header('X-Inertia')) {
                     return redirect()->back()->with('error', 'Emergency not found');
                 }
-                return response()->json(['error' => 'Emergency not found', 'success' => false], 404);
+                return response()->json(['success' => false, 'error' => 'Emergency not found'], 404);
             }
 
-            $oldStatus = $emergency->status;
-            $studentId = (string)$emergency->studentId;
-            $student = Student::find($studentId);
-
-            if (!$student) {
-                $student = new \stdClass();
-                $student->name = 'Unknown Student';
-                $student->matrixNumber = 'N/A';
-                $student->phone = 'N/A';
-            }
-
+            // Update emergency
             $emergency->status = 'responding';
             $emergency->assigned_officer_id = $validated['officerId'];
             $emergency->assigned_officer_name = $validated['officerName'];
@@ -413,79 +398,24 @@ class EmergencyController extends Controller
             $emergency->dispatched_at = now();
             $emergency->save();
 
-            // Clear cache for counts
+            // Clear cache
             cache()->forget('emergency_counts');
 
-            Log::info('Emergency saved with assigned officer: ' . $emergency->assigned_officer_name);
-
-            // Send Telegram notification ONLY to the ASSIGNED officer
-            try {
-                $assignedOfficer = Officer::where('officerName', $validated['officerName'])
-                    ->orWhere('officerId', $validated['officerId'])
-                    ->first();
-
-                if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
-                    Log::info('Sending Telegram notification to assigned officer only: ' . $assignedOfficer->officerName);
-
-                    $message = "👮 *TASK ASSIGNED TO YOU* 👮\n\n";
-                    $message .= "*{$assignedOfficer->officerName}*, you have been assigned to an emergency.\n\n";
-                    $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                    $message .= "*Matrix:* " . ($student->matrixNumber ?? 'N/A') . "\n";
-                    $message .= "*Phone:* " . ($student->phone ?? 'N/A') . "\n";
-                    $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
-                    $message .= "*Reported at:* " . $emergency->triggeredAt->format('d/m/Y H:i:s') . "\n\n";
-                    $message .= "📋 *Your Task:*\n";
-                    $message .= "• Respond to the location immediately\n";
-                    $message .= "• Assess the situation\n";
-                    $message .= "• Provide assistance to the student\n";
-                    $message .= "• Update the status when resolved\n\n";
-                    $message .= "⚠️ *Please respond to this emergency as soon as possible!*";
-
-                    $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
-                } else {
-                    Log::warning('Assigned officer not found or has no Telegram: ' . $validated['officerName']);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to send Telegram notification to assigned officer: ' . $e->getMessage());
+            // 🔥 FIX: Always return redirect for Inertia, JSON for API
+            if ($request->header('X-Inertia')) {
+                return redirect()->back()->with('success', 'Officer dispatched successfully');
             }
 
-            // Send mobile notification
-            try {
-                $nodeServerUrl = env('NODE_SERVER_URL', 'http://localhost:3000');
-                Http::timeout(5)->post($nodeServerUrl . '/api/notify-emergency-status', [
-                    'emergencyId' => (string)$emergency->_id,
-                    'studentId' => $studentId,
-                    'oldStatus' => $oldStatus,
-                    'newStatus' => 'responding',
-                    'title' => '👮 Officer Dispatched',
-                    'message' => "Officer {$validated['officerName']} has been dispatched to your location. Stay calm and await assistance."
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to notify mobile server for emergency dispatch: ' . $e->getMessage());
-            }
-
-            // IMPORTANT FIX: Check for Inertia request properly
-            // Inertia requests have a special header 'X-Inertia' = true
-            $isInertiaRequest = $request->header('X-Inertia') === 'true';
-
-            if ($request->wantsJson() && !$isInertiaRequest) {
-                // This is a pure API JSON request
-                return response()->json(['success' => true, 'emergency' => $emergency]);
-            }
-
-            // For Inertia requests, ALWAYS return a redirect (Inertia will handle it)
-            return redirect()->back()->with('success', 'Officer dispatched successfully');
+            return response()->json(['success' => true]);
 
         } catch (\Exception $e) {
             Log::error('Failed to dispatch officer: ' . $e->getMessage());
 
-            $isInertiaRequest = $request->header('X-Inertia') === 'true';
-
-            if ($request->wantsJson() && !$isInertiaRequest) {
-                return response()->json(['success' => false, 'error' => 'Failed to dispatch officer: ' . $e->getMessage()], 500);
+            if ($request->header('X-Inertia')) {
+                return redirect()->back()->with('error', 'Failed to dispatch officer: ' . $e->getMessage());
             }
 
-            return redirect()->back()->with('error', 'Failed to dispatch officer: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 

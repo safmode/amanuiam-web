@@ -588,6 +588,8 @@ const Alerts = () => {
   // Fetch emergencies with filters using Fetch (GET)
   const fetchEmergencies = async (page = 1, perPage = pagination.per_page) => {
     setLoading(true);
+
+    // Build query parameters
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('per_page', perPage);
@@ -595,42 +597,66 @@ const Alerts = () => {
     if (filters.locations.length > 0) params.append('locations', filters.locations.join(','));
 
     try {
-      const response = await fetch(`/api/emergencies?${params.toString()}`, {
-        headers: {
-          'X-CSRF-TOKEN': getCsrfToken(),
-          'X-Requested-With': 'XMLHttpRequest'
+        // Use relative URL - browser will use HTTPS automatically
+        const response = await fetch(`/api/emergencies?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            credentials: 'same-origin' // Important!
+        });
+
+        if (!response.ok) {
+            if (response.status === 419) {
+                throw new Error('Session expired. Please refresh the page.');
+            }
+            throw new Error(`HTTP ${response.status}`);
         }
-      });
-      const data = await response.json();
-      setAlerts(data.data || []);
-      setPagination(data.pagination);
-      window.dispatchEvent(new CustomEvent('emergency-updated'));
+
+        const data = await response.json();
+        setAlerts(data.data || []);
+        setPagination(data.pagination);
+        window.dispatchEvent(new CustomEvent('emergency-updated'));
     } catch (error) {
-      console.error('Failed to fetch emergencies:', error);
-      showToast('Failed to load emergencies', 'error');
+        console.error('Failed to fetch emergencies:', error);
+        if (error.message.includes('419')) {
+            showToast('Session expired. Refreshing page...', 'error');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showToast('Failed to load emergencies', 'error');
+        }
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
-  // Fetch global stats using Fetch (GET)
+// Fix the stats fetching
   const fetchGlobalStats = async () => {
     try {
-      const response = await fetch('/api/emergencies/counts', {
-        headers: {
-          'X-CSRF-TOKEN': getCsrfToken(),
-          'X-Requested-With': 'XMLHttpRequest'
+        const response = await fetch('/api/emergencies/counts', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-      });
-      const data = await response.json();
-      setGlobalStats({
-        active: data.active || 0,
-        responding: data.responding || 0,
-        resolved: data.resolved || 0,
-        total: (data.active || 0) + (data.responding || 0) + (data.resolved || 0),
-      });
+
+        const data = await response.json();
+        setGlobalStats({
+            active: data.active || 0,
+            responding: data.responding || 0,
+            resolved: data.resolved || 0,
+            total: (data.active || 0) + (data.responding || 0) + (data.resolved || 0),
+        });
     } catch (error) {
-      console.error('Failed to fetch global stats:', error);
+        console.error('Failed to fetch global stats:', error);
     }
   };
 

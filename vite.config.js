@@ -4,7 +4,6 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-    base: '/build/',   // ← ADD THIS LINE - CRITICAL FOR HTTPS!
     plugins: [
         laravel({
             input: ['resources/js/app.jsx', 'resources/css/app.css'],
