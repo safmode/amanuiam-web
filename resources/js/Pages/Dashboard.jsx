@@ -165,40 +165,45 @@ const Dashboard = () => {
   };
 
   // Transform report data to match your component's expected format
-  const formattedReports = recentReports.map(report => ({
-    id: report.reportId,
+  // In Dashboard.jsx, update the formattedReports mapping:
+
+// In Dashboard.jsx - REPLACE your formattedReports with this:
+
+const formattedReports = recentReports.map(report => ({
+    id: report.reportId,  // ← This is what RecentReports uses for the key and display
     reportId: report.reportId,
-    issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
+    issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),  // ← RecentReports uses 'issue'
+    description: report.description,
     location: report.mahallah,
     locationArea: report.locationArea,
     building: report.building,
     address: report.address,
-    locationRaw: report.location,
+    specificPlace: report.specificPlace,
+    locationRaw: report.locationRaw,
     mahallah: report.mahallah,
     status: report.status,
     urgency: report.urgency,
-    date: new Date(report.incidentDateTime).toLocaleDateString(),
-    time: new Date(report.incidentDateTime).toLocaleTimeString(),
+    date: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleDateString() : 'Unknown',  // ← RecentReports expects 'date'
+    time: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleTimeString() : 'Unknown',  // ← RecentReports expects 'time'
+    incidentDateTime: report.incidentDateTime,
+    reportedAt: report.reportedAt,
     reporterName: report.studentName || 'Unknown Reporter',
     reporterContact: report.studentPhone || 'Not provided',
     reporterEmail: report.studentEmail,
     reporterMatricNo: report.studentMatrix,
     reporter_type_display: report.reporter_type_display,
     reporter_type: report.reporter_type,
-    description: report.description,
+    studentName: report.studentName,
+    studentEmail: report.studentEmail,
+    studentPhone: report.studentPhone,
+    studentMatrix: report.studentMatrix,
     incidentCategory: report.incidentCategory,
     injuries: report.injuries,
     officerNotes: report.officerNotes,
     assignedOfficer: report.assignedOfficer,
     officerName: report.officerName,
-    attachmentUrls: report.attachmentUrls,
-    incidentDateTime: report.incidentDateTime,
-    reportedAt: report.reportedAt,
-    studentName: report.studentName,
-    studentEmail: report.studentEmail,
-    studentPhone: report.studentPhone,
-    studentMatrix: report.studentMatrix
-  }));
+    attachmentUrls: report.attachmentUrls
+}));
 
   return (
     <DashboardLayout>

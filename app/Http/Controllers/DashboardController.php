@@ -141,6 +141,24 @@ class DashboardController extends Controller
             $report->studentMatrix = $reporterMatric;
             $report->reporter_type_display = $reporterTypeDisplay;
 
+            // ========== FIX: ADD LOCATION DATA ==========
+            // Extract location data from the location object
+            if (isset($report->location) && is_array($report->location)) {
+                $report->locationArea = $report->location['locationArea'] ?? null;
+                $report->building = $report->location['building'] ?? null;
+                $report->address = $report->location['address'] ?? null;
+                $report->specificPlace = $report->location['specificPlace'] ?? null;
+                $report->locationRaw = $report->location; // Keep original for reference
+            } else {
+                // Fallback to existing fields
+                $report->locationArea = $report->mahallah ?? null;
+                $report->building = $report->building ?? null;
+                $report->address = $report->address ?? null;
+                $report->specificPlace = null;
+                $report->locationRaw = null;
+            }
+            // ========== END LOCATION DATA ==========
+
             // Load officer name from assignedOfficer
             if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
                 $officer = $officers[$report->assignedOfficer];
