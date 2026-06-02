@@ -12,9 +12,6 @@ class Emergencies extends Model
 
     protected $fillable = [
         'studentId',
-        'studentName',
-        'studentMatrix',
-        'studentPhone',
         'latitude',
         'longitude',
         'status',

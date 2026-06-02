@@ -11,198 +11,152 @@ use App\Models\Emergencies;
 use App\Models\UnregisteredReporter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
     public function getRecentReports(Request $request)
     {
-        // Get the 10 most recent reports
-        $recentReports = Report::orderBy('reportedAt', 'desc')
-            ->limit(10)
-            ->get();
+        try {
+            // Get the 10 most recent reports
+            $recentReports = Report::orderBy('reportedAt', 'desc')
+                ->limit(10)
+                ->get();
 
-        // Get all officers for quick lookup
-        $officers = Officer::all()->keyBy('officerId');
+            // Transform reports for frontend
+            $transformedReports = [];
 
-        // Collect IDs for registered students and unregistered reporters
-        $studentIds = [];
-        $unregisteredIds = [];
-        $legacyMatricNumbers = [];
+            foreach ($recentReports as $report) {
+                try {
+                    // Get reporter info
+                    $studentName = 'Unknown Reporter';
+                    $studentEmail = null;
+                    $studentPhone = null;
+                    $studentMatrix = null;
 
-        foreach ($recentReports as $report) {
-            // Check if report has reporter_type (new format)
-            if (isset($report->reporter_type)) {
-                if ($report->reporter_type === 'registered' && $report->reporter_id) {
-                    $studentIds[] = (string)$report->reporter_id;
-                } elseif ($report->reporter_type === 'unregistered' && $report->reporter_id) {
-                    $unregisteredIds[] = (string)$report->reporter_id;
+                    // Simple reporter lookup
+                    if (isset($report->studentId) && $report->studentId) {
+                        $student = Student::find($report->studentId);
+                        if ($student) {
+                            $studentName = $student->name ?? 'Unknown';
+                            $studentEmail = $student->email ?? null;
+                            $studentPhone = $student->phone ?? null;
+                            $studentMatrix = $student->matrixNumber ?? null;
+                        }
+                    }
+
+                    // Get location data safely
+                    $locationArea = null;
+                    $building = null;
+                    $address = null;
+                    $specificPlace = null;
+                    $locationRaw = null;
+
+                    if (isset($report->location) && is_array($report->location)) {
+                        $locationArea = $report->location['locationArea'] ?? null;
+                        $building = $report->location['building'] ?? null;
+                        $address = $report->location['address'] ?? null;
+                        $specificPlace = $report->location['specificPlace'] ?? null;
+                        $locationRaw = $report->location;
+                    }
+
+                    // Fallback to mahallah if no locationArea
+                    if (!$locationArea && isset($report->mahallah)) {
+                        $locationArea = $report->mahallah;
+                    }
+
+                    // Build the report object
+                    $transformedReports[] = [
+                        '_id' => (string)$report->_id,
+                        'reportId' => $report->reportId ?? 'Unknown',
+                        'description' => $report->description ?? 'No description',
+                        'status' => $report->status ?? 'pending',
+                        'urgency' => $report->urgency ?? 'general',
+                        'incidentCategory' => $report->incidentCategory ?? 'other',
+                        'incidentDateTime' => $report->incidentDateTime,
+                        'reportedAt' => $report->reportedAt,
+                        'attachmentUrls' => $report->attachmentUrls ?? [],
+                        // Reporter info
+                        'studentName' => $studentName,
+                        'studentEmail' => $studentEmail,
+                        'studentPhone' => $studentPhone,
+                        'studentMatrix' => $studentMatrix,
+                        'reporter_type_display' => 'Student Reporter',
+                        // Location info - THIS IS WHAT YOU NEED
+                        'locationArea' => $locationArea,
+                        'building' => $building,
+                        'address' => $address,
+                        'specificPlace' => $specificPlace,
+                        'locationRaw' => $locationRaw,
+                        'mahallah' => $report->mahallah ?? null,
+                        // Officer info
+                        'assignedOfficer' => $report->assignedOfficer ?? null,
+                        'officerName' => 'Not Assigned',
+                    ];
+
+                } catch (\Exception $e) {
+                    Log::error('Error processing single report: ' . $e->getMessage());
+                    continue;
                 }
             }
-            // Handle old reports that have studentId
-            elseif (isset($report->studentId) && $report->studentId) {
-                // If studentId is 24 chars (MongoDB ObjectId format)
-                if (preg_match('/^[a-f0-9]{24}$/i', $report->studentId)) {
-                    $studentIds[] = (string)$report->studentId;
-                } else {
-                    // Legacy reports with matric number as studentId
-                    $legacyMatricNumbers[] = $report->studentId;
-                }
-            }
+
+            // Get statistics
+            $statusCounts = [
+                'pending' => Report::where('status', 'pending')->count(),
+                'inProgress' => Report::where('status', 'inProgress')->count(),
+                'resolved' => Report::where('status', 'resolved')->count(),
+                'nfa' => Report::where('status', 'nfa')->count(),
+            ];
+
+            $activeEmergencies = Emergencies::where('status', 'active')->count();
+            $respondingEmergencies = Emergencies::where('status', 'responding')->count();
+            $emergencyAlerts = $activeEmergencies + $respondingEmergencies;
+
+            $stats = [
+                'totalReports' => array_sum($statusCounts),
+                'pendingReports' => $statusCounts['pending'],
+                'inProgressReports' => $statusCounts['inProgress'],
+                'resolvedReports' => $statusCounts['resolved'],
+                'nfaReports' => $statusCounts['nfa'],
+                'emergencyAlerts' => $emergencyAlerts,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'recentReports' => $transformedReports,
+                'stats' => $stats,
+                'statusCounts' => $statusCounts,
+                'lastUpdated' => now()->toDateTimeString(),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('DashboardController error: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            // Return empty data instead of crashing
+            return response()->json([
+                'success' => false,
+                'recentReports' => [],
+                'stats' => [
+                    'totalReports' => 0,
+                    'pendingReports' => 0,
+                    'inProgressReports' => 0,
+                    'resolvedReports' => 0,
+                    'nfaReports' => 0,
+                    'emergencyAlerts' => 0,
+                ],
+                'statusCounts' => [
+                    'pending' => 0,
+                    'inProgress' => 0,
+                    'resolved' => 0,
+                    'nfa' => 0,
+                ],
+                'lastUpdated' => now()->toDateTimeString(),
+                'error' => $e->getMessage()
+            ]);
         }
-
-        // Fetch registered students by ObjectId
-        $students = collect();
-        if (!empty($studentIds)) {
-            $students = Student::whereIn('_id', $studentIds)->get()->keyBy(function($item) {
-                return (string)$item->_id;
-            });
-        }
-
-        // Fetch students by matric number for legacy reports
-        $studentsByMatric = collect();
-        if (!empty($legacyMatricNumbers)) {
-            $studentsByMatric = Student::whereIn('matrixNumber', $legacyMatricNumbers)->get()->keyBy('matrixNumber');
-        }
-
-        // Fetch unregistered reporters
-        $unregisteredReporters = collect();
-        if (!empty($unregisteredIds)) {
-            $unregisteredReporters = UnregisteredReporter::whereIn('_id', $unregisteredIds)->get()->keyBy(function($item) {
-                return (string)$item->_id;
-            });
-        }
-
-        // Transform reports with student and officer data
-        $recentReports->transform(function ($report) use ($officers, $students, $studentsByMatric, $unregisteredReporters) {
-            $reporterName = null;
-            $reporterEmail = null;
-            $reporterPhone = null;
-            $reporterMatric = null;
-            $reporterTypeDisplay = null;
-
-            // NEW FORMAT: Has reporter_type
-            if (isset($report->reporter_type)) {
-                if ($report->reporter_type === 'registered' && $report->reporter_id && isset($students[(string)$report->reporter_id])) {
-                    $student = $students[(string)$report->reporter_id];
-                    $reporterName = $student->name;
-                    $reporterEmail = $student->email;
-                    $reporterPhone = $student->phone;
-                    $reporterMatric = $student->matrixNumber;
-                    $reporterTypeDisplay = 'Registered Student';
-                }
-                elseif ($report->reporter_type === 'unregistered' && $report->reporter_id && isset($unregisteredReporters[(string)$report->reporter_id])) {
-                    $unregistered = $unregisteredReporters[(string)$report->reporter_id];
-                    $reporterName = $unregistered->name;
-                    $reporterEmail = $unregistered->email;
-                    $reporterPhone = $unregistered->phone;
-                    $reporterMatric = $unregistered->matric_number;
-                    $reporterTypeDisplay = 'Unregistered Reporter';
-                }
-            }
-            // LEGACY FORMAT 1: studentId is ObjectId
-            elseif (isset($report->studentId) && preg_match('/^[a-f0-9]{24}$/i', $report->studentId) && isset($students[(string)$report->studentId])) {
-                $student = $students[(string)$report->studentId];
-                $reporterName = $student->name;
-                $reporterEmail = $student->email;
-                $reporterPhone = $student->phone;
-                $reporterMatric = $student->matrixNumber;
-                $reporterTypeDisplay = 'Registered Student';
-            }
-            // LEGACY FORMAT 2: studentId is matric number
-            elseif (isset($report->studentId) && isset($studentsByMatric[$report->studentId])) {
-                $student = $studentsByMatric[$report->studentId];
-                $reporterName = $student->name;
-                $reporterEmail = $student->email;
-                $reporterPhone = $student->phone;
-                $reporterMatric = $student->matrixNumber;
-                $reporterTypeDisplay = 'Registered Student';
-            }
-            // LEGACY FORMAT 3: Has studentName directly in report
-            elseif (isset($report->studentName) && $report->studentName) {
-                $reporterName = $report->studentName;
-                $reporterEmail = $report->studentEmail ?? null;
-                $reporterPhone = $report->studentPhone ?? null;
-                $reporterMatric = $report->studentMatrix ?? null;
-                $reporterTypeDisplay = 'Legacy Report';
-            }
-            // Fallback
-            else {
-                $reporterName = 'Unknown Reporter';
-                $reporterEmail = null;
-                $reporterPhone = null;
-                $reporterMatric = null;
-                $reporterTypeDisplay = 'Unknown';
-            }
-
-            // Set the fields for the frontend
-            $report->studentName = $reporterName;
-            $report->studentEmail = $reporterEmail;
-            $report->studentPhone = $reporterPhone;
-            $report->studentMatrix = $reporterMatric;
-            $report->reporter_type_display = $reporterTypeDisplay;
-
-            // ========== FIX: ADD LOCATION DATA ==========
-            // Extract location data from the location object
-            if (isset($report->location) && is_array($report->location)) {
-                $report->locationArea = $report->location['locationArea'] ?? null;
-                $report->building = $report->location['building'] ?? null;
-                $report->address = $report->location['address'] ?? null;
-                $report->specificPlace = $report->location['specificPlace'] ?? null;
-                $report->locationRaw = $report->location; // Keep original for reference
-            } else {
-                // Fallback to existing fields
-                $report->locationArea = $report->mahallah ?? null;
-                $report->building = $report->building ?? null;
-                $report->address = $report->address ?? null;
-                $report->specificPlace = null;
-                $report->locationRaw = null;
-            }
-            // ========== END LOCATION DATA ==========
-
-            // Load officer name from assignedOfficer
-            if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
-                $officer = $officers[$report->assignedOfficer];
-                $report->officerName = $officer->officerName;
-            } else {
-                $report->officerName = 'Not Assigned';
-            }
-
-            return $report;
-        });
-
-        // Get ALL statistics for dashboard - Reports stats
-        $statusCounts = [
-            'pending' => Report::where('status', 'pending')->count(),
-            'inProgress' => Report::where('status', 'inProgress')->count(),
-            'resolved' => Report::where('status', 'resolved')->count(),
-            'nfa' => Report::where('status', 'nfa')->count(),
-        ];
-
-        // Get emergency alerts count from emergencies collection - ONLY ACTIVE AND RESPONDING (not resolved)
-        $activeEmergencies = Emergencies::where('status', 'active')->count();
-        $respondingEmergencies = Emergencies::where('status', 'responding')->count();
-
-        // Total emergencies that need attention (active + responding, NOT including resolved)
-        $emergencyAlerts = $activeEmergencies + $respondingEmergencies;
-
-        $stats = [
-            'totalReports' => array_sum($statusCounts),
-            'pendingReports' => $statusCounts['pending'],
-            'inProgressReports' => $statusCounts['inProgress'],
-            'resolvedReports' => $statusCounts['resolved'],
-            'nfaReports' => $statusCounts['nfa'],
-            'emergencyAlerts' => $emergencyAlerts,
-        ];
-
-        return response()->json([
-            'recentReports' => $recentReports,
-            'stats' => $stats,
-            'statusCounts' => $statusCounts,
-            'lastUpdated' => now()->toDateTimeString(),
-        ]);
     }
 
-    // In your DashboardController or wherever you render the Approvals page
     public function approvals()
     {
         $pendingAdmins = Admins::where('status', 'pending')

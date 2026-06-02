@@ -146,7 +146,7 @@ class EmergencyController extends Controller
 
             // ✅ FIX: Add the missing student fields to select
             $query->select([
-                '_id', 'studentId', 'studentName', 'studentMatrix', 'studentPhone',
+                '_id', 'studentId',
                 'status', 'triggeredAt', 'address', 'location',
                 'assigned_officer_id', 'assigned_officer_name', 'dispatch_notes',
                 'dispatched_at', 'resolvedAt', 'latitude', 'longitude'
