@@ -12,9 +12,9 @@ class Emergencies extends Model
 
     protected $fillable = [
         'studentId',
-        'student_name',      
-        'student_matrix',
-        'student_phone',
+        'studentName',
+        'studentMatrix',
+        'studentPhone',
         'latitude',
         'longitude',
         'status',
