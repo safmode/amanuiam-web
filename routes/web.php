@@ -48,26 +48,7 @@ Route::get('/health', function () {
     ]);
 })->name('health.check');
 
-// ============================================
-// API ROUTES
-// ============================================
 
-Route::post('/api/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
-Route::get('/api/students/search', function (Request $request) {
-    $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
-    if ($student) {
-        return response()->json([
-            'student' => [
-                '_id' => (string)$student->_id,
-                'name' => $student->name,
-                'email' => $student->email,
-                'phone' => $student->phone,
-                'matrixNumber' => $student->matrixNumber,
-            ]
-        ]);
-    }
-    return response()->json(['student' => null]);
-});
 
 // ============================================
 // WEBHOOK ROUTES

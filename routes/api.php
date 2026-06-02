@@ -29,4 +29,20 @@ Route::post('/webhook/new-report', function (Request $request) {
 
 Route::post('/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
 
+Route::get('/api/students/search', function (Request $request) {
+    $student = App\Models\Student::where('matrixNumber', $request->matric)->first();
+    if ($student) {
+        return response()->json([
+            'student' => [
+                '_id' => (string)$student->_id,
+                'name' => $student->name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'matrixNumber' => $student->matrixNumber,
+            ]
+        ]);
+    }
+    return response()->json(['student' => null]);
+});
+
 // Your existing API routes can go here if you had any
