@@ -144,10 +144,9 @@ class EmergencyController extends Controller
                 $query->whereIn('status', $statuses);
             }
 
-            // ✅ FIX: Add the missing student fields to select
+            // OPTIMIZATION: Select only needed fields to reduce data transfer
             $query->select([
-                '_id', 'studentId',
-                'status', 'triggeredAt', 'address', 'location',
+                '_id', 'studentId', 'status', 'triggeredAt', 'address', 'location',
                 'assigned_officer_id', 'assigned_officer_name', 'dispatch_notes',
                 'dispatched_at', 'resolvedAt', 'latitude', 'longitude'
             ]);
@@ -155,43 +154,85 @@ class EmergencyController extends Controller
             // Execute paginated query
             $emergencies = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // Transform results
-            $emergencies->getCollection()->transform(function ($emergency) {
-                // ✅ Use the stored student fields first (from webhook)
-                if ($emergency->student_name && $emergency->student_name !== 'Unknown Student') {
-                    $emergency->reporterName = $emergency->student_name;
-                    $emergency->reporterMatric = $emergency->student_matrix ?? 'N/A';
-                    $emergency->reporterPhone = $emergency->student_phone ?? 'N/A';
+            // OPTIMIZATION: Batch load all students in ONE query instead of N queries
+            $studentIds = [];
+            foreach ($emergencies->items() as $emergency) {
+                if ($emergency->studentId && !in_array($emergency->studentId, $studentIds)) {
+                    $studentIds[] = $emergency->studentId;
                 }
-                // Fallback to Student model lookup if fields are empty
-                else if ($emergency->studentId) {
-                    $student = Student::find($emergency->studentId);
-                    if ($student) {
-                        $emergency->reporterName = $student->name;
-                        $emergency->reporterPhone = $student->phone;
-                        $emergency->reporterEmail = $student->email;
-                        $emergency->reporterMatric = $student->matrixNumber;
-                    } else {
-                        $emergency->reporterName = 'Unknown Student';
-                        $emergency->reporterPhone = null;
-                        $emergency->reporterEmail = null;
-                        $emergency->reporterMatric = null;
-                    }
+            }
+
+            // Batch fetch students
+            $students = [];
+            if (!empty($studentIds)) {
+                $studentCollection = Student::whereIn('_id', $studentIds)->get();
+                foreach ($studentCollection as $student) {
+                    $students[(string)$student->_id] = $student;
+                }
+            }
+
+            // Transform results with batched student data
+            $emergencies->getCollection()->transform(function ($emergency) use ($students) {
+                // Attach student data from batch-loaded collection
+                if ($emergency->studentId && isset($students[(string)$emergency->studentId])) {
+                    $student = $students[(string)$emergency->studentId];
+                    $emergency->reporterName = $student->name;
+                    $emergency->reporterPhone = $student->phone;
+                    $emergency->reporterEmail = $student->email;
+                    $emergency->reporterMatric = $student->matrixNumber;
+                    $emergency->student = $student;
                 } else {
                     $emergency->reporterName = 'Unknown Student';
                     $emergency->reporterPhone = null;
                     $emergency->reporterEmail = null;
                     $emergency->reporterMatric = null;
+                    $emergency->student = null;
                 }
+
+                // Ensure fields exist
+                $emergency->assigned_officer_id = $emergency->assigned_officer_id ?? null;
+                $emergency->assigned_officer_name = $emergency->assigned_officer_name ?? null;
+                $emergency->dispatch_notes = $emergency->dispatch_notes ?? null;
+                $emergency->dispatched_at = $emergency->dispatched_at ?? null;
 
                 // Determine location from address field
                 $address = strtolower($emergency->address ?? '');
                 $determinedLocation = null;
 
                 $locationMap = [
-                    'aminah' => 'Aminah', 'asiah' => 'Asiah', 'safiyyah' => 'Safiyyah',
-                    'maryam' => 'Maryam', 'ruqayyah' => 'Ruqayyah', 'koe' => 'KOE',
-                    'kict' => 'KICT', 'kirkhs' => 'KIRKHS', 'library' => 'Dar al-Hikmah Library',
+                    'aminah' => 'Aminah',
+                    'asiah' => 'Asiah',
+                    'safiyyah' => 'Safiyyah',
+                    'maryam' => 'Maryam',
+                    'ruqayyah' => 'Ruqayyah',
+                    'ali' => 'Ali',
+                    'faruq' => 'Faruq',
+                    'bilal' => 'Bilal',
+                    'asma' => 'Asma',
+                    'hafsah' => 'Hafsah',
+                    'halimah' => 'Halimah',
+                    'siddiq' => 'Siddiq',
+                    'salahuddin' => 'Salahuddin',
+                    'uthman' => 'Uthman',
+                    'nusaibah' => 'Nusaibah',
+                    'zubair' => 'Zubair Al-Awwam',
+                    'sumayyah' => 'Sumayyah',
+                    'kirkhs' => 'KIRKHS',
+                    'kict' => 'KICT',
+                    'koe' => 'KOE',
+                    'kaed' => 'KAED',
+                    'kenms' => 'KENMS',
+                    'aikol' => 'AIKOL',
+                    'koed' => 'KOED',
+                    'library' => 'Dar al-Hikmah Library',
+                    'stadium' => 'Saidina Hamzah Stadium',
+                    'archery' => 'IIUM Archery Range',
+                    'football' => 'UIA Football Turf',
+                    'cricket' => 'IIUM Cricket Ground',
+                    'rugby' => 'IIUM Rugby Field',
+                    'educare' => 'IIUM Educare',
+                    'mosque' => 'Sultan Haji Ahmad Shah Mosque',
+                    'engineering' => 'KOE',
                 ];
 
                 foreach ($locationMap as $keyword => $locationKey) {
@@ -201,10 +242,29 @@ class EmergencyController extends Controller
                     }
                 }
 
+                if (!$determinedLocation && preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
+                    $determinedLocation = ucfirst(strtolower($matches[1]));
+                }
+
                 $emergency->determined_location = $determinedLocation;
+
+                // Remove large fields that aren't needed for list view
+                unset($emergency->location);
 
                 return $emergency;
             });
+
+            // Apply location filter if provided
+            if ($locations) {
+                $locationArray = explode(',', $locations);
+                $filteredItems = $emergencies->getCollection()->filter(function ($emergency) use ($locationArray) {
+                    return in_array($emergency->determined_location, $locationArray);
+                });
+                $emergencies->setCollection($filteredItems);
+                $totalItems = $filteredItems->count();
+                $emergencies->total = $totalItems;
+                $emergencies->lastPage = ceil($totalItems / $perPage);
+            }
 
             return response()->json([
                 'success' => true,
@@ -214,6 +274,10 @@ class EmergencyController extends Controller
                     'per_page' => $emergencies->perPage(),
                     'total' => $emergencies->total(),
                     'last_page' => $emergencies->lastPage(),
+                    'from' => $emergencies->firstItem(),
+                    'to' => $emergencies->lastItem(),
+                    'next_page_url' => $emergencies->nextPageUrl(),
+                    'prev_page_url' => $emergencies->previousPageUrl(),
                 ]
             ]);
         } catch (\Exception $e) {
