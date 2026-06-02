@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
-import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,62 +14,31 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isPendingApproval, setIsPendingApproval] = useState(false);
 
-  // Refresh CSRF token when component mounts
-  useEffect(() => {
-    const initCsrf = async () => {
-      try {
-        await axios.get('/sanctum/csrf-cookie');
-        console.log('CSRF token initialized');
-      } catch (error) {
-        console.error('CSRF init failed:', error);
-      }
-    };
-    initCsrf();
-  }, []);
-
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setError('');
     setIsPendingApproval(false);
     setIsLoading(true);
 
-    // Ensure fresh CSRF token before login
-    try {
-      await axios.get('/sanctum/csrf-cookie');
-    } catch (error) {
-      console.error('CSRF refresh failed:', error);
-    }
+    router.post('/login', {
+      email,
+      password,
+    }, {
+      onError: (errors) => {
+        console.error('Login error:', errors);
 
-    // Small delay to ensure cookie is set
-    setTimeout(() => {
-      router.post('/login', {
-        email,
-        password,
-      }, {
-        onError: (errors) => {
-          console.error('Login error:', errors);
-
-          if (errors.email && errors.email.includes('pending approval')) {
-            setIsPendingApproval(true);
-            setError(errors.email);
-          } else if (errors.email && errors.email.includes('419')) {
-            setError('Session expired. Please refresh the page.');
-            // Ask user to refresh manually
-            setTimeout(() => {
-              if (confirm('Session expired. Refresh page to continue?')) {
-                window.location.reload();
-              }
-            }, 100);
-          } else {
-            setError(errors.email || 'Invalid email or password');
-          }
-          setIsLoading(false);
-        },
-        onSuccess: () => {
-          setIsLoading(false);
-        },
-      });
-    }, 100);
+        if (errors.email && errors.email.includes('pending approval')) {
+          setIsPendingApproval(true);
+          setError(errors.email);
+        } else {
+          setError(errors.email || 'Invalid email or password');
+        }
+        setIsLoading(false);
+      },
+      onSuccess: () => {
+        setIsLoading(false);
+      },
+    });
   };
 
   return (
