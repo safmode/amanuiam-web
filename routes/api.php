@@ -79,16 +79,32 @@ Route::middleware('auth')->group(function () {
             ->get();
     });
 
-    // Settings endpoints
-    Route::post('/settings/notification-preferences', [SettingsController::class, 'updateNotificationPreferences']);
-    Route::get('/settings/notification-preferences', [SettingsController::class, 'getNotificationPreferences']);
-    Route::post('/settings/dark-mode', [SettingsController::class, 'updateDarkMode']);
-    Route::get('/settings/dark-mode', [SettingsController::class, 'getDarkMode']);
+    // ============================================
+    // SETTINGS ENDPOINTS - ALL HERE
+    // ============================================
 
-    // Password change endpoints
+    // Profile settings
+    Route::put('/settings/profile', [SettingsController::class, 'updateProfile']);
+
+    // Password settings
+    Route::put('/settings/password', [SettingsController::class, 'changePassword']);
     Route::post('/password/send-code', [PasswordChangeController::class, 'sendCode']);
     Route::post('/password/verify-change', [PasswordChangeController::class, 'verifyAndChange']);
     Route::post('/password/resend-code', [PasswordChangeController::class, 'resendCode']);
+
+    // Two-factor authentication
+    Route::post('/settings/two-factor', [SettingsController::class, 'toggleTwoFactor']);
+
+    // Logout from all devices
+    Route::post('/logout-all', [SettingsController::class, 'logoutAllDevices']);
+
+    // Dark mode
+    Route::post('/settings/dark-mode', [SettingsController::class, 'updateDarkMode']);
+    Route::get('/settings/dark-mode', [SettingsController::class, 'getDarkMode']);
+
+    // Notification preferences
+    Route::post('/settings/notification-preferences', [SettingsController::class, 'updateNotificationPreferences']);
+    Route::get('/settings/notification-preferences', [SettingsController::class, 'getNotificationPreferences']);
 
     // Digest endpoints
     Route::post('/digest/send', [DigestController::class, 'send']);

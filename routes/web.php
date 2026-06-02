@@ -234,12 +234,6 @@ Route::middleware('auth')->group(function () {
     Route::put('/admin/update-status/{adminId}', [AdminAuthController::class, 'updateStatus']);
     Route::put('/admin/approve/{adminId}', [AdminAuthController::class, 'approve']);
     Route::put('/admin/reject/{adminId}', [AdminAuthController::class, 'reject']);
-
-    // Settings (non-API)
-    Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
-    Route::put('/settings/password', [SettingsController::class, 'changePassword'])->name('settings.password');
-    Route::post('/settings/two-factor', [SettingsController::class, 'toggleTwoFactor'])->name('settings.two-factor');
-    Route::post('/logout-all', [SettingsController::class, 'logoutAllDevices'])->name('logout-all');
 });
 
 // ============================================
