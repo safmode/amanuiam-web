@@ -117,7 +117,7 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
             return response()->json(['success' => true, 'emergency_id' => $emergencyId]);
         }
 
-        // Save ONLY studentId - NO name, matrix, phone
+        // Save emergency
         $emergencyData = [
             '_id' => $emergencyId,
             'studentId' => $studentId,
