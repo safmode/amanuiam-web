@@ -1,4 +1,4 @@
-// Dashboard.jsx - Simplified version
+// Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { RecentReports } from '@/components/dashboard/RecentReports';
@@ -49,9 +49,8 @@ const Dashboard = () => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
-      console.log('Raw API response - first report:', data.recentReports?.[0]);
+      console.log('Dashboard data received:', data);
 
-      // Use the data directly WITHOUT transforming
       setRecentReports(data.recentReports || []);
       setStats({
         totalReports: data.stats?.totalReports || 0,

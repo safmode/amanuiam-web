@@ -1,4 +1,4 @@
-// RecentReports.jsx - Simplified version without locationRaw
+// RecentReports.jsx
 import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,18 +46,6 @@ const getLocationDetails = (report) => {
 };
 
 export const RecentReports = ({ reports = [], onViewReport, loading = false }) => {
-  console.log('RecentReports received:', reports.length, 'reports');
-  if (reports.length > 0) {
-    console.log('Sample report data:', reports[0]);
-    console.log('Location fields:', {
-      locationArea: reports[0].locationArea,
-      building: reports[0].building,
-      specificPlace: reports[0].specificPlace,
-      address: reports[0].address,
-      fullAddress: reports[0].fullAddress,
-    });
-  }
-
   const statusLabels = {
     pending: 'Pending',
     inProgress: 'In Progress',
@@ -204,7 +192,7 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                           {locationDetails.address && locationDetails.address !== locationDetails.locationArea && (
                             <p><span className="font-medium">Address:</span> {locationDetails.address}</p>
                           )}
-                          {locationDetails.fullAddress && (
+                          {locationDetails.fullAddress && locationDetails.fullAddress !== locationDisplay && (
                             <p><span className="font-medium">Full:</span> {locationDetails.fullAddress}</p>
                           )}
                         </div>

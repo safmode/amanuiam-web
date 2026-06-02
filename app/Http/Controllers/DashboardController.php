@@ -128,6 +128,9 @@ class DashboardController extends Controller
                 $reporterTypeDisplay = 'Unknown';
             }
 
+            // Get the full location data using the model's method
+            $fullLocation = $report->getFullLocation();
+
             // Create a clean array for the frontend
             $reportData = [
                 '_id' => (string)$report->_id,
@@ -145,22 +148,14 @@ class DashboardController extends Controller
                 'studentMatrix' => $reporterMatric,
                 'reporter_type_display' => $reporterTypeDisplay,
                 'officerName' => ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) ? $officers[$report->assignedOfficer]->officerName : 'Not Assigned',
+                // Location data from the model
+                'locationArea' => $fullLocation['locationArea'],
+                'building' => $fullLocation['building'],
+                'specificPlace' => $fullLocation['specificPlace'],
+                'address' => $fullLocation['address'],
+                'fullAddress' => $fullLocation['fullAddress'],
+                'location' => $report->location, // Keep original if needed
             ];
-
-            // CRITICAL: Add location data
-            if (isset($report->location) && is_array($report->location)) {
-                $reportData['locationRaw'] = $report->location;
-                $reportData['locationArea'] = $report->location['locationArea'] ?? null;
-                $reportData['building'] = $report->location['building'] ?? null;
-                $reportData['address'] = $report->location['address'] ?? null;
-                $reportData['specificPlace'] = $report->location['specificPlace'] ?? null;
-            } else {
-                $reportData['locationRaw'] = null;
-                $reportData['locationArea'] = $report->mahallah ?? null;
-                $reportData['building'] = $report->building ?? null;
-                $reportData['address'] = $report->address ?? null;
-                $reportData['specificPlace'] = null;
-            }
 
             $transformedReports[] = $reportData;
         }
