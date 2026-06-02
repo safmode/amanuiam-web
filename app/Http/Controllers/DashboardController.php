@@ -69,16 +69,14 @@ class DashboardController extends Controller
         }
 
         // Transform reports with student and officer data
-        $transformedReports = [];
-
-        foreach ($recentReports as $report) {
+        $recentReports->transform(function ($report) use ($officers, $students, $studentsByMatric, $unregisteredReporters) {
             $reporterName = null;
             $reporterEmail = null;
             $reporterPhone = null;
             $reporterMatric = null;
             $reporterTypeDisplay = null;
 
-            // Get reporter info
+            // NEW FORMAT: Has reporter_type
             if (isset($report->reporter_type)) {
                 if ($report->reporter_type === 'registered' && $report->reporter_id && isset($students[(string)$report->reporter_id])) {
                     $student = $students[(string)$report->reporter_id];
@@ -97,6 +95,7 @@ class DashboardController extends Controller
                     $reporterTypeDisplay = 'Unregistered Reporter';
                 }
             }
+            // LEGACY FORMAT 1: studentId is ObjectId
             elseif (isset($report->studentId) && preg_match('/^[a-f0-9]{24}$/i', $report->studentId) && isset($students[(string)$report->studentId])) {
                 $student = $students[(string)$report->studentId];
                 $reporterName = $student->name;
@@ -105,6 +104,7 @@ class DashboardController extends Controller
                 $reporterMatric = $student->matrixNumber;
                 $reporterTypeDisplay = 'Registered Student';
             }
+            // LEGACY FORMAT 2: studentId is matric number
             elseif (isset($report->studentId) && isset($studentsByMatric[$report->studentId])) {
                 $student = $studentsByMatric[$report->studentId];
                 $reporterName = $student->name;
@@ -113,6 +113,7 @@ class DashboardController extends Controller
                 $reporterMatric = $student->matrixNumber;
                 $reporterTypeDisplay = 'Registered Student';
             }
+            // LEGACY FORMAT 3: Has studentName directly in report
             elseif (isset($report->studentName) && $report->studentName) {
                 $reporterName = $report->studentName;
                 $reporterEmail = $report->studentEmail ?? null;
@@ -120,6 +121,7 @@ class DashboardController extends Controller
                 $reporterMatric = $report->studentMatrix ?? null;
                 $reporterTypeDisplay = 'Legacy Report';
             }
+            // Fallback
             else {
                 $reporterName = 'Unknown Reporter';
                 $reporterEmail = null;
@@ -128,39 +130,43 @@ class DashboardController extends Controller
                 $reporterTypeDisplay = 'Unknown';
             }
 
-            // Get the full location data using the model's method
-            $fullLocation = $report->getFullLocation();
+            // Set the fields for the frontend
+            $report->studentName = $reporterName;
+            $report->studentEmail = $reporterEmail;
+            $report->studentPhone = $reporterPhone;
+            $report->studentMatrix = $reporterMatric;
+            $report->reporter_type_display = $reporterTypeDisplay;
 
-            // Create a clean array for the frontend
-            $reportData = [
-                '_id' => (string)$report->_id,
-                'reportId' => $report->reportId,
-                'description' => $report->description,
-                'status' => $report->status,
-                'urgency' => $report->urgency,
-                'incidentCategory' => $report->incidentCategory,
-                'incidentDateTime' => $report->incidentDateTime,
-                'reportedAt' => $report->reportedAt,
-                'attachmentUrls' => $report->attachmentUrls ?? [],
-                'studentName' => $reporterName,
-                'studentEmail' => $reporterEmail,
-                'studentPhone' => $reporterPhone,
-                'studentMatrix' => $reporterMatric,
-                'reporter_type_display' => $reporterTypeDisplay,
-                'officerName' => ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) ? $officers[$report->assignedOfficer]->officerName : 'Not Assigned',
-                // Location data from the model
-                'locationArea' => $fullLocation['locationArea'],
-                'building' => $fullLocation['building'],
-                'specificPlace' => $fullLocation['specificPlace'],
-                'address' => $fullLocation['address'],
-                'fullAddress' => $fullLocation['fullAddress'],
-                'location' => $report->location, // Keep original if needed
-            ];
+            // ========== FIX: ADD LOCATION DATA ==========
+            // Extract location data from the location object
+            if (isset($report->location) && is_array($report->location)) {
+                $report->locationArea = $report->location['locationArea'] ?? null;
+                $report->building = $report->location['building'] ?? null;
+                $report->address = $report->location['address'] ?? null;
+                $report->specificPlace = $report->location['specificPlace'] ?? null;
+                $report->locationRaw = $report->location; // Keep original for reference
+            } else {
+                // Fallback to existing fields
+                $report->locationArea = $report->mahallah ?? null;
+                $report->building = $report->building ?? null;
+                $report->address = $report->address ?? null;
+                $report->specificPlace = null;
+                $report->locationRaw = null;
+            }
+            // ========== END FIX ==========
 
-            $transformedReports[] = $reportData;
-        }
+            // Load officer name from assignedOfficer
+            if ($report->assignedOfficer && isset($officers[$report->assignedOfficer])) {
+                $officer = $officers[$report->assignedOfficer];
+                $report->officerName = $officer->officerName;
+            } else {
+                $report->officerName = 'Not Assigned';
+            }
 
-        // Get statistics
+            return $report;
+        });
+
+        // Get ALL statistics for dashboard - Reports stats
         $statusCounts = [
             'pending' => Report::where('status', 'pending')->count(),
             'inProgress' => Report::where('status', 'inProgress')->count(),
@@ -168,8 +174,11 @@ class DashboardController extends Controller
             'nfa' => Report::where('status', 'nfa')->count(),
         ];
 
+        // Get emergency alerts count from emergencies collection - ONLY ACTIVE AND RESPONDING (not resolved)
         $activeEmergencies = Emergencies::where('status', 'active')->count();
         $respondingEmergencies = Emergencies::where('status', 'responding')->count();
+
+        // Total emergencies that need attention (active + responding, NOT including resolved)
         $emergencyAlerts = $activeEmergencies + $respondingEmergencies;
 
         $stats = [
@@ -182,7 +191,7 @@ class DashboardController extends Controller
         ];
 
         return response()->json([
-            'recentReports' => $transformedReports,
+            'recentReports' => $recentReports,
             'stats' => $stats,
             'statusCounts' => $statusCounts,
             'lastUpdated' => now()->toDateTimeString(),

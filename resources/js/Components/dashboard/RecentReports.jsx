@@ -1,9 +1,9 @@
-// RecentReports.jsx
-import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail } from 'lucide-react';
+import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail, Building2, LocateFixed } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { statusLabels, urgencyLabels } from '@/Pages/Reports';
 import { Link } from '@inertiajs/react';
 
 const statusColors = {
@@ -17,54 +17,70 @@ const urgencyColors = {
   urgent: 'bg-red-50 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
 };
 
+// Helper function to get the best available location display
 const getLocationDisplay = (report) => {
-  // Use fullAddress if available (from the model)
-  if (report.fullAddress && report.fullAddress !== 'No address specified') {
-    return report.fullAddress;
+  // Priority 1: Use location.address if available
+  if (report.address && report.address !== 'No address specified' && report.address !== '') {
+    return report.address;
   }
 
-  // Otherwise build from components
+  // Priority 2: Use location.locationArea + building from location object
+  if (report.locationRaw) {
+    const locationObj = report.locationRaw;
+    if (locationObj.locationArea) {
+      const building = locationObj.building ? `, ${locationObj.building}` : '';
+      return `${locationObj.locationArea}${building}`;
+    }
+    if (locationObj.address) {
+      return locationObj.address;
+    }
+  }
+
+  // Priority 3: Use locationArea + building from report root
   if (report.locationArea) {
-    const parts = [report.locationArea];
-    if (report.specificPlace) parts.push(report.specificPlace);
-    else if (report.building) parts.push(report.building);
-    if (report.address && !parts.includes(report.address)) parts.push(report.address);
-    return parts.join(', ');
+    const building = report.building ? `, ${report.building}` : '';
+    return `${report.locationArea}${building}`;
   }
 
-  return '⚠️ No specific location provided';
+  // Priority 4: Fallback to mahallah
+  if (report.mahallah && report.mahallah !== 'Unknown Location') {
+    return report.mahallah;
+  }
+
+  return 'Location not specified';
 };
 
+// Helper function to get full location details for tooltip
 const getLocationDetails = (report) => {
-  return {
-    locationArea: report.locationArea || '',
-    building: report.building || '',
-    address: report.address || '',
-    specificPlace: report.specificPlace || '',
-    fullAddress: report.fullAddress || '',
-  };
+  let locationArea = '';
+  let building = '';
+  let address = '';
+  let mahallah = '';
+
+  // Try to extract from location object
+  if (report.locationRaw && typeof report.locationRaw === 'object') {
+    locationArea = report.locationRaw.locationArea || '';
+    building = report.locationRaw.building || '';
+    address = report.locationRaw.address || '';
+  }
+
+  // Fallback to root properties
+  if (!locationArea && report.locationArea) locationArea = report.locationArea;
+  if (!building && report.building) building = report.building;
+  if (!address && report.address) address = report.address;
+  if (!mahallah && report.mahallah) mahallah = report.mahallah;
+
+  return { locationArea, building, address, mahallah };
 };
 
-export const RecentReports = ({ reports = [], onViewReport, loading = false }) => {
-  const statusLabels = {
-    pending: 'Pending',
-    inProgress: 'In Progress',
-    resolved: 'Resolved',
-    nfa: 'No Further Action',
-  };
-
-  const urgencyLabels = {
-    general: 'General',
-    urgent: 'Urgent',
-  };
-
+export const RecentReports = ({ reports, onViewReport, loading = false }) => {
   const getStatusBadge = (status) => (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="outline" className={`${statusColors[status]} text-xs font-medium cursor-help`}>
             <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-            {statusLabels[status] || status}
+            {statusLabels[status]}
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
@@ -83,7 +99,7 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="outline" className={`${urgencyColors[urgency]} text-xs cursor-help`}>
-            {urgencyLabels[urgency] || urgency}
+            {urgencyLabels[urgency]}
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
@@ -96,15 +112,32 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
     </TooltipProvider>
   );
 
-  const formatDateTime = (dateTime) => {
-    if (!dateTime) return { date: 'Unknown date', time: 'Unknown time' };
-    const date = new Date(dateTime);
+  // Get reporter display name
+  const getReporterDisplayName = (report) => {
+    if (report.studentName && report.studentName !== 'Unknown' && report.studentName !== 'No student linked') {
+      return report.studentName;
+    }
+    if (report.reporterName && report.reporterName !== 'Unknown' && report.reporterName !== 'No student linked') {
+      return report.reporterName;
+    }
+    return 'Unknown Reporter';
+  };
+
+  // Get reporter details for tooltip
+  const getReporterDetails = (report) => {
     return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      type: report.reporter_type_display || (report.reporter_type === 'registered' ? 'Registered Student' : report.reporter_type === 'unregistered' ? 'Unregistered Reporter' : 'Reporter'),
+      name: report.studentName || report.reporterName || 'Unknown',
+      email: report.studentEmail || report.reporterEmail,
+      phone: report.studentPhone || report.reporterContact,
+      matric: report.studentMatrix || report.reporterMatricNo,
+      showMatric: !!(report.studentMatrix || report.reporterMatricNo),
+      showEmail: !!(report.studentEmail || report.reporterEmail),
+      showPhone: !!(report.studentPhone || report.reporterContact)
     };
   };
 
+  // Show loading skeletons when loading is true
   if (loading) {
     return (
       <Card className="bg-white dark:bg-slate-800 border-border">
@@ -113,6 +146,7 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
             <h3 className="text-lg font-semibold">Recent Reports</h3>
             <div className="h-5 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
           </div>
+
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 animate-pulse">
@@ -120,10 +154,13 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-20 bg-gray-200 dark:bg-slate-600 rounded" />
                     <div className="h-5 w-16 bg-gray-200 dark:bg-slate-600 rounded" />
+                    <div className="h-5 w-16 bg-gray-200 dark:bg-slate-600 rounded" />
                   </div>
+                  <div className="h-8 w-8 bg-gray-200 dark:bg-slate-600 rounded" />
                 </div>
                 <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-3/4 mb-2" />
-                <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-1/2" />
+                <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-1/2 mb-2" />
+                <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-2/3" />
               </div>
             ))}
           </div>
@@ -132,6 +169,7 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
     );
   }
 
+  // Show actual reports when not loading
   return (
     <Card className="bg-white dark:bg-slate-800 border-border">
       <CardContent className="p-6">
@@ -145,19 +183,22 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
 
         <div className="space-y-4">
           {reports.map((report) => {
+            const reporterDetails = getReporterDetails(report);
+            const displayName = getReporterDisplayName(report);
             const locationDisplay = getLocationDisplay(report);
             const locationDetails = getLocationDetails(report);
-            const { date, time } = formatDateTime(report.incidentDateTime || report.reportedAt);
+
+            const hasDetailedLocation = locationDetails.locationArea || locationDetails.building || locationDetails.address;
 
             return (
               <div
-                key={report._id || report.id}
-                className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
-                onClick={() => onViewReport(report)}
-              >
+                    key={report.id}
+                    className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
+                    onClick={() => onViewReport(report)}  // This passes the entire report object
+                >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-mono text-muted-foreground">{report.reportId}</span>
+                    <span className="text-sm font-mono text-muted-foreground">{report.id}</span>
                     {getUrgencyBadge(report.urgency)}
                     {getStatusBadge(report.status)}
                   </div>
@@ -166,8 +207,9 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                   </Button>
                 </div>
 
-                <h4 className="font-semibold mb-2 line-clamp-2">{report.description?.substring(0, 100) || 'No description'}</h4>
+                <h4 className="font-semibold mb-2 line-clamp-2">{report.issue}</h4>
 
+                {/* Location Section - Enhanced with detailed tooltip */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <TooltipProvider>
                     <Tooltip>
@@ -181,19 +223,31 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                         <div className="text-xs space-y-1.5 p-1">
                           <p className="font-semibold text-[#D4A853] mb-1">📍 Location Details</p>
                           {locationDetails.locationArea && (
-                            <p><span className="font-medium">Area:</span> {locationDetails.locationArea}</p>
-                          )}
-                          {locationDetails.specificPlace && (
-                            <p><span className="font-medium">Place:</span> {locationDetails.specificPlace}</p>
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Area:</span>
+                              <span>{locationDetails.locationArea}</span>
+                            </p>
                           )}
                           {locationDetails.building && (
-                            <p><span className="font-medium">Building:</span> {locationDetails.building}</p>
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Building:</span>
+                              <span className="break-words">{locationDetails.building}</span>
+                            </p>
                           )}
                           {locationDetails.address && locationDetails.address !== locationDetails.locationArea && (
-                            <p><span className="font-medium">Address:</span> {locationDetails.address}</p>
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Address:</span>
+                              <span className="break-words">{locationDetails.address}</span>
+                            </p>
                           )}
-                          {locationDetails.fullAddress && locationDetails.fullAddress !== locationDisplay && (
-                            <p><span className="font-medium">Full:</span> {locationDetails.fullAddress}</p>
+                          {locationDetails.mahallah && !locationDetails.locationArea && (
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Mahallah:</span>
+                              <span>{locationDetails.mahallah}</span>
+                            </p>
+                          )}
+                          {!hasDetailedLocation && (
+                            <p className="text-muted-foreground italic">No detailed location information available</p>
                           )}
                         </div>
                       </TooltipContent>
@@ -201,22 +255,39 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                   </TooltipProvider>
                 </div>
 
+                {/* Reporter and Date Info */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
                           <User className="w-4 h-4" />
-                          <span>{report.studentName || 'Unknown Reporter'}</span>
+                          <span className="line-clamp-1">{displayName}</span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
                         <div className="text-xs space-y-1 p-1">
                           <p className="font-semibold text-[#D4A853] mb-1">👤 Reporter Details</p>
-                          <p>Name: {report.studentName || 'Unknown'}</p>
-                          {report.studentEmail && <p>📧 {report.studentEmail}</p>}
-                          {report.studentPhone && <p>📞 {report.studentPhone}</p>}
-                          {report.studentMatrix && <p>🎓 Matric: {report.studentMatrix}</p>}
+                          <p className="font-medium">{reporterDetails.type}</p>
+                          <p>Name: {reporterDetails.name}</p>
+                          {reporterDetails.showEmail && reporterDetails.email && (
+                            <p className="flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {reporterDetails.email}
+                            </p>
+                          )}
+                          {reporterDetails.showPhone && reporterDetails.phone && (
+                            <p className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {reporterDetails.phone}
+                            </p>
+                          )}
+                          {reporterDetails.showMatric && reporterDetails.matric && (
+                            <p className="mt-1">Matric: {reporterDetails.matric}</p>
+                          )}
+                          {!reporterDetails.showEmail && !reporterDetails.showPhone && !reporterDetails.showMatric && (
+                            <p className="text-muted-foreground italic">No contact information available</p>
+                          )}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -224,14 +295,14 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
 
                   <span className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {date} at {time}
+                    {report.date} at {report.time}
                   </span>
                 </div>
               </div>
             );
           })}
 
-          {reports.length === 0 && !loading && (
+          {reports.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               <MapPin className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No reports found</p>
