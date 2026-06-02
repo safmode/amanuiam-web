@@ -96,6 +96,7 @@ class SettingsController extends Controller
 
     /**
      * Update notification preferences for the authenticated admin
+     * Returns JSON for AJAX requests, redirect for regular form submissions
      */
     public function updateNotificationPreferences(Request $request)
     {
@@ -117,7 +118,15 @@ class SettingsController extends Controller
             'preferences' => $admin->notification_preferences
         ]);
 
-        // ✅ FIXED: Return redirect for Inertia
+        // ✅ Check if request expects JSON (from fetch) or Inertia
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification preferences updated successfully',
+                'incident_alerts' => $validated['incident_alerts']
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Notification preferences updated successfully');
     }
 
@@ -129,7 +138,6 @@ class SettingsController extends Controller
         $admin = Auth::user();
         $preferences = $admin->notification_preferences ?? [];
 
-        // For GET requests, JSON is fine
         return response()->json([
             'incident_alerts' => $preferences['incident_alerts'] ?? true,
         ]);
@@ -139,6 +147,10 @@ class SettingsController extends Controller
     // Dark Mode Preference
     // ============================================================
 
+    /**
+     * Update dark mode preference
+     * Returns JSON for AJAX requests, redirect for regular form submissions
+     */
     public function updateDarkMode(Request $request)
     {
         $admin = Auth::user();
@@ -153,7 +165,15 @@ class SettingsController extends Controller
         ]);
         $admin->save();
 
-        // ✅ FIXED: Return redirect for Inertia
+        // ✅ Check if request expects JSON (from fetch) or Inertia
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Dark mode preference updated successfully',
+                'dark_mode' => $validated['dark_mode']
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Dark mode preference updated successfully');
     }
 

@@ -1,4 +1,4 @@
-// RecentReports.jsx - Simplified, just use props
+// RecentReports.jsx - Simplified version without locationRaw
 import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,53 +18,44 @@ const urgencyColors = {
 };
 
 const getLocationDisplay = (report) => {
-  // Priority 1: Check locationRaw object
-  if (report.locationRaw) {
-    if (report.locationRaw.address && report.locationRaw.address !== 'No address specified') {
-      return report.locationRaw.address;
-    }
-    if (report.locationRaw.locationArea) {
-      const building = report.locationRaw.building ? `, ${report.locationRaw.building}` : '';
-      const specificPlace = report.locationRaw.specificPlace ? `, ${report.locationRaw.specificPlace}` : '';
-      return `${report.locationRaw.locationArea}${building}${specificPlace}`;
-    }
+  // Use fullAddress if available (from the model)
+  if (report.fullAddress && report.fullAddress !== 'No address specified') {
+    return report.fullAddress;
   }
 
-  // Priority 2: Use root location fields
+  // Otherwise build from components
   if (report.locationArea) {
-    const building = report.building ? `, ${report.building}` : '';
-    const specificPlace = report.specificPlace ? `, ${report.specificPlace}` : '';
-    return `${report.locationArea}${building}${specificPlace}`;
+    const parts = [report.locationArea];
+    if (report.specificPlace) parts.push(report.specificPlace);
+    else if (report.building) parts.push(report.building);
+    if (report.address && !parts.includes(report.address)) parts.push(report.address);
+    return parts.join(', ');
   }
 
   return '⚠️ No specific location provided';
 };
 
 const getLocationDetails = (report) => {
-  let locationArea = '';
-  let building = '';
-  let address = '';
-  let specificPlace = '';
-
-  if (report.locationRaw && typeof report.locationRaw === 'object') {
-    locationArea = report.locationRaw.locationArea || '';
-    building = report.locationRaw.building || '';
-    address = report.locationRaw.address || '';
-    specificPlace = report.locationRaw.specificPlace || '';
-  }
-
-  if (!locationArea && report.locationArea) locationArea = report.locationArea;
-  if (!building && report.building) building = report.building;
-  if (!address && report.address) address = report.address;
-  if (!specificPlace && report.specificPlace) specificPlace = report.specificPlace;
-
-  return { locationArea, building, address, specificPlace };
+  return {
+    locationArea: report.locationArea || '',
+    building: report.building || '',
+    address: report.address || '',
+    specificPlace: report.specificPlace || '',
+    fullAddress: report.fullAddress || '',
+  };
 };
 
 export const RecentReports = ({ reports = [], onViewReport, loading = false }) => {
   console.log('RecentReports received:', reports.length, 'reports');
   if (reports.length > 0) {
     console.log('Sample report data:', reports[0]);
+    console.log('Location fields:', {
+      locationArea: reports[0].locationArea,
+      building: reports[0].building,
+      specificPlace: reports[0].specificPlace,
+      address: reports[0].address,
+      fullAddress: reports[0].fullAddress,
+    });
   }
 
   const statusLabels = {
@@ -212,6 +203,9 @@ export const RecentReports = ({ reports = [], onViewReport, loading = false }) =
                           )}
                           {locationDetails.address && locationDetails.address !== locationDetails.locationArea && (
                             <p><span className="font-medium">Address:</span> {locationDetails.address}</p>
+                          )}
+                          {locationDetails.fullAddress && (
+                            <p><span className="font-medium">Full:</span> {locationDetails.fullAddress}</p>
                           )}
                         </div>
                       </TooltipContent>
