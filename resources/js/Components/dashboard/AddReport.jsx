@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from 'react';
+import { router } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +97,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  // Debounced description analysis - USING AXIOS (NO CSRF ERRORS!)
+  // Debounced description analysis - USING INERTIA ROUTER (CHANGED)
   useEffect(() => {
     if (analysisTimeoutRef.current) {
       clearTimeout(analysisTimeoutRef.current);
@@ -121,36 +122,40 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     };
   }, [newReport.description]);
 
-  const analyzeDescription = async (description) => {
+  // CHANGED: Now using Inertia router instead of axios
+  const analyzeDescription = (description) => {
     if (!description || description.length < 15) {
       setIsAnalyzing(false);
       return;
     }
 
-    try {
-      // Axios automatically handles CSRF - no manual token needed!
-      const response = await api.post('/api/ai/analyze-report', {
-        description: description
-      });
+    // Use Inertia's router - handles CSRF automatically!
+    router.post('/api/ai/analyze-report', {
+      description: description
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      onSuccess: (page) => {
+        // The response data is in page.props
+        const data = page.props.aiAnalysis || page.props;
 
-      const data = response.data;
-
-      if (data.success) {
-        setAiSuggestion({
-          category: data.category,
-          urgency: data.urgency,
-          confidence: data.confidence || 0.8
-        });
-      } else {
+        if (data.success) {
+          setAiSuggestion({
+            category: data.category,
+            urgency: data.urgency,
+            confidence: data.confidence || 0.8
+          });
+        } else {
+          setAiSuggestion(null);
+        }
+        setIsAnalyzing(false);
+      },
+      onError: (errors) => {
+        console.error('AI analysis failed:', errors);
         setAiSuggestion(null);
+        setIsAnalyzing(false);
       }
-    } catch (error) {
-      console.error('AI analysis failed:', error);
-      // Silent fail - no error message to user
-      setAiSuggestion(null);
-    } finally {
-      setIsAnalyzing(false);
-    }
+    });
   };
 
   const applyAiSuggestion = () => {
