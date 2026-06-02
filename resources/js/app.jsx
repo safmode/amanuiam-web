@@ -1,4 +1,3 @@
-// resources/js/app.jsx
 import '../css/app.css';
 import './bootstrap.jsx';
 
@@ -35,17 +34,13 @@ axios.interceptors.request.use((config) => {
     return config;
 });
 
-// Response interceptor - handle 419 by refreshing the page (last resort)
+// Response interceptor - NO PAGE RELOAD!
 axios.interceptors.response.use(
     (response) => response,
-    async (error) => {
-        if (error.response?.status === 419 && !error.config._retry) {
-            error.config._retry = true;
-
-            // Don't call /sanctum/csrf-cookie - just reload the page
-            console.warn('CSRF token expired. Reloading page...');
-            window.location.reload();
-            return Promise.reject(error);
+    (error) => {
+        // Just log the error, don't reload
+        if (error.response?.status === 419) {
+            console.warn('CSRF token error (419) - this is a backend issue');
         }
         return Promise.reject(error);
     }
