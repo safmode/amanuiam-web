@@ -130,7 +130,7 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
 
         $emergency = Emergencies::create([
             '_id' => $emergencyIdentifier,
-            'student_id' => $studentId,
+            'studentId' => $studentId,
             'student_matrix' => $studentMatrix,
             'student_phone' => $studentPhone,
             'location' => [
