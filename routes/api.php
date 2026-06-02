@@ -1,9 +1,13 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\NotificationController;
+use App\Models\SystemNotification;
+use App\Models\Admins;
+use App\Events\NotificationSent;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\NotificationController;
 
 // ============================================
 // API ROUTES (Prefix: /api)
@@ -32,33 +36,52 @@ Route::post('/ai/analyze-report', [ReportController::class, 'analyzeWithAI']);
 
 // ✅ THIS IS THE KEY ENDPOINT FOR EMERGENCY NOTIFICATIONS
 Route::post('/notifications/emergency', function (Request $request) {
-    \Log::info('📢 Emergency notification received:', $request->all());
-
     try {
-        $notification = new \App\Models\Notification();
-        $notification->type = $request->type;
-        $notification->title = $request->title;
-        $notification->message = $request->message;
-        $notification->report_id = $request->report_id;
-        $notification->report_title = $request->report_title;
-        $notification->status = $request->status;
-        $notification->student_id = $request->student_id;
-        $notification->student_name = $request->student_name;
-        $notification->student_matrix = $request->student_matrix;
-        $notification->student_phone = $request->student_phone;
-        $notification->location = $request->location;
-        $notification->latitude = $request->latitude;
-        $notification->longitude = $request->longitude;
-        $notification->read_by = [];
-        $notification->created_at = now();
-        $notification->updated_at = now();
-        $notification->save();
+        Log::info('📢 Creating emergency notification:', $request->all());
 
-        \Log::info('✅ Emergency notification saved with ID: ' . $notification->_id);
+        $notification = SystemNotification::create([
+            'type' => 'emergency_alert',
+            'title' => '⚠️ URGENT',
+            'message' => $request->message,
+            'report_id' => $request->report_id,
+            'report_title' => $request->report_title,
+            'status' => $request->status ?? 'active',
+            'read_by' => [],
+            'created_at' => now(),
+            'student_id' => $request->student_id,
+            'student_name' => $request->student_name,
+            'student_matrix' => $request->student_matrix,
+            'student_phone' => $request->student_phone,
+            'location' => $request->location,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude
+        ]);
 
-        return response()->json(['success' => true, 'notification' => $notification]);
+        // Broadcast to all admins via Pusher
+        $admins = Admins::all();
+        $broadcastCount = 0;
+
+        foreach ($admins as $admin) {
+            try {
+                broadcast(new NotificationSent($notification, (string)$admin->_id));
+                $broadcastCount++;
+            } catch (\Exception $e) {
+                Log::warning("Failed to broadcast to admin {$admin->_id}: " . $e->getMessage());
+            }
+        }
+
+        Log::info("✅ Emergency notification broadcast via Pusher to {$broadcastCount} admins", [
+            'notification_id' => $notification->_id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'notification' => $notification,
+            'broadcast_count' => $broadcastCount
+        ]);
+
     } catch (\Exception $e) {
-        \Log::error('Failed to save notification: ' . $e->getMessage());
+        Log::error('Failed to create emergency notification: ' . $e->getMessage());
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });

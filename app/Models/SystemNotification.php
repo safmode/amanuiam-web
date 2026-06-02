@@ -21,7 +21,15 @@ class SystemNotification extends Model
         'status',
         'read_by',
         'created_at',
-        'updated_at'
+        'updated_at',
+        // ✅ ADD THESE STUDENT FIELDS
+        'student_id',
+        'student_name',
+        'student_matrix',
+        'student_phone',
+        'location',
+        'latitude',
+        'longitude'
     ];
 
     protected $casts = [
@@ -48,7 +56,6 @@ class SystemNotification extends Model
 
     public static function getUnreadCount($userId)
     {
-        // Fix for MongoDB - get all notifications and filter in PHP
         $allNotifications = self::all();
         $unreadCount = 0;
 
@@ -64,7 +71,6 @@ class SystemNotification extends Model
 
     public static function createUnique($data)
     {
-        // Check if similar notification exists in last 5 seconds
         $existing = self::where('report_id', $data['report_id'])
             ->where('created_at', '>', now()->subSeconds(5))
             ->first();

@@ -137,24 +137,6 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
         // ✅ CREATE SYSTEM NOTIFICATION (student name used here, not saved to emergencies)
         $emergencyIdShort = substr((string)$emergency->_id, -6);
 
-        $notification = App\Models\SystemNotification::create([
-            'type' => 'emergency_alert',
-            'title' => '⚠️ URGENT',
-            'message' => "Urgent Report from {$studentName} at {$address}",
-            'report_id' => 'EMERG-' . $emergencyIdShort,
-            'report_title' => "Urgent Report at {$address}",
-            'status' => 'active',
-            'read_by' => [],
-            'created_at' => now()
-        ]);
-
-        // Broadcast to admins
-        try {
-            broadcast(new App\Events\NotificationSent($notification, null));
-        } catch (\Exception $e) {
-            Log::warning('Broadcast failed: ' . $e->getMessage());
-        }
-
         Log::info("✅ Emergency saved to Laravel DB: {$emergencyId}");
 
         return response()->json([
