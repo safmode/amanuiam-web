@@ -1,7 +1,6 @@
 // resources/js/lib/axios.js
 import axios from 'axios';
 
-// Create a custom axios instance
 const api = axios.create({
     withCredentials: true,
     headers: {
@@ -11,65 +10,54 @@ const api = axios.create({
     }
 });
 
-// Helper to get current CSRF token
-const getCurrentCsrfToken = () => {
+const getCsrfToken = () => {
     return document.querySelector('meta[name="csrf-token"]')?.content;
 };
 
-// REQUEST INTERCEPTOR - Always use fresh CSRF token
+// Request interceptor - ALWAYS add fresh token
 api.interceptors.request.use((config) => {
-    const token = getCurrentCsrfToken();
+    const token = getCsrfToken();
     if (token) {
         config.headers['X-CSRF-TOKEN'] = token;
+        // Also add X-XSRF-TOKEN for Laravel
+        config.headers['X-XSRF-TOKEN'] = token;
+    } else {
+        console.warn('⚠️ No CSRF token found in meta tag');
     }
 
-    // Log for debugging (remove in production)
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} - CSRF: ${token ? '✅' : '❌'}`);
-
+    console.log(`📤 ${config.method?.toUpperCase()} ${config.url} - CSRF: ${token ? '✅' : '❌'}`);
     return config;
-}, (error) => {
-    return Promise.reject(error);
 });
 
-// RESPONSE INTERCEPTOR - Handle 419 errors without requiring refresh
+// Response interceptor
 api.interceptors.response.use(
     response => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // Handle 419 CSRF token mismatch
         if (error.response?.status === 419 && !originalRequest._retry) {
             originalRequest._retry = true;
-
-            console.warn('CSRF token expired, refreshing...');
+            console.warn('🔄 CSRF token expired, refreshing...');
 
             try {
-                // Fetch fresh CSRF cookie from server
+                // Fetch fresh CSRF cookie
                 await axios.get('/sanctum/csrf-cookie', {
                     withCredentials: true,
                 });
 
-                // Small delay to ensure cookie is set
+                // Wait a bit for cookie to be set
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                // Get the new token
-                const newToken = getCurrentCsrfToken();
+                // Get new token
+                const newToken = getCsrfToken();
                 if (newToken) {
                     originalRequest.headers['X-CSRF-TOKEN'] = newToken;
+                    originalRequest.headers['X-XSRF-TOKEN'] = newToken;
+                    console.log('✅ CSRF refreshed, retrying...');
+                    return api(originalRequest);
                 }
-
-                console.log('CSRF refreshed, retrying request...');
-
-                // Retry the original request
-                return api(originalRequest);
             } catch (refreshError) {
-                console.error('CSRF refresh failed:', refreshError);
-
-                // Last resort: reload the page
-                if (confirm('Session expired. Would you like to refresh the page?')) {
-                    window.location.reload();
-                }
-                return Promise.reject(error);
+                console.error('❌ CSRF refresh failed:', refreshError);
             }
         }
 
