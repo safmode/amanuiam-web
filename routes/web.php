@@ -99,6 +99,9 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
 
     try {
         $studentId = $request->input('studentId');
+        $studentName = $request->input('studentName', 'Unknown Student');  // From Node.js
+        $studentMatrix = $request->input('studentMatrix', 'N/A');
+        $studentPhone = $request->input('studentPhone', 'N/A');
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
         $address = $request->input('address');
@@ -112,8 +115,21 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
             ], 400);
         }
 
+        // ✅ Get student from Laravel database (even better!)
+        $student = App\Models\Student::find($studentId);
+
+        if ($student) {
+            // Use database values (more reliable)
+            $studentName = $student->name;
+            $studentMatrix = $student->matrixNumber;
+            $studentPhone = $student->phone;
+            Log::info("✅ Student found in DB: {$studentName}");
+        } else {
+            Log::warning("Student not found in DB: {$studentId}, using Node.js provided data");
+        }
+
         // Check for recent duplicate
-        $recentEmergency = Emergencies::where('studentId', $studentId)
+        $recentEmergency = Emergencies::where('student_id', $studentId)
             ->where('triggeredAt', '>=', now()->subSeconds(30))
             ->first();
 
@@ -128,12 +144,17 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
 
         $emergencyIdentifier = $emergencyId ?? 'EMG-' . uniqid();
 
-        // ✅ Save ONLY studentId - NO name, matrix, phone
+        // ✅ CRITICAL: Make sure ALL fields are saved correctly
         $emergencyData = [
             '_id' => $emergencyIdentifier,
-            'studentId' => $studentId,           // ONLY this field from student
-            'latitude' => (float)$latitude,
-            'longitude' => (float)$longitude,
+            'student_id' => $studentId,
+            'student_name' => $studentName,        // ✅ Use the resolved name
+            'student_matrix' => $studentMatrix,    // ✅ Matrix number
+            'student_phone' => $studentPhone,      // ✅ Phone number
+            'location' => [
+                'type' => 'Point',
+                'coordinates' => [(float)$longitude, (float)$latitude]
+            ],
             'address' => $address,
             'status' => 'active',
             'triggeredAt' => now(),
@@ -149,11 +170,28 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
 
         $emergency = Emergencies::create($emergencyData);
 
-        Log::info("✅ Emergency created: {$emergencyIdentifier} - Student ID: {$studentId}");
+        // ✅ VERIFY: Fetch it back to confirm it saved correctly
+        $savedEmergency = Emergencies::find($emergencyIdentifier);
+        Log::info('✅ VERIFICATION - Saved emergency:', [
+            'id' => $savedEmergency->_id,
+            'student_name' => $savedEmergency->student_name ?? 'MISSING',
+            'student_matrix' => $savedEmergency->student_matrix ?? 'MISSING',
+            'student_phone' => $savedEmergency->student_phone ?? 'MISSING'
+        ]);
+
+        // Create web dashboard notification - PASS THE STUDENT OBJECT
+        $notification = App\Http\Controllers\NotificationController::createEmergencyAlert($emergency, $student ?: (object)[
+            'name' => $studentName,
+            'matrixNumber' => $studentMatrix,
+            'phone' => $studentPhone
+        ]);
+
+        Log::info("✅ Emergency created: {$emergencyIdentifier} - Student: {$studentName}");
 
         return response()->json([
             'success' => true,
-            'emergency_id' => $emergencyIdentifier
+            'emergency_id' => $emergencyIdentifier,
+            'student_name' => $studentName
         ]);
 
     } catch (\Exception $e) {
