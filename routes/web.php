@@ -54,7 +54,6 @@ Route::get('/health', function () {
 // WEBHOOK ROUTES (External - No CSRF)
 // ============================================
 
-// Webhook for new report notifications
 Route::post('/webhook/new-report', function (Request $request) {
     Log::info('📢 New report webhook received:', $request->all());
 
@@ -85,7 +84,6 @@ Route::post('/webhook/new-report', function (Request $request) {
     }
 });
 
-// Webhook for emergency alerts
 Route::post('/webhook/emergency-alert', function (Request $request) {
     Log::info('🚨 Emergency alert webhook received:', $request->all());
 
@@ -139,7 +137,6 @@ Route::post('/webhook/emergency-alert', function (Request $request) {
 // TELEGRAM WEBHOOK ROUTES
 // ============================================
 
-// Helper function for Telegram - DECLARED ONLY ONCE
 if (!function_exists('sendTelegramMessage')) {
     function sendTelegramMessage($chatId, $message, $parseMode = 'Markdown')
     {
@@ -185,10 +182,8 @@ Route::get('/telegram/set-webhook', function () {
     ]);
 });
 
-// Main Telegram webhook handler
 Route::post('/telegram/webhook', function (Request $request) {
     Log::info('Telegram webhook received:', $request->all());
-    // Your existing Telegram webhook code here
     return response()->json(['status' => 'ok']);
 });
 
@@ -203,11 +198,12 @@ Route::post('/register', [AdminAuthController::class, 'register']);
 Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
 // ============================================
-// INERTIA PROTECTED ROUTES (Auth required)
+// PROTECTED ROUTES (Auth required) - EVERYTHING HERE
 // ============================================
 
 Route::middleware('auth')->group(function () {
-    // Inertia page renders
+
+    // ========== INERTIA PAGE RENDERS ==========
     Route::get('/Dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
     Route::get('/Alerts', fn() => Inertia::render('Alerts'))->name('alerts');
     Route::get('/Settings', fn() => Inertia::render('Settings'))->name('settings');
@@ -220,20 +216,79 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Approvals', ['allAdmins' => $allAdmins]);
     })->name('approvals');
 
-    // Report CRUD (non-API)
+    // ========== EMERGENCY ENDPOINTS ==========
+    Route::get('/emergencies', [EmergencyController::class, 'index']);
+    Route::get('/emergencies/counts', [EmergencyController::class, 'getActiveCount']);
+    Route::get('/emergencies/{id}', [EmergencyController::class, 'show']);
+    Route::put('/emergencies/{id}/dispatch', [EmergencyController::class, 'dispatch']);
+    Route::put('/emergencies/{id}/resolve', [EmergencyController::class, 'resolve']);
+    Route::put('/emergencies/{id}/revert', [EmergencyController::class, 'revert']);
+    Route::delete('/emergencies/{id}', [EmergencyController::class, 'destroy']);
+    Route::post('/emergencies/bulk-delete', [EmergencyController::class, 'bulkDelete']);
+    Route::put('/emergencies/{id}/live-location', [EmergencyController::class, 'updateLiveLocation']);
+    Route::get('/emergencies/{id}/live-location', [EmergencyController::class, 'getLiveLocation']);
+    Route::post('/emergencies/{id}/start-tracking', [EmergencyController::class, 'startLiveTracking']);
+
+    // ========== NOTIFICATION ENDPOINTS ==========
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
+    // ========== REPORT ENDPOINTS ==========
     Route::post('/Reports', [ReportController::class, 'store'])->name('reports.store');
     Route::put('/Reports/{reportId}', [ReportController::class, 'update'])->name('reports.update');
     Route::delete('/Reports/{reportId}', [ReportController::class, 'destroy'])->name('reports.destroy');
+    Route::get('/Reports/recent', [ReportController::class, 'getRecent']);
+    Route::get('/reports/{reportId}/attachments', [ReportController::class, 'getAttachments']);
+    Route::post('/reports/upload-attachments', [ReportController::class, 'uploadAttachments']);
+    Route::post('/reports/upload-for-new', [ReportController::class, 'uploadForNewReport']);
+    Route::delete('/reports/delete-attachment', [ReportController::class, 'deleteAttachment']);
 
-    // Officer CRUD
+    // ========== OFFICER ENDPOINTS ==========
     Route::post('/Officers', [OfficerController::class, 'store'])->name('officers.store');
     Route::put('/Officers/{officerId}', [OfficerController::class, 'update'])->name('officers.update');
     Route::delete('/Officers/{officerId}', [OfficerController::class, 'destroy'])->name('officers.destroy');
+    Route::get('/officers/list', [OfficerController::class, 'getOfficersList']);
 
-    // Admin management
+    // ========== DASHBOARD ENDPOINTS ==========
+    Route::get('/dashboard/recent-data', [DashboardController::class, 'getRecentReports']);
+    Route::get('/heatmap-data', [MapController::class, 'getHeatmapData']);
+    Route::get('/pending-admins', function () {
+        return App\Models\Admins::where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    });
+
+    // ========== ADMIN MANAGEMENT ==========
     Route::put('/admin/update-status/{adminId}', [AdminAuthController::class, 'updateStatus']);
     Route::put('/admin/approve/{adminId}', [AdminAuthController::class, 'approve']);
     Route::put('/admin/reject/{adminId}', [AdminAuthController::class, 'reject']);
+
+    // ========== SETTINGS ENDPOINTS (ALL HERE - NO /api) ==========
+    Route::put('/settings/profile', [SettingsController::class, 'updateProfile']);
+    Route::put('/settings/password', [SettingsController::class, 'changePassword']);
+    Route::post('/settings/two-factor', [SettingsController::class, 'toggleTwoFactor']);
+    Route::post('/logout-all', [SettingsController::class, 'logoutAllDevices']);
+    Route::post('/settings/dark-mode', [SettingsController::class, 'updateDarkMode']);
+    Route::get('/settings/dark-mode', [SettingsController::class, 'getDarkMode']);
+    Route::post('/settings/notification-preferences', [SettingsController::class, 'updateNotificationPreferences']);
+    Route::get('/settings/notification-preferences', [SettingsController::class, 'getNotificationPreferences']);
+
+    // ========== PASSWORD CHANGE ==========
+    Route::post('/password/send-code', [PasswordChangeController::class, 'sendCode']);
+    Route::post('/password/verify-change', [PasswordChangeController::class, 'verifyAndChange']);
+    Route::post('/password/resend-code', [PasswordChangeController::class, 'resendCode']);
+
+    // ========== DIGEST ==========
+    Route::post('/digest/send', [DigestController::class, 'send']);
+
+    // ========== SAFETY TIPS ==========
+    Route::prefix('/safety-tips')->group(function () {
+        Route::post('/send', [App\Http\Controllers\SafetyTipsController::class, 'send']);
+        Route::get('/history', [App\Http\Controllers\SafetyTipsController::class, 'history']);
+        Route::get('/{id}', [App\Http\Controllers\SafetyTipsController::class, 'show']);
+    });
 });
 
 // ============================================
