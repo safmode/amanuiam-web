@@ -109,81 +109,54 @@ Route::get('/webhook/new-report', function (Request $request) {
 
 // Webhook for emergency alerts
 Route::post('/webhook/emergency-alert', function (Request $request) {
-    Log::info('🚨 Emergency alert webhook received:', $request->all());
+    Log::info('🚨 Emergency alert received:', $request->all());
 
     try {
+        // Get data from Node.js (already has student name!)
         $studentId = $request->input('studentId');
-        $studentName = $request->input('studentName');
+        $studentName = $request->input('studentName', 'Unknown Student');
+        $studentMatrix = $request->input('studentMatrix', 'N/A');
+        $studentPhone = $request->input('studentPhone', 'N/A');
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
         $address = $request->input('address');
-        $timestamp = $request->input('timestamp', now());
 
         if (!$studentId || !$latitude || !$longitude) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Missing required fields'
-            ], 400);
+            return response()->json(['success' => false, 'error' => 'Missing fields'], 400);
         }
 
-        // Try to find student if name not provided
-        if (!$studentName || $studentName === 'Unknown Student') {
-            $student = App\Models\Student::find($studentId);
-            if ($student) {
-                $studentName = $student->name;
-                $studentMatrix = $student->matrixNumber;
-                $studentPhone = $student->phone;
-            } else {
-                $studentMatrix = 'N/A';
-                $studentPhone = 'N/A';
-            }
-        } else {
-            $studentMatrix = $request->input('studentMatrix', 'N/A');
-            $studentPhone = $request->input('studentPhone', 'N/A');
-        }
-
-        // Generate emergency ID
+        // Create emergency with the name Node.js sent
         $emergencyIdentifier = 'EMG-' . uniqid();
 
-        // Create emergency record
         $emergency = Emergencies::create([
             '_id' => $emergencyIdentifier,
             'student_id' => $studentId,
-            'student_name' => $studentName,  // ✅ NAME IS HERE
-            'student_matrix' => $studentMatrix ?? 'N/A',
-            'student_phone' => $studentPhone ?? 'N/A',
+            'student_name' => $studentName,     // ✅ USING NAME FROM NODE.JS
+            'student_matrix' => $studentMatrix,
+            'student_phone' => $studentPhone,
             'location' => [
                 'type' => 'Point',
                 'coordinates' => [(float)$longitude, (float)$latitude]
             ],
             'address' => $address,
             'status' => 'active',
-            'triggeredAt' => now(),
-            'assigned_officer_id' => null,
-            'assigned_officer_name' => null,
-            'assigned_at' => null,
-            'resolvedAt' => null,
-            'resolved_by_officer_id' => null,
-            'resolved_by_officer_name' => null
+            'triggeredAt' => now()
         ]);
 
-        Log::info("✅ Emergency created: {$emergencyIdentifier} for student: {$studentName}");
+        Log::info("✅ Emergency created: {$emergencyIdentifier} - Student: {$studentName}");
 
-        // Create web dashboard notification
+        // Create dashboard notification
         $notification = App\Http\Controllers\NotificationController::createEmergencyAlert($emergency, null);
 
         return response()->json([
             'success' => true,
             'emergency_id' => $emergencyIdentifier,
-            'student_name' => $studentName  // ✅ RETURN THE NAME
+            'student_name' => $studentName
         ]);
 
     } catch (\Exception $e) {
-        Log::error('❌ Failed to process emergency webhook: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
+        Log::error('❌ Webhook error: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
