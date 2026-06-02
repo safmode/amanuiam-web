@@ -19,21 +19,24 @@ const urgencyColors = {
 
 // Helper function to get the best available location display
 const getLocationDisplay = (report) => {
-  // Priority 1: Use location.address if available
-  if (report.address && report.address !== 'No address specified' && report.address !== '') {
-    return report.address;
+  // Priority 1: Check if location object exists and has address
+  if (report.location) {
+    // Check for address in location object
+    if (report.location.address && report.location.address !== 'No address specified' && report.location.address !== '') {
+      return report.location.address;
+    }
+
+    // Check for locationArea + building in location object
+    if (report.location.locationArea) {
+      const building = report.location.building ? `, ${report.location.building}` : '';
+      const specificPlace = report.location.specificPlace ? `, ${report.location.specificPlace}` : '';
+      return `${report.location.locationArea}${building}${specificPlace}`;
+    }
   }
 
-  // Priority 2: Use location.locationArea + building from location object
-  if (report.locationRaw) {
-    const locationObj = report.locationRaw;
-    if (locationObj.locationArea) {
-      const building = locationObj.building ? `, ${locationObj.building}` : '';
-      return `${locationObj.locationArea}${building}`;
-    }
-    if (locationObj.address) {
-      return locationObj.address;
-    }
+  // Priority 2: Use location.address if available at root level
+  if (report.address && report.address !== 'No address specified' && report.address !== '') {
+    return report.address;
   }
 
   // Priority 3: Use locationArea + building from report root
@@ -56,12 +59,14 @@ const getLocationDetails = (report) => {
   let building = '';
   let address = '';
   let mahallah = '';
+  let specificPlace = '';
 
-  // Try to extract from location object
-  if (report.locationRaw && typeof report.locationRaw === 'object') {
-    locationArea = report.locationRaw.locationArea || '';
-    building = report.locationRaw.building || '';
-    address = report.locationRaw.address || '';
+  // Try to extract from location object first
+  if (report.location && typeof report.location === 'object') {
+    locationArea = report.location.locationArea || '';
+    building = report.location.building || '';
+    address = report.location.address || '';
+    specificPlace = report.location.specificPlace || '';
   }
 
   // Fallback to root properties
@@ -70,7 +75,7 @@ const getLocationDetails = (report) => {
   if (!address && report.address) address = report.address;
   if (!mahallah && report.mahallah) mahallah = report.mahallah;
 
-  return { locationArea, building, address, mahallah };
+  return { locationArea, building, address, mahallah, specificPlace };
 };
 
 export const RecentReports = ({ reports, onViewReport, loading = false }) => {
@@ -188,17 +193,30 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
             const locationDisplay = getLocationDisplay(report);
             const locationDetails = getLocationDetails(report);
 
-            const hasDetailedLocation = locationDetails.locationArea || locationDetails.building || locationDetails.address;
+            const hasDetailedLocation = locationDetails.locationArea || locationDetails.building || locationDetails.address || locationDetails.specificPlace;
+
+            // Format date and time
+            const formatDate = (dateTime) => {
+              if (!dateTime) return 'Unknown date';
+              const date = new Date(dateTime);
+              return date.toLocaleDateString();
+            };
+
+            const formatTime = (dateTime) => {
+              if (!dateTime) return 'Unknown time';
+              const date = new Date(dateTime);
+              return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
 
             return (
               <div
-                    key={report.id}
-                    className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
-                    onClick={() => onViewReport(report)}  // This passes the entire report object
-                >
+                key={report.id || report._id}
+                className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
+                onClick={() => onViewReport(report)}
+              >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-mono text-muted-foreground">{report.id}</span>
+                    <span className="text-sm font-mono text-muted-foreground">{report.reportId || report.id}</span>
                     {getUrgencyBadge(report.urgency)}
                     {getStatusBadge(report.status)}
                   </div>
@@ -207,7 +225,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
                   </Button>
                 </div>
 
-                <h4 className="font-semibold mb-2 line-clamp-2">{report.issue}</h4>
+                <h4 className="font-semibold mb-2 line-clamp-2">{report.issue || report.description?.substring(0, 100)}</h4>
 
                 {/* Location Section - Enhanced with detailed tooltip */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -226,6 +244,12 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
                             <p className="flex items-start gap-1">
                               <span className="font-medium min-w-[70px]">Area:</span>
                               <span>{locationDetails.locationArea}</span>
+                            </p>
+                          )}
+                          {locationDetails.specificPlace && (
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Place:</span>
+                              <span className="break-words">{locationDetails.specificPlace}</span>
                             </p>
                           )}
                           {locationDetails.building && (
@@ -295,7 +319,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
 
                   <span className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {report.date} at {report.time}
+                    {formatDate(report.incidentDateTime || report.reportedAt)} at {formatTime(report.incidentDateTime || report.reportedAt)}
                   </span>
                 </div>
               </div>
