@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, Fragment } from 'react';
-import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,12 +22,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const [foundStudent, setFoundStudent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // === AI FEATURE: State for AI suggestion ===
+  // AI suggestion state
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const analysisTimeoutRef = useRef(null);
 
-  // Store pending files that need to be uploaded on submit
+  // Pending files
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isUploadingOnSubmit, setIsUploadingOnSubmit] = useState(false);
 
@@ -53,7 +52,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     incidentTime: '',
   });
 
-  // Update full address when locationArea or building changes
   const updateFullAddress = (locationAreaVal, buildingVal) => {
     let full = locationAreaVal || '';
     if (buildingVal && buildingVal.trim() !== '') {
@@ -65,9 +63,9 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const handleLocationAreaChange = (value) => {
     const newFullAddress = updateFullAddress(value, newReport.building);
     setNewReport(prev => ({
-        ...prev,
-        locationArea: value,
-        fullAddress: newFullAddress
+      ...prev,
+      locationArea: value,
+      fullAddress: newFullAddress
     }));
   };
 
@@ -80,7 +78,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
-  // Fetch officers for dropdown - USING AXIOS
+  // ✅ FETCH OFFICERS – USE AXIOS
   useEffect(() => {
     fetchOfficers();
   }, []);
@@ -88,7 +86,8 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const fetchOfficers = async () => {
     setIsLoadingOfficers(true);
     try {
-      const response = await router.get('/api/officers/list');
+      const response = await axios.get('/api/officers/list');
+      // The API returns an array directly, not wrapped in {data}
       setOfficersList(response.data);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
@@ -97,42 +96,31 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  // Debounced description analysis - NOW USING AXIOS ✅
+  // Debounced AI analysis – already using axios ✅
   useEffect(() => {
-    if (analysisTimeoutRef.current) {
-      clearTimeout(analysisTimeoutRef.current);
-    }
-
+    if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     if (!newReport.description || newReport.description.length < 15) {
       setAiSuggestion(null);
       setIsAnalyzing(false);
       return;
     }
-
     setIsAnalyzing(true);
-
     analysisTimeoutRef.current = setTimeout(() => {
       analyzeDescription(newReport.description);
     }, 1200);
-
     return () => {
-      if (analysisTimeoutRef.current) {
-        clearTimeout(analysisTimeoutRef.current);
-      }
+      if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     };
   }, [newReport.description]);
 
-  // ✅ CHANGED: Now using axios instead of Inertia router
   const analyzeDescription = async (description) => {
     if (!description || description.length < 15) {
       setIsAnalyzing(false);
       return;
     }
-
     try {
       const response = await axios.post('/api/ai/analyze-report', { description });
       const data = response.data;
-
       if (data.success) {
         setAiSuggestion({
           category: data.category,
@@ -144,9 +132,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
-      if (error.response?.status === 419) {
-        console.warn('CSRF token expired – refresh the page if this persists');
-      }
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -158,13 +143,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       const updates = {};
       if (aiSuggestion.category) updates.category = aiSuggestion.category;
       if (aiSuggestion.urgency) updates.urgency = aiSuggestion.urgency;
-
       if (Object.keys(updates).length > 0) {
         setNewReport(prev => ({ ...prev, ...updates }));
         showToast(`AI suggestion applied: ${categoryLabels[aiSuggestion.category] || aiSuggestion.category} / ${urgencyLabels[aiSuggestion.urgency]}`, 'success');
-
         setAiSuggestion(prev => prev ? { ...prev, applied: true } : null);
-
         setTimeout(() => {
           setAiSuggestion(prev => prev?.applied ? null : prev);
         }, 3000);
@@ -193,18 +175,16 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     return officer ? officer.officerName : 'Not Assigned';
   };
 
-  // Search student by matric - USING AXIOS
+  // ✅ SEARCH STUDENT – USE AXIOS
   const searchStudentByMatric = async () => {
     if (!newReport.reporterMatricNo) {
       showToast('Please enter a matric number', 'error');
       return;
     }
-
     setIsSearchingStudent(true);
     try {
-      const response = await router.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
+      const response = await axios.get(`/api/students/search?matric=${newReport.reporterMatricNo}`);
       const data = response.data;
-
       if (data.student) {
         setFoundStudent(data.student);
         setNewReport(prev => ({
@@ -257,37 +237,28 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-
     setPendingFiles(prev => [...prev, ...files]);
-
     files.forEach(file => {
       const previewUrl = URL.createObjectURL(file);
       setAttachmentUrls(prev => [...prev, previewUrl]);
       setAttachmentPublicIds(prev => [...prev, null]);
     });
-
     showToast(`${files.length} file(s) ready to upload. Click Create Report to upload.`, 'info');
-
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Upload pending files - USING AXIOS
+  // ✅ UPLOAD PENDING FILES – USE AXIOS
   const uploadPendingFiles = async () => {
     if (pendingFiles.length === 0) return { urls: [], publicIds: [] };
-
     setIsUploadingOnSubmit(true);
     const formData = new FormData();
     pendingFiles.forEach(file => {
       formData.append('attachments[]', file);
     });
-
     try {
-      const response = await router.post('/reports/upload-for-new', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await axios.post('/reports/upload-for-new', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-
       const data = response.data;
       return { urls: data.urls, publicIds: data.publicIds };
     } catch (error) {
@@ -303,30 +274,25 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       URL.revokeObjectURL(url);
       setAttachmentUrls(prev => prev.filter((_, i) => i !== index));
       setAttachmentPublicIds(prev => prev.filter((_, i) => i !== index));
-
       const existingUrlsCount = attachmentUrls.filter(u => u.startsWith('http') && !u.startsWith('blob:')).length;
       const pendingIndex = index - existingUrlsCount;
       if (pendingIndex >= 0 && pendingIndex < pendingFiles.length) {
         setPendingFiles(prev => prev.filter((_, i) => i !== pendingIndex));
       }
-
       showToast('Attachment removed', 'success');
       return;
     }
-
     if (!confirm('Are you sure you want to delete this attachment?')) return;
-
     try {
-      await router.delete('/reports/delete-attachment', {
+      // Deletion also uses axios (or you could keep router.delete, but it's safer with axios)
+      await axios.delete('/reports/delete-attachment', {
         data: {
           attachmentUrl: url,
           attachmentPublicId: attachmentPublicIds[index],
         }
       });
-
       setAttachmentUrls(prev => prev.filter((_, i) => i !== index));
       setAttachmentPublicIds(prev => prev.filter((_, i) => i !== index));
-
       showToast('Attachment deleted successfully', 'success');
     } catch (error) {
       console.error('Delete error:', error);
@@ -346,37 +312,30 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-
     try {
       let newAttachments = { urls: [], publicIds: [] };
       if (pendingFiles.length > 0) {
         newAttachments = await uploadPendingFiles();
       }
-
       let incidentDateTime = null;
       if (newReport.incidentDate && newReport.incidentTime) {
         incidentDateTime = new Date(`${newReport.incidentDate}T${newReport.incidentTime}:00`).toISOString();
       }
-
       const existingUrls = attachmentUrls.filter(url =>
         url.startsWith('http') && !url.startsWith('blob:')
       );
       const existingPublicIds = attachmentPublicIds.filter(id => id !== null);
-
       const finalUrls = [...existingUrls, ...newAttachments.urls];
       const finalPublicIds = [...existingPublicIds, ...newAttachments.publicIds];
-
       const combinedAddress = (newReport.locationArea && newReport.building)
         ? `${newReport.locationArea}, ${newReport.building}`
         : (newReport.locationArea || '');
-
       const locationObj = {
         locationArea: newReport.locationArea || '',
         building: newReport.building || '',
         address: combinedAddress,
         timestamp: new Date().toISOString()
       };
-
       const payload = {
         studentId: foundStudent ? foundStudent._id : null,
         studentName: newReport.reporterName,
@@ -396,10 +355,8 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         attachmentPublicIds: finalPublicIds,
         location: locationObj
       };
-
       console.log('Sending payload:', payload);
       onSave(payload);
-
       resetForm();
       onClose();
     } catch (error) {
@@ -412,30 +369,27 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
 
   const resetForm = () => {
     attachmentUrls.forEach(url => {
-        if (url.startsWith('blob:')) {
-        URL.revokeObjectURL(url);
-        }
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
     });
-
     setNewReport({
-        reporterName: '',
-        reporterEmail: '',
-        reporterPhone: '',
-        reporterMatricNo: '',
-        category: '',
-        urgency: 'general',
-        status: 'pending',
-        description: '',
-        locationArea: '',
-        building: '',
-        fullAddress: '',
-        damages: '',
-        suspectDescription: '',
-        injuries: '',
-        assignedOfficer: '',
-        officerNotes: '',
-        incidentDate: '',
-        incidentTime: '',
+      reporterName: '',
+      reporterEmail: '',
+      reporterPhone: '',
+      reporterMatricNo: '',
+      category: '',
+      urgency: 'general',
+      status: 'pending',
+      description: '',
+      locationArea: '',
+      building: '',
+      fullAddress: '',
+      damages: '',
+      suspectDescription: '',
+      injuries: '',
+      assignedOfficer: '',
+      officerNotes: '',
+      incidentDate: '',
+      incidentTime: '',
     });
     setAttachmentUrls([]);
     setAttachmentPublicIds([]);
@@ -443,16 +397,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     setFoundStudent(null);
     setAiSuggestion(null);
     setIsAnalyzing(false);
-    if (analysisTimeoutRef.current) {
-        clearTimeout(analysisTimeoutRef.current);
-    }
+    if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
   };
 
   const handleClose = () => {
     attachmentUrls.forEach(url => {
-      if (url.startsWith('blob:')) {
-          URL.revokeObjectURL(url);
-      }
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
     });
     resetForm();
     onClose();
@@ -485,7 +435,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         </DialogHeader>
 
         <div className="p-6 space-y-5">
-          {/* Reporter Information */}
+          {/* Reporter Information – unchanged except the search uses axios */}
           <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -566,7 +516,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
             </CardContent>
           </Card>
 
-          {/* Incident Details */}
+          {/* Incident Details – unchanged */}
           <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -577,54 +527,44 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Category *</Label>
-                    <Select
-                      value={newReport.category}
-                      onValueChange={handleCategoryChange}
-                    >
+                    <Select value={newReport.category} onValueChange={handleCategoryChange}>
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
                         {Object.entries(categoryLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Urgency Level *</Label>
-                    <Select
-                      value={newReport.urgency}
-                      onValueChange={handleUrgencyChange}
-                    >
+                    <Select value={newReport.urgency} onValueChange={handleUrgencyChange}>
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(urgencyLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Status</Label>
                     <Select value={newReport.status} onValueChange={(v) => setNewReport({...newReport, status: v})}>
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(statusLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">{label}</SelectItem>
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
-                {/* Description */}
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Description *</Label>
                   <Textarea
@@ -644,7 +584,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                     </div>
                   </div>
                 )}
-
                 {aiSuggestion && !isAnalyzing && (
                   <div className={`p-3 rounded-lg border ${
                     aiSuggestion.confidence > 0.7
@@ -657,38 +596,24 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">🤖 AI SUGGESTION</p>
                           {aiSuggestion.applied ? (
-                            <Badge variant="outline" className="text-green-600 border-green-300 text-xs dark:text-green-400 dark:border-green-700">
-                              ✓ Applied
-                            </Badge>
+                            <Badge variant="outline" className="text-green-600 border-green-300 text-xs dark:text-green-400 dark:border-green-700">✓ Applied</Badge>
                           ) : (
-                            <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs dark:text-purple-400 dark:border-purple-700">
-                              Click to apply
-                            </Badge>
+                            <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs dark:text-purple-400 dark:border-purple-700">Click to apply</Badge>
                           )}
                         </div>
                         <div className="text-sm mt-1">
-                            <span className="text-gray-600 dark:text-gray-400">Category:</span>{' '}
-                            <strong className="text-gray-800 dark:text-gray-200">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
-                            {' • '}
-                            <span className="text-gray-600 dark:text-gray-400">Urgency:</span>{' '}
-                            <strong className="text-gray-800 dark:text-gray-200">{urgencyLabels[aiSuggestion.urgency]}</strong>
+                          <span className="text-gray-600 dark:text-gray-400">Category:</span>{' '}
+                          <strong className="text-gray-800 dark:text-gray-200">{categoryLabels[aiSuggestion.category] || aiSuggestion.category}</strong>
+                          {' • '}
+                          <span className="text-gray-600 dark:text-gray-400">Urgency:</span>{' '}
+                          <strong className="text-gray-800 dark:text-gray-200">{urgencyLabels[aiSuggestion.urgency]}</strong>
                         </div>
                         {!aiSuggestion.applied && (
                           <div className="flex gap-2 mt-2">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-7 px-3"
-                              onClick={applyAiSuggestion}
-                            >
+                            <Button variant="default" size="sm" className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-7 px-3" onClick={applyAiSuggestion}>
                               Apply Suggestion
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-500 text-xs h-7 px-2 dark:text-gray-400 dark:hover:bg-slate-700"
-                              onClick={() => setAiSuggestion(null)}
-                            >
+                            <Button variant="ghost" size="sm" className="text-gray-500 text-xs h-7 px-2 dark:text-gray-400 dark:hover:bg-slate-700" onClick={() => setAiSuggestion(null)}>
                               Dismiss
                             </Button>
                           </div>
@@ -703,80 +628,48 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </div>
                 )}
 
-                {/* Date & Time */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Date *</Label>
-                    <Input
-                      type="date"
-                      value={newReport.incidentDate}
-                      onChange={(e) => setNewReport({...newReport, incidentDate: e.target.value})}
-                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                    />
+                    <Input type="date" value={newReport.incidentDate} onChange={(e) => setNewReport({...newReport, incidentDate: e.target.value})} className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
                   </div>
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Incident Time *</Label>
-                    <Input
-                      type="time"
-                      value={newReport.incidentTime}
-                      onChange={(e) => setNewReport({...newReport, incidentTime: e.target.value})}
-                      className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                    />
+                    <Input type="time" value={newReport.incidentTime} onChange={(e) => setNewReport({...newReport, incidentTime: e.target.value})} className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200" />
                   </div>
                 </div>
 
-                {/* Location Section */}
                 <div className="space-y-3">
-                  {/* Location Area */}
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Location Area *</Label>
-                    <p className="text-[10px] text-gray-600 dark:text-gray-400">
-                      Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
-                    </p>
-                    <Select
-                      value={newReport.locationArea || ""}
-                      onValueChange={handleLocationAreaChange}
-                    >
+                    <p className="text-[10px] text-gray-600 dark:text-gray-400">Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)</p>
+                    <Select value={newReport.locationArea || ""} onValueChange={handleLocationAreaChange}>
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select location area" />
                       </SelectTrigger>
-                      <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
+                      <SelectContent>
                         {Object.entries(locationLabels).map(([groupName, locations]) => (
                           <Fragment key={groupName}>
-                            <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">
-                              {groupName}
-                            </div>
+                            <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-slate-700">{groupName}</div>
                             {Object.entries(locations).map(([key, label]) => (
-                              <SelectItem key={key} value={label} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                                {label}
-                              </SelectItem>
+                              <SelectItem key={key} value={label}>{label}</SelectItem>
                             ))}
                           </Fragment>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Specific Address */}
                   <div>
                     <Label className="text-xs text-gray-700 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
-                    <div className="flex items-start gap-1.5 mt-1 mb-1">
-                      <p className="text-[10px] text-gray-600 dark:text-gray-400">
-                        Enter the specific location where the incident happened (building name/number, room/block, landmarks)
-                      </p>
-                    </div>
                     <Textarea
                       value={newReport.building || ''}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 bg-white text-sm text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="mt-1 bg-white text-sm text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
                       placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
                       rows={2}
                     />
-                    <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
-                      💡 Tip: Be as specific as possible to help security personnel locate the exact spot
-                    </p>
+                    <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">💡 Tip: Be as specific as possible to help security personnel locate the exact spot</p>
                   </div>
-
-                  {/* Full Address (Combined) */}
                   {newReport.fullAddress && (
                     <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                       <div className="flex items-center gap-2">
@@ -801,21 +694,11 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Injuries</Label>
-                  <Textarea
-                    value={newReport.injuries}
-                    onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                    placeholder="Describe any injuries sustained..."
-                  />
+                  <Textarea value={newReport.injuries} onChange={(e) => setNewReport({...newReport, injuries: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe any injuries sustained..." />
                 </div>
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Damages</Label>
-                  <Textarea
-                    value={newReport.damages}
-                    onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
-                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                    placeholder="Describe any property damage..."
-                  />
+                  <Textarea value={newReport.damages} onChange={(e) => setNewReport({...newReport, damages: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe any property damage..." />
                 </div>
               </div>
             </CardContent>
@@ -830,12 +713,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               </div>
               <div>
                 <Label className="text-xs text-gray-700 dark:text-gray-400">Suspect Description</Label>
-                <Textarea
-                  value={newReport.suspectDescription}
-                  onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
-                  className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                  placeholder="Describe the suspect (height, build, clothing, distinguishing features)..."
-                />
+                <Textarea value={newReport.suspectDescription} onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe the suspect (height, build, clothing, distinguishing features)..." />
               </div>
             </CardContent>
           </Card>
@@ -853,83 +731,35 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </span>
                 </div>
                 <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,application/pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || isUploadingOnSubmit}
-                    className="gap-2 text-gray-700 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
-                  >
+                  <input ref={fileInputRef} type="file" multiple accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" id="file-upload" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading || isUploadingOnSubmit} className="gap-2">
                     <Upload className="w-4 h-4" />
                     Select Files
                   </Button>
                 </div>
               </div>
-
               {attachmentUrls.length > 0 ? (
                 <div className="grid grid-cols-3 gap-3">
                   {attachmentUrls.map((url, index) => {
                     const isPending = url.startsWith('blob:');
                     const isValidUrl = url && (url.startsWith('/storage/') || url.startsWith('http'));
                     const isImage = isImageFile(url);
-
                     return (
                       <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-white dark:border-slate-700 dark:bg-slate-800">
                         {isImage && (isValidUrl || isPending) ? (
-                          <img
-                            src={getOptimizedImageUrl(url)}
-                            alt={`Attachment ${index + 1}`}
-                            className="w-full h-24 object-cover"
-                            onError={(e) => {
-                              console.error('Image failed to load:', url);
-                              e.target.onerror = null;
-                              e.target.src = 'https://placehold.co/400x400?text=Preview';
-                            }}
-                          />
+                          <img src={getOptimizedImageUrl(url)} alt={`Attachment ${index + 1}`} className="w-full h-24 object-cover" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x400?text=Preview'; }} />
                         ) : (
                           <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-700">
                             {getFileIcon(url)}
-                            <span className="text-xs text-gray-500 mt-1 truncate px-1 dark:text-gray-400">
-                              {url.split('/').pop()?.slice(0, 15) || `File ${index + 1}`}
-                            </span>
+                            <span className="text-xs text-gray-500 mt-1 truncate px-1 dark:text-gray-400">{url.split('/').pop()?.slice(0, 15) || `File ${index + 1}`}</span>
                           </div>
                         )}
-
-                        {isPending && (
-                          <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-1 rounded">
-                            Pending
-                          </div>
-                        )}
-
+                        {isPending && <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-1 rounded">Pending</div>}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           {!isPending && isValidUrl && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="w-8 h-8 p-0 rounded-full"
-                              onClick={() => handlePreview(url)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <Button size="sm" variant="secondary" className="w-8 h-8 p-0 rounded-full" onClick={() => handlePreview(url)}><Eye className="w-4 h-4" /></Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="w-8 h-8 p-0 rounded-full"
-                            onClick={() => handleDeleteAttachment(url, index)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Button size="sm" variant="destructive" className="w-8 h-8 p-0 rounded-full" onClick={() => handleDeleteAttachment(url, index)}><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       </div>
                     );
@@ -955,73 +785,37 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               <div className="space-y-4">
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Assigned Officer</Label>
-                  <Select
-                    value={newReport.assignedOfficer || "unassigned"}
-                    onValueChange={(value) => {
-                      setNewReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }));
-                    }}
-                  >
+                  <Select value={newReport.assignedOfficer || "unassigned"} onValueChange={(value) => setNewReport(prev => ({ ...prev, assignedOfficer: value === "unassigned" ? "" : value }))}>
                     <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                       <SelectValue placeholder={isLoadingOfficers ? "Loading officers..." : "Select officer to assign"}>
                         {getOfficerDisplayName(newReport.assignedOfficer)}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="text-gray-700 dark:bg-slate-800 dark:border-slate-700">
-                      <SelectItem value="unassigned" className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                        <span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span>
-                      </SelectItem>
+                    <SelectContent>
+                      <SelectItem value="unassigned"><span className="text-gray-500 dark:text-gray-400">None (Not Assigned)</span></SelectItem>
                       {officersList.map((officer) => (
-                        <SelectItem key={officer.officerId} value={officer.officerId} className="text-gray-700 dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-gray-100">
-                          {officer.officerName}
-                        </SelectItem>
+                        <SelectItem key={officer.officerId} value={officer.officerId}>{officer.officerName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {newReport.assignedOfficer && (
-                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
-                      Assigned: {getOfficerDisplayName(newReport.assignedOfficer)}
-                    </p>
-                  )}
+                  {newReport.assignedOfficer && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Assigned: {getOfficerDisplayName(newReport.assignedOfficer)}</p>}
                 </div>
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Internal Notes</Label>
-                  <Textarea
-                    value={newReport.officerNotes}
-                    onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
-                    className="mt-1 bg-white min-h-[60px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
-                    placeholder="Add internal notes..."
-                  />
+                  <Textarea value={newReport.officerNotes} onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})} className="mt-1 bg-white min-h-[60px]" placeholder="Add internal notes..." />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
-            <Button
-              variant="outline"
-              className="text-gray-700 border-gray-700 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
-              onClick={handleClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl text-white"
-              onClick={handleSubmit}
-              disabled={
-                isSubmitting ||
-                isUploadingOnSubmit ||
-                !newReport.reporterName ||
-                !newReport.reporterEmail ||
-                !newReport.reporterPhone ||
-                !newReport.category ||
-                !newReport.description ||
-                !newReport.locationArea ||
-                !newReport.incidentDate ||
-                !newReport.incidentTime
-              }
-            >
+            <Button variant="outline" className="text-gray-700 border-gray-700 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={handleClose} disabled={isSubmitting}>Cancel</Button>
+            <Button className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl text-white" onClick={handleSubmit} disabled={
+              isSubmitting || isUploadingOnSubmit ||
+              !newReport.reporterName || !newReport.reporterEmail || !newReport.reporterPhone ||
+              !newReport.category || !newReport.description ||
+              !newReport.locationArea || !newReport.incidentDate || !newReport.incidentTime
+            }>
               {isSubmitting || isUploadingOnSubmit ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : 'Create Report'}
             </Button>
           </div>
