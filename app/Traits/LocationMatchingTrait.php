@@ -8,44 +8,44 @@ trait LocationMatchingTrait
 {
     private $mainLocations = [
         // Mahallahs
-        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200, 'key' => 'Asiah'],
-        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200, 'key' => 'Aminah'],
-        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200, 'key' => 'Safiyyah'],
-        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200, 'key' => 'Maryam'],
-        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200, 'key' => 'Ruqayyah'],
-        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200, 'key' => 'Ali'],
-        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200, 'key' => 'Faruq'],
-        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200, 'key' => 'Bilal'],
-        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200, 'key' => 'Asma'],
-        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200, 'key' => 'Hafsah'],
-        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200, 'key' => 'Halimah'],
-        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200, 'key' => 'Siddiq'],
-        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200, 'key' => 'Salahuddin'],
-        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200, 'key' => 'Uthman'],
-        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200, 'key' => 'Nusaibah'],
-        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200, 'key' => 'Zubair Al-Awwam'],
-        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200, 'key' => 'Sumayyah'],
+        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200, 'key' => 'Asiah', 'display' => 'Mahallah Asiah'],
+        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200, 'key' => 'Aminah', 'display' => 'Mahallah Aminah'],
+        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200, 'key' => 'Safiyyah', 'display' => 'Mahallah Safiyyah'],
+        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200, 'key' => 'Maryam', 'display' => 'Mahallah Maryam'],
+        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200, 'key' => 'Ruqayyah', 'display' => 'Mahallah Ruqayyah'],
+        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200, 'key' => 'Ali', 'display' => 'Mahallah Ali'],
+        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200, 'key' => 'Faruq', 'display' => 'Mahallah Faruq'],
+        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200, 'key' => 'Bilal', 'display' => 'Mahallah Bilal'],
+        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200, 'key' => 'Asma', 'display' => 'Mahallah Asma'],
+        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200, 'key' => 'Hafsah', 'display' => 'Mahallah Hafsah'],
+        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200, 'key' => 'Halimah', 'display' => 'Mahallah Halimah'],
+        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200, 'key' => 'Siddiq', 'display' => 'Mahallah Siddiq'],
+        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200, 'key' => 'Salahuddin', 'display' => 'Mahallah Salahuddin'],
+        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200, 'key' => 'Uthman', 'display' => 'Mahallah Uthman'],
+        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200, 'key' => 'Nusaibah', 'display' => 'Mahallah Nusaibah'],
+        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200, 'key' => 'Zubair Al-Awwam', 'display' => 'Mahallah Zubair'],
+        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200, 'key' => 'Sumayyah', 'display' => 'Mahallah Sumayyah'],
 
         // Kulliyyahs
-        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences'], 'radius' => 150, 'key' => 'KIRKHS'],
-        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology'], 'radius' => 200, 'key' => 'KICT'],
-        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering'], 'radius' => 150, 'key' => 'KOE'],
-        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture'], 'radius' => 150, 'key' => 'KAED'],
-        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics'], 'radius' => 150, 'key' => 'KENMS'],
-        'AIKOL (Law)' => ['keywords' => ['aikol', 'law'], 'radius' => 150, 'key' => 'AIKOL'],
-        'KOED (Education)' => ['keywords' => ['koed', 'education'], 'radius' => 150, 'key' => 'KOED'],
+        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'human sciences'], 'radius' => 150, 'key' => 'KIRKHS', 'display' => 'KIRKHS (AHAS KIRKHS)'],
+        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'iibf', 'islamic banking'], 'radius' => 200, 'key' => 'KICT', 'display' => 'KICT (ICT)'],
+        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering'], 'radius' => 150, 'key' => 'KOE', 'display' => 'KOE (Engineering)'],
+        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture'], 'radius' => 150, 'key' => 'KAED', 'display' => 'KAED (Architecture)'],
+        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics'], 'radius' => 150, 'key' => 'KENMS', 'display' => 'KENMS (Economics)'],
+        'AIKOL (Law)' => ['keywords' => ['aikol', 'law'], 'radius' => 150, 'key' => 'AIKOL', 'display' => 'AIKOL (Law)'],
+        'KOED (Education)' => ['keywords' => ['koed', 'education'], 'radius' => 150, 'key' => 'KOED', 'display' => 'KOED (Education)'],
 
         // Facilities
-        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah'], 'radius' => 100, 'key' => 'Dar al-Hikmah Library'],
-        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym'], 'radius' => 150, 'key' => 'Female Sports Complex'],
-        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah'], 'radius' => 200, 'key' => 'Saidina Hamzah Stadium'],
-        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100, 'key' => 'IIUM Archery Range'],
-        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120, 'key' => 'UIA Football Turf'],
-        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150, 'key' => 'IIUM Cricket Ground'],
-        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150, 'key' => 'IIUM Rugby Field'],
-        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade'], 'radius' => 150, 'key' => 'Padang Kawad UIAM'],
-        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten'], 'radius' => 100, 'key' => 'IIUM Educare'],
-        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid'], 'radius' => 150, 'key' => 'Sultan Haji Ahmad Shah Mosque'],
+        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah'], 'radius' => 100, 'key' => 'Dar al-Hikmah Library', 'display' => 'Dar al-Hikmah Library'],
+        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym'], 'radius' => 150, 'key' => 'Female Sports Complex', 'display' => 'Female Sports Complex'],
+        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah'], 'radius' => 200, 'key' => 'Saidina Hamzah Stadium', 'display' => 'Saidina Hamzah Stadium'],
+        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100, 'key' => 'IIUM Archery Range', 'display' => 'IIUM Archery Range'],
+        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120, 'key' => 'UIA Football Turf', 'display' => 'UIA Football Turf'],
+        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150, 'key' => 'IIUM Cricket Ground', 'display' => 'IIUM Cricket Ground'],
+        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150, 'key' => 'IIUM Rugby Field', 'display' => 'IIUM Rugby Field'],
+        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade'], 'radius' => 150, 'key' => 'Padang Kawad UIAM', 'display' => 'Padang Kawad UIAM'],
+        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten'], 'radius' => 100, 'key' => 'IIUM Educare', 'display' => 'IIUM Educare'],
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid'], 'radius' => 150, 'key' => 'Sultan Haji Ahmad Shah Mosque', 'display' => 'Sultan Haji Ahmad Shah Mosque'],
     ];
 
     private $mainLocationCoordinates = [];
@@ -61,58 +61,6 @@ trait LocationMatchingTrait
         } else {
             Log::warning('Map coordinates config file not found. Run: php artisan map:seed-coordinates');
         }
-    }
-
-    /**
-     * Get locationArea from report (for reference only)
-     */
-    protected function getLocationAreaFromReport($report)
-    {
-        if (!isset($report->location)) {
-            return '';
-        }
-
-        $location = $report->location;
-
-        if (is_string($location)) {
-            $location = json_decode($location, true);
-        }
-
-        if (is_array($location)) {
-            return $location['locationArea'] ?? '';
-        }
-
-        if (is_object($location) && isset($location->locationArea)) {
-            return $location->locationArea;
-        }
-
-        return '';
-    }
-
-    /**
-     * Get address from report
-     */
-    protected function getAddressFromReport($report)
-    {
-        if (!isset($report->location)) {
-            return '';
-        }
-
-        $location = $report->location;
-
-        if (is_string($location)) {
-            $location = json_decode($location, true);
-        }
-
-        if (is_array($location)) {
-            return $location['address'] ?? '';
-        }
-
-        if (is_object($location) && isset($location->address)) {
-            return $location->address;
-        }
-
-        return '';
     }
 
     /**
@@ -152,6 +100,32 @@ trait LocationMatchingTrait
     }
 
     /**
+     * Get locationArea from report
+     */
+    protected function getLocationAreaFromReport($report)
+    {
+        if (!isset($report->location)) {
+            return '';
+        }
+
+        $location = $report->location;
+
+        if (is_string($location)) {
+            $location = json_decode($location, true);
+        }
+
+        if (is_array($location)) {
+            return $location['locationArea'] ?? '';
+        }
+
+        if (is_object($location) && isset($location->locationArea)) {
+            return $location->locationArea;
+        }
+
+        return '';
+    }
+
+    /**
      * Calculate distance between two points in meters (Haversine formula)
      */
     protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
@@ -171,8 +145,7 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Find closest location by proximity using coordinates ONLY
-     * This is the PRIMARY method for determining location area
+     * Find closest location by proximity using coordinates
      */
     protected function findClosestLocationByProximity($reportCoords)
     {
@@ -205,6 +178,40 @@ trait LocationMatchingTrait
     }
 
     /**
+     * Match locationArea to main location using keywords (only against predefined list)
+     */
+    protected function matchLocationToMainLocation($locationArea)
+    {
+        if (empty($locationArea)) return null;
+
+        $locationAreaLower = strtolower($locationArea);
+
+        foreach ($this->mainLocations as $mainLocationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                    Log::info('Location matched by KEYWORD: ' . $mainLocationName . ' (keyword: ' . $keyword . ')');
+                    return $mainLocationName;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the display name for a location
+     */
+    protected function getLocationDisplayName($locationName)
+    {
+        foreach ($this->mainLocations as $fullName => $config) {
+            if ($fullName === $locationName) {
+                return $config['display'];
+            }
+        }
+        return $locationName;
+    }
+
+    /**
      * Get the short key for a location (for frontend filtering)
      */
     protected function getLocationKey($locationName)
@@ -218,63 +225,167 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine report location using PROXIMITY FIRST (coordinates)
-     * Only use keyword matching if NO coordinates are available
+     * Determine report location - HYBRID APPROACH
+     * Priority: 1. Manually set locationArea, 2. Coordinates proximity, 3. Keyword matching
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // METHOD 1: Try proximity matching using coordinates (MOST ACCURATE)
-        // This is the primary method - coordinates override everything
+        // METHOD 1: Check if locationArea is already manually set (admin created)
+        $existingLocationArea = $this->getLocationAreaFromReport($report);
+        if (!empty($existingLocationArea)) {
+            // Check if it's already a valid predefined location
+            $matched = $this->matchLocationToMainLocation($existingLocationArea);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $matched);
+                return $returnKey ? $this->getLocationKey($matched) : $matched;
+            }
+        }
+
+        // METHOD 2: Try proximity matching using coordinates (for mobile reports)
         $reportCoords = $this->getReportCoordinates($report);
         if ($reportCoords && !empty($this->mainLocationCoordinates)) {
             $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
             if ($matchedLocation) {
                 $key = $this->getLocationKey($matchedLocation);
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by PROXIMITY: ' . $key);
                 return $returnKey ? $key : $matchedLocation;
             }
         }
 
-        // METHOD 2: ONLY use keyword matching if NO coordinates are available
-        // This is a fallback for reports without coordinates
-        $locationArea = $this->getLocationAreaFromReport($report);
-
-        if (!empty($locationArea)) {
-            $locationAreaLower = strtolower($locationArea);
-
-            // Check for Mahallahs
-            $mahallahs = [
-                'asiah' => 'Asiah', 'aminah' => 'Aminah', 'safiyyah' => 'Safiyyah',
-                'maryam' => 'Maryam', 'ruqayyah' => 'Ruqayyah', 'ali' => 'Ali',
-                'faruq' => 'Faruq', 'bilal' => 'Bilal', 'asma' => 'Asma',
-                'hafsah' => 'Hafsah', 'halimah' => 'Halimah', 'siddiq' => 'Siddiq',
-                'salahuddin' => 'Salahuddin', 'uthman' => 'Uthman', 'nusaibah' => 'Nusaibah',
-                'zubair' => 'Zubair Al-Awwam', 'sumayyah' => 'Sumayyah'
-            ];
-
-            foreach ($mahallahs as $keyword => $key) {
-                if (strpos($locationAreaLower, $keyword) !== false) {
-                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by KEYWORD (no coordinates): ' . $key);
-                    return $returnKey ? $key : 'Mahallah ' . ucfirst($keyword);
-                }
-            }
-
-            // Check for Kulliyyahs
-            $kulliyyahs = [
-                'kirkhs' => 'KIRKHS', 'kict' => 'KICT', 'koe' => 'KOE',
-                'kaed' => 'KAED', 'kenms' => 'KENMS', 'aikol' => 'AIKOL', 'koed' => 'KOED'
-            ];
-
-            foreach ($kulliyyahs as $keyword => $key) {
-                if (strpos($locationAreaLower, $keyword) !== false) {
-                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by KEYWORD (no coordinates): ' . $key);
-                    return $returnKey ? $key : $key;
-                }
+        // METHOD 3: Fallback to keyword matching (for legacy data)
+        if (!empty($existingLocationArea)) {
+            $matched = $this->matchLocationToMainLocation($existingLocationArea);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by KEYWORD: ' . $matched);
+                return $returnKey ? $this->getLocationKey($matched) : $matched;
             }
         }
 
         // No match found
         Log::info('Report ' . ($report->reportId ?? 'unknown') . ' has no location match');
         return $returnKey ? null : null;
+    }
+
+    /**
+     * Get the original location text (for Specific Address column)
+     */
+    protected function getOriginalLocationText($report)
+    {
+        $location = $report->location;
+
+        if (is_string($location)) {
+            $location = json_decode($location, true);
+        }
+
+        if (is_array($location)) {
+            if (!empty($location['address'])) {
+                return $location['address'];
+            }
+            if (!empty($location['locationArea'])) {
+                return $location['locationArea'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Get full address string from report
+     */
+    protected function getFullAddressString($report)
+    {
+        $addressParts = [];
+
+        if (isset($report->location)) {
+            $location = $report->location;
+
+            if (is_string($location)) {
+                $location = json_decode($location, true);
+            }
+
+            if (is_array($location)) {
+                if (!empty($location['address'])) {
+                    $addressParts[] = $location['address'];
+                } elseif (!empty($location['locationArea'])) {
+                    $addressParts[] = $location['locationArea'];
+                }
+                if (!empty($location['building'])) {
+                    $addressParts[] = $location['building'];
+                }
+                if (!empty($location['specificPlace'])) {
+                    $addressParts[] = $location['specificPlace'];
+                }
+            }
+        }
+
+        return !empty($addressParts) ? implode(', ', $addressParts) : '';
+    }
+
+    /**
+     * Group reports by proximity to main locations (for heatmap)
+     */
+    protected function groupReportsByProximity($reports)
+    {
+        $grouped = collect();
+        $unassigned = [];
+
+        foreach ($reports as $report) {
+            $assigned = false;
+
+            // Check manually set location first
+            $locationArea = $this->getLocationAreaFromReport($report);
+            if (!empty($locationArea)) {
+                $matched = $this->matchLocationToMainLocation($locationArea);
+                if ($matched) {
+                    if (!isset($grouped[$matched])) {
+                        $grouped[$matched] = collect();
+                    }
+                    $grouped[$matched]->push($report);
+                    $assigned = true;
+                }
+            }
+
+            // If not manually set, try proximity
+            if (!$assigned) {
+                $reportCoords = $this->getReportCoordinates($report);
+                if ($reportCoords && !empty($this->mainLocationCoordinates)) {
+                    $bestMatch = null;
+                    $bestDistance = PHP_FLOAT_MAX;
+
+                    foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+                        $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+                        $distance = $this->calculateDistance(
+                            $reportCoords['lat'], $reportCoords['lng'],
+                            $locationCoords['lat'], $locationCoords['lng']
+                        );
+
+                        if ($distance <= $radius && $distance < $bestDistance) {
+                            $bestDistance = $distance;
+                            $bestMatch = $locationName;
+                        }
+                    }
+
+                    if ($bestMatch) {
+                        if (!isset($grouped[$bestMatch])) {
+                            $grouped[$bestMatch] = collect();
+                        }
+                        $grouped[$bestMatch]->push($report);
+                        $assigned = true;
+                    }
+                }
+            }
+
+            if (!$assigned) {
+                $unassigned[] = $report;
+            }
+        }
+
+        if (!empty($unassigned)) {
+            $grouped['Unknown'] = collect($unassigned);
+        }
+
+        return $grouped;
     }
 
     /**
@@ -301,257 +412,17 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine emergency location using PROXIMITY first
+     * Determine emergency location
      */
     protected function determineEmergencyLocation($emergency)
     {
-        // METHOD 1: Try proximity matching using coordinates (MOST ACCURATE)
         $emergencyCoords = $this->getEmergencyCoordinates($emergency);
         if ($emergencyCoords && !empty($this->mainLocationCoordinates)) {
             $matchedLocation = $this->findClosestLocationByProximity($emergencyCoords);
             if ($matchedLocation) {
-                $key = $this->getLocationKey($matchedLocation);
-                Log::info('Emergency location matched by PROXIMITY: ' . $key);
-                return $key;
+                return $this->getLocationKey($matchedLocation);
             }
         }
-
-        // METHOD 2: Fallback to keyword matching on address (only if no coordinates)
-        $address = strtolower($emergency->address ?? '');
-
-        if (!empty($address)) {
-            $locationMap = [
-                'aminah' => 'Aminah', 'asiah' => 'Asiah', 'safiyyah' => 'Safiyyah',
-                'maryam' => 'Maryam', 'ruqayyah' => 'Ruqayyah', 'ali' => 'Ali',
-                'faruq' => 'Faruq', 'bilal' => 'Bilal', 'asma' => 'Asma',
-                'hafsah' => 'Hafsah', 'halimah' => 'Halimah', 'siddiq' => 'Siddiq',
-                'salahuddin' => 'Salahuddin', 'uthman' => 'Uthman', 'nusaibah' => 'Nusaibah',
-                'zubair' => 'Zubair Al-Awwam', 'sumayyah' => 'Sumayyah',
-                'kirkhs' => 'KIRKHS', 'kict' => 'KICT', 'koe' => 'KOE',
-                'kaed' => 'KAED', 'kenms' => 'KENMS', 'aikol' => 'AIKOL', 'koed' => 'KOED',
-                'library' => 'Dar al-Hikmah Library', 'stadium' => 'Saidina Hamzah Stadium',
-                'mosque' => 'Sultan Haji Ahmad Shah Mosque', 'masjid' => 'Sultan Haji Ahmad Shah Mosque'
-            ];
-
-            foreach ($locationMap as $keyword => $locationKey) {
-                if (strpos($address, $keyword) !== false) {
-                    Log::info('Emergency location matched by KEYWORD (no coordinates): ' . $locationKey);
-                    return $locationKey;
-                }
-            }
-
-            if (preg_match('/mahallah\s+(\w+)/i', $address, $matches)) {
-                $found = ucfirst(strtolower($matches[1]));
-                Log::info('Emergency location matched by REGEX: ' . $found);
-                return $found;
-            }
-        }
-
-        Log::warning('No location match for emergency - Address: ' . ($emergency->address ?? 'no address'));
         return null;
-    }
-
-    /**
-     * Get full address string from report
-     */
-    protected function getFullAddressString($report)
-    {
-        $addressParts = [];
-
-        if (isset($report->location)) {
-            $location = $report->location;
-
-            if (is_string($location)) {
-                $location = json_decode($location, true);
-            }
-
-            if (is_array($location)) {
-                if (!empty($location['locationArea'])) $addressParts[] = $location['locationArea'];
-                if (!empty($location['specificPlace'])) $addressParts[] = $location['specificPlace'];
-                if (!empty($location['building'])) $addressParts[] = $location['building'];
-                if (!empty($location['address'])) $addressParts[] = $location['address'];
-            } elseif (is_object($location)) {
-                if (!empty($location->locationArea)) $addressParts[] = $location->locationArea;
-                if (!empty($location->specificPlace)) $addressParts[] = $location->specificPlace;
-                if (!empty($location->building)) $addressParts[] = $location->building;
-                if (!empty($location->address)) $addressParts[] = $location->address;
-            }
-        }
-
-        // Fallback to old fields
-        if (empty($addressParts)) {
-            if (!empty($report->mahallah)) $addressParts[] = $report->mahallah;
-            if (!empty($report->building)) $addressParts[] = $report->building;
-            if (!empty($report->address)) $addressParts[] = $report->address;
-        }
-
-        // If still empty, try from description (first line only)
-        if (empty($addressParts) && !empty($report->description)) {
-            $firstLine = explode("\n", $report->description)[0];
-            if (strlen($firstLine) < 100) $addressParts[] = $firstLine;
-        }
-
-        return implode(', ', array_filter($addressParts));
-    }
-
-    /**
-     * Group reports by proximity to main locations (for heatmap)
-     */
-    protected function groupReportsByProximity($reports)
-    {
-        $grouped = collect();
-        $unassigned = [];
-
-        foreach ($reports as $report) {
-            $assigned = false;
-
-            // METHOD 1: Try proximity matching using coordinates (PRIMARY)
-            $reportCoords = $this->getReportCoordinates($report);
-            if ($reportCoords && !empty($this->mainLocationCoordinates)) {
-                $bestMatch = null;
-                $bestDistance = PHP_FLOAT_MAX;
-
-                foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
-                    $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
-
-                    $distance = $this->calculateDistance(
-                        $reportCoords['lat'], $reportCoords['lng'],
-                        $locationCoords['lat'], $locationCoords['lng']
-                    );
-
-                    if ($distance <= $radius && $distance < $bestDistance) {
-                        $bestDistance = $distance;
-                        $bestMatch = $locationName;
-                    }
-                }
-
-                if ($bestMatch) {
-                    if (!isset($grouped[$bestMatch])) {
-                        $grouped[$bestMatch] = collect();
-                    }
-                    $grouped[$bestMatch]->push($report);
-                    $assigned = true;
-                }
-            }
-
-            // METHOD 2: Only use keyword matching if NO coordinates are available
-            if (!$assigned) {
-                $locationArea = $this->getLocationAreaFromReport($report);
-                if (!empty($locationArea)) {
-                    $matchedLocation = $this->matchLocationToMainLocation($locationArea);
-                    if ($matchedLocation) {
-                        if (!isset($grouped[$matchedLocation])) {
-                            $grouped[$matchedLocation] = collect();
-                        }
-                        $grouped[$matchedLocation]->push($report);
-                        $assigned = true;
-                    }
-                }
-            }
-
-            if (!$assigned) {
-                $unassigned[] = $report;
-            }
-        }
-
-        if (!empty($unassigned)) {
-            $grouped['Unknown'] = collect($unassigned);
-        }
-
-        return $grouped;
-    }
-
-    /**
-     * Match locationArea to main location using keywords (fallback only)
-     */
-    protected function matchLocationToMainLocation($locationArea)
-    {
-        if (empty($locationArea)) return null;
-
-        $locationAreaLower = strtolower($locationArea);
-
-        foreach ($this->mainLocations as $mainLocationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
-                    return $mainLocationName;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Split location into area and specific place/building
-     */
-    protected function splitLocationIntoAreaAndPlace($report, $inputAddress = null)
-    {
-        $address = $inputAddress;
-        if (!$address) {
-            $address = $this->getFullAddressString($report);
-        }
-
-        if (empty($address)) {
-            return ['locationArea' => null, 'specificPlace' => null, 'building' => null];
-        }
-
-        $addressLower = strtolower($address);
-
-        // Predefined specific places (businesses, facilities, etc.)
-        $specificPlaces = [
-            '7 eleven', '7-eleven', 'seven eleven', 'office', 'cafe', 'cafeteria',
-            'restaurant', 'food court', 'gym', 'store', 'shop', 'convenience store'
-        ];
-
-        $foundSpecificPlace = null;
-        foreach ($specificPlaces as $place) {
-            if (strpos($addressLower, $place) !== false) {
-                $foundSpecificPlace = $place;
-                break;
-            }
-        }
-
-        // Try to extract building/block/room numbers
-        $buildingPattern = '/(block|blk|building|bldg|tower|wing|floor|level|room|rm|suite|unit|no\.|#)\s*([a-z0-9\-]+)/i';
-        $foundBuilding = null;
-        if (preg_match($buildingPattern, $address, $matches)) {
-            $foundBuilding = trim($matches[0]);
-        }
-
-        // PRIMARY: Determine location area by proximity (coordinates)
-        $locationArea = $this->determineReportLocation($report, false);
-
-        // SECONDARY: If no coordinates, try to extract from address text
-        if (!$locationArea) {
-            $mahallahs = ['asiah', 'aminah', 'safiyyah', 'maryam', 'ruqayyah', 'ali', 'faruq', 'bilal', 'asma', 'hafsah', 'halimah', 'siddiq', 'salahuddin', 'uthman', 'nusaibah', 'zubair', 'sumayyah'];
-            foreach ($mahallahs as $mahallah) {
-                if (strpos($addressLower, $mahallah) !== false) {
-                    $locationArea = 'Mahallah ' . ucfirst($mahallah);
-                    break;
-                }
-            }
-
-            if (!$locationArea) {
-                $kulliyyahs = ['kirkhs' => 'KIRKHS (AHAS KIRKHS)', 'kict' => 'KICT (ICT)', 'koe' => 'KOE (Engineering)', 'kaed' => 'KAED (Architecture)', 'kenms' => 'KENMS (Economics)', 'aikol' => 'AIKOL (Law)', 'koed' => 'KOED (Education)'];
-                foreach ($kulliyyahs as $key => $name) {
-                    if (strpos($addressLower, $key) !== false) {
-                        $locationArea = $name;
-                        break;
-                    }
-                }
-            }
-        }
-
-        $specificPlace = $foundSpecificPlace;
-
-        if ($foundBuilding && !$specificPlace) {
-            $specificPlace = $foundBuilding;
-        }
-
-        return [
-            'locationArea' => $locationArea,
-            'specificPlace' => $specificPlace,
-            'building' => $foundBuilding
-        ];
     }
 }
