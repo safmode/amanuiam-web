@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
-use App\Traits\LocationMatchingTrait;
+use App\Traits\MapLocationTrait;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
 class MapController extends Controller
 {
-    use LocationMatchingTrait;
+    use MapLocationTrait;
 
     private $googleApiKey;
 
@@ -18,7 +18,7 @@ class MapController extends Controller
         $this->googleApiKey = env('GOOGLE_MAPS_API_KEY', '');
 
         // Initialize the trait
-        $this->initLocationMatching();
+        $this->initMapLocationMatching();
     }
 
     public function index(Request $request)
