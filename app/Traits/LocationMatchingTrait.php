@@ -312,9 +312,10 @@ trait LocationMatchingTrait
         return $returnKey ? $this->getLocationKey($firstLocation) : $firstLocation;
     }
 
-    /**
-     * Get the original location text for Specific Address column
-     */
+    /*
+    * Get the original location text for Specific Address column
+    * This extracts everything except the matched location name
+    */
     protected function getOriginalLocationText($report)
     {
         $location = $report->location;
@@ -326,6 +327,11 @@ trait LocationMatchingTrait
 
         if (is_array($location)) {
             $parts = [];
+
+            // Priority order for Specific Address:
+            // 1. specificPlace (business names like "7 Eleven", "Co-Mart")
+            // 2. building (block, room numbers)
+            // 3. address (full address) - THIS IS WHERE "Musallah" is stored!
 
             if (!empty($location['specificPlace'])) {
                 $parts[] = $location['specificPlace'];
@@ -340,6 +346,7 @@ trait LocationMatchingTrait
             $fullText = implode(', ', $parts);
         }
 
+        // Fallback to building or address fields
         if (empty($fullText) && !empty($report->building)) {
             $fullText = $report->building;
         }
@@ -350,11 +357,35 @@ trait LocationMatchingTrait
             $fullText = $report->specificPlace;
         }
 
+        // Remove the matched location name from the text
         $matchedLocation = $this->determineReportLocation($report, false);
         if ($matchedLocation && !empty($fullText)) {
             $displayName = $this->getLocationDisplayName($matchedLocation);
-            $fullText = trim(str_ireplace($displayName, '', $fullText));
+            $shortKey = $this->getLocationKey($matchedLocation);
+
+            // Remove the location name variations from the text
+            $fullText = str_ireplace($displayName, '', $fullText);
+            $fullText = str_ireplace($shortKey, '', $fullText);
+            $fullText = str_ireplace($matchedLocation, '', $fullText);
+            $fullText = str_ireplace('Mahallah ', '', $fullText);
+
+            // Clean up extra spaces and commas
+            $fullText = preg_replace('/\s+/', ' ', $fullText);
+            $fullText = preg_replace('/,\s*,/', ',', $fullText);
             $fullText = trim($fullText, ' ,');
+        }
+
+        // If fullText is empty after removing location, return the original address without the location
+        if (empty($fullText) && !empty($location['address'])) {
+            $address = $location['address'];
+            $matchedLocation = $this->determineReportLocation($report, false);
+            if ($matchedLocation) {
+                $displayName = $this->getLocationDisplayName($matchedLocation);
+                $fullText = trim(str_ireplace($displayName, '', $address));
+                $fullText = trim($fullText, ' ,');
+            } else {
+                $fullText = $address;
+            }
         }
 
         return !empty($fullText) ? $fullText : 'Not specified';
