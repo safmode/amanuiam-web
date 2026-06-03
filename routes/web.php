@@ -160,8 +160,13 @@ function sendTelegramMessage($chatId, $message, $parseMode = 'Markdown')
 {
     $token = env('TELEGRAM_BOT_TOKEN');
 
+    if (!$token) {
+        Log::error('TELEGRAM_BOT_TOKEN not set in .env');
+        return null;
+    }
+
     try {
-        $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+        $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
             'chat_id' => $chatId,
             'text' => $message,
             'parse_mode' => $parseMode
@@ -222,9 +227,36 @@ Route::get('/telegram/set-webhook', function () {
     ]);
 });
 
+// Debug endpoint to see recent updates
+Route::get('/telegram/debug-updates', function () {
+    $token = env('TELEGRAM_BOT_TOKEN');
+    $response = Http::get("https://api.telegram.org/bot{$token}/getUpdates");
+    return response()->json($response->json());
+});
+
+// Test endpoint to send a test message
+Route::get('/telegram/test-send/{chatId}', function ($chatId) {
+    $message = "🎉 *Test Message from IIUM Security Bot!* 🎉\n\n";
+    $message .= "Your bot is working correctly!\n\n";
+    $message .= "📋 *Available Commands:*\n";
+    $message .= "`/start` - Start the bot\n";
+    $message .= "`/help` - Show all commands\n";
+    $message .= "`/status` - Check registration status\n";
+    $message .= "`/myid` - Show your Chat ID\n";
+    $message .= "`/myemergencies` - List your active emergencies\n";
+    $message .= "`/resolve` - Resolve an emergency";
+
+    $result = sendTelegramMessage($chatId, $message);
+    return response()->json([
+        'success' => $result ? $result->successful() : false,
+        'chat_id' => $chatId,
+        'response' => $result ? $result->json() : null
+    ]);
+});
+
 // Main webhook that handles all bot interactions
 Route::post('/telegram/webhook', function (Request $request) {
-    Log::info('Telegram webhook received:', $request->all());
+    Log::info('📨 Telegram webhook received:', $request->all());
 
     $update = $request->all();
 
@@ -233,22 +265,29 @@ Route::post('/telegram/webhook', function (Request $request) {
         $message = $update['message'];
         $chatId = $message['chat']['id'];
         $firstName = $message['chat']['first_name'] ?? 'User';
-        $text = strtolower(trim($message['text'] ?? ''));
-        $originalText = $message['text'] ?? '';
+        $text = trim($message['text'] ?? '');
+        $textLower = strtolower($text);
+        $originalText = $text;
 
-        Log::info('Processing message', ['chat_id' => $chatId, 'text' => $text]);
+        Log::info('📝 Processing message', [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'from' => $firstName
+        ]);
 
         // Check if this chat is already linked to an officer
         $existingOfficer = App\Models\Officer::where('telegram_chat_id', (string)$chatId)->first();
 
         // Handle /start command
-        if ($text === '/start') {
+        if ($textLower === '/start') {
+            Log::info('🎯 /start command received', ['chat_id' => $chatId]);
+
             if ($existingOfficer) {
                 $welcomeMessage = "✅ *Welcome back, {$existingOfficer->officerName}!*\n\n";
                 $welcomeMessage .= "You are already registered in the system.\n\n";
                 $welcomeMessage .= "📋 *Emergency Commands:*\n";
                 $welcomeMessage .= "`/myemergencies` - List your active emergencies\n";
-                $welcomeMessage .= "`/resolve` - Resolve your current emergency\n\n";
+                $welcomeMessage .= "`/resolve [ID]` - Resolve an emergency\n\n";
                 $welcomeMessage .= "📋 *Report Commands:*\n";
                 $welcomeMessage .= "`/myreports` - List your assigned reports\n";
                 $welcomeMessage .= "`/report REPORT_ID` - View report details\n";
@@ -264,12 +303,13 @@ Route::post('/telegram/webhook', function (Request $request) {
                 $welcomeMessage .= "Example: `Senior Security Officer` or `Ahmad Bin Abdullah`\n\n";
                 $welcomeMessage .= "Type `/help` to see available commands.";
             }
+
             sendTelegramMessage($chatId, $welcomeMessage);
             return response()->json(['status' => 'ok']);
         }
 
         // Handle /myid command
-        if ($text === '/myid') {
+        if ($textLower === '/myid') {
             $messageText = "🔑 *Your Telegram Chat ID:* `{$chatId}`\n\n";
             if ($existingOfficer) {
                 $messageText .= "✅ You are already registered as: *{$existingOfficer->officerName}*";
@@ -281,7 +321,7 @@ Route::post('/telegram/webhook', function (Request $request) {
         }
 
         // Handle /status command
-        if ($text === '/status') {
+        if ($textLower === '/status') {
             if ($existingOfficer) {
                 $messageText = "✅ *Registration Status: Active*\n\n";
                 $messageText .= "*Officer Name:* {$existingOfficer->officerName}\n";
@@ -299,7 +339,7 @@ Route::post('/telegram/webhook', function (Request $request) {
         }
 
         // Handle /myemergencies or /myalerts command
-        if ($text === '/myemergencies' || $text === '/myalerts') {
+        if ($textLower === '/myemergencies' || $textLower === '/myalerts') {
             if (!$existingOfficer) {
                 sendTelegramMessage($chatId, "❌ You are not registered. Please type your name to register first.");
                 return response()->json(['status' => 'ok']);
@@ -318,7 +358,8 @@ Route::post('/telegram/webhook', function (Request $request) {
             $messageText = "📋 *Your Active Emergencies*\n\n";
             foreach ($emergencies as $emergency) {
                 $statusIcon = $emergency->status === 'active' ? '🚨' : '👮';
-                $messageText .= "{$statusIcon} *ID:* `{$emergency->_id}`\n";
+                $emergencyIdShort = substr((string)$emergency->_id, -8);
+                $messageText .= "{$statusIcon} *ID:* `{$emergencyIdShort}`\n";
                 $messageText .= "   *Location:* " . ($emergency->address ?? 'Unknown') . "\n";
                 $messageText .= "   *Time:* " . $emergency->triggeredAt->format('d/m/Y H:i') . "\n";
                 $messageText .= "   *Status:* " . ($emergency->status === 'active' ? 'Active' : 'Responding') . "\n\n";
@@ -331,7 +372,7 @@ Route::post('/telegram/webhook', function (Request $request) {
         }
 
         // Handle /myreports command - Show ONLY assigned reports
-        if ($text === '/myreports') {
+        if ($textLower === '/myreports') {
             if (!$existingOfficer) {
                 sendTelegramMessage($chatId, "❌ You are not registered. Please type your name to register first.");
                 return response()->json(['status' => 'ok']);
@@ -523,9 +564,15 @@ Route::post('/telegram/webhook', function (Request $request) {
             return response()->json(['status' => 'ok']);
         }
 
-        // Handle /resolve or /resolved command
+        // Handle /resolve or /resolved command - FIXED VERSION
         if (preg_match('/^\/resolve(?:\s+(.+))?$/i', $originalText, $matches) ||
             preg_match('/^\/resolved(?:\s+(.+))?$/i', $originalText, $matches)) {
+
+            Log::info('🔍 RESOLVE COMMAND RECEIVED', [
+                'original_text' => $originalText,
+                'matches' => $matches,
+                'chat_id' => $chatId
+            ]);
 
             if (!$existingOfficer) {
                 sendTelegramMessage($chatId, "❌ You are not registered. Please type your name to register first.");
@@ -534,13 +581,13 @@ Route::post('/telegram/webhook', function (Request $request) {
 
             $emergencyIdentifier = trim($matches[1] ?? '');
 
-            Log::info('🔍 RESOLVE COMMAND DEBUG', [
+            Log::info('🔍 Looking for emergency', [
                 'officer_id' => $existingOfficer->officerId,
                 'officer_name' => $existingOfficer->officerName,
-                'chat_id' => $chatId,
                 'emergency_id_provided' => $emergencyIdentifier
             ]);
 
+            // Build query for emergencies assigned to this officer OR unassigned
             $query = App\Models\Emergencies::where(function($q) use ($existingOfficer) {
                 $q->where('assigned_officer_id', $existingOfficer->officerId)
                   ->orWhereNull('assigned_officer_id');
@@ -548,63 +595,76 @@ Route::post('/telegram/webhook', function (Request $request) {
 
             $query->whereIn('status', ['active', 'responding']);
 
+            // Find the emergency
             if (!empty($emergencyIdentifier)) {
+                // Try to find by ID (full or partial)
                 $query->where(function($q) use ($emergencyIdentifier) {
                     $q->where('_id', $emergencyIdentifier)
-                      ->orWhere('reportId', $emergencyIdentifier);
+                      ->orWhere('_id', 'like', '%' . $emergencyIdentifier . '%');
                 });
                 $emergency = $query->first();
+
+                if (!$emergency) {
+                    sendTelegramMessage($chatId, "❌ No active emergency found with ID: `{$emergencyIdentifier}`\n\nUse `/myemergencies` to see your active emergencies.");
+                    return response()->json(['status' => 'ok']);
+                }
             } else {
+                // No ID provided, find the most recent emergency assigned to this officer
                 $emergency = App\Models\Emergencies::where('assigned_officer_id', $existingOfficer->officerId)
                     ->whereIn('status', ['active', 'responding'])
                     ->orderBy('triggeredAt', 'desc')
                     ->first();
 
+                // If none assigned, find the most recent active emergency overall
                 if (!$emergency) {
                     $emergency = App\Models\Emergencies::whereIn('status', ['active', 'responding'])
                         ->orderBy('triggeredAt', 'desc')
                         ->first();
                 }
-            }
 
-            if (!$emergency) {
-                $messageText = "❌ *No active emergency found*\n\n";
-                $assignedCount = App\Models\Emergencies::where('assigned_officer_id', $existingOfficer->officerId)
-                    ->whereIn('status', ['active', 'responding'])
-                    ->count();
+                if (!$emergency) {
+                    $messageText = "❌ *No active emergency found*\n\n";
+                    $assignedCount = App\Models\Emergencies::where('assigned_officer_id', $existingOfficer->officerId)
+                        ->whereIn('status', ['active', 'responding'])
+                        ->count();
 
-                $totalActive = App\Models\Emergencies::whereIn('status', ['active', 'responding'])->count();
+                    $totalActive = App\Models\Emergencies::whereIn('status', ['active', 'responding'])->count();
 
-                if ($assignedCount > 0) {
-                    $messageText .= "You have {$assignedCount} active emergency(s).\n";
-                    $messageText .= "Try using: `/resolve EMERGENCY_ID`\n";
-                    $messageText .= "Use `/myemergencies` to see your emergency IDs.";
-                } elseif ($totalActive > 0) {
-                    $messageText .= "There are {$totalActive} active emergency(s) in the system, but none are assigned to you.\n\n";
-                    $messageText .= "Contact dispatch to get assigned or use:\n";
-                    $firstEmergency = App\Models\Emergencies::whereIn('status', ['active', 'responding'])->first();
-                    if ($firstEmergency) {
-                        $messageText .= "`/resolve " . $firstEmergency->_id . "`";
+                    if ($assignedCount > 0) {
+                        $messageText .= "You have {$assignedCount} active emergency(s).\n";
+                        $messageText .= "Try using: `/resolve EMERGENCY_ID`\n";
+                        $messageText .= "Use `/myemergencies` to see your emergency IDs.";
+                    } elseif ($totalActive > 0) {
+                        $messageText .= "There are {$totalActive} active emergency(s) in the system, but none are assigned to you.\n\n";
+                        $messageText .= "Contact dispatch to get assigned or use:\n";
+                        $firstEmergency = App\Models\Emergencies::whereIn('status', ['active', 'responding'])->first();
+                        if ($firstEmergency) {
+                            $messageText .= "`/resolve " . $firstEmergency->_id . "`";
+                        }
+                    } else {
+                        $messageText .= "No active emergencies in the system right now.";
                     }
-                } else {
-                    $messageText .= "No active emergencies in the system right now.";
+
+                    sendTelegramMessage($chatId, $messageText);
+                    return response()->json(['status' => 'ok']);
                 }
-
-                sendTelegramMessage($chatId, $messageText);
-                return response()->json(['status' => 'ok']);
             }
 
+            // Get student info for the message
             $student = null;
-            if ($emergency->student_id) {
-                $student = App\Models\Student::find($emergency->student_id);
+            if ($emergency->studentId) {
+                $student = App\Models\Student::find($emergency->studentId);
             }
 
+            // If emergency is unassigned, assign it to this officer
             if (is_null($emergency->assigned_officer_id)) {
                 $emergency->assigned_officer_id = $existingOfficer->officerId;
                 $emergency->assigned_officer_name = $existingOfficer->officerName;
                 $emergency->assigned_at = now();
+                $emergency->save();
+
                 Log::info('Auto-assigned emergency to resolving officer', [
-                    'emergency_id' => $emergency->_id,
+                    'emergency_id' => (string)$emergency->_id,
                     'officer_id' => $existingOfficer->officerId
                 ]);
             }
@@ -616,19 +676,25 @@ Route::post('/telegram/webhook', function (Request $request) {
             $emergency->resolved_by_officer_name = $existingOfficer->officerName;
             $emergency->save();
 
+            // Clear cache
+            cache()->forget('emergency_counts');
+
+            // Send success message to the officer
+            $emergencyIdShort = substr((string)$emergency->_id, -8);
             $successMessage = "✅ *Emergency Resolved!*\n\n";
             $successMessage .= "You have successfully resolved the emergency.\n";
-            $successMessage .= "*ID:* `{$emergency->_id}`\n";
+            $successMessage .= "*ID:* `{$emergencyIdShort}`\n";
             $successMessage .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
             $successMessage .= "*Status changed:* " . ucfirst($oldStatus) . " → Resolved\n";
             $successMessage .= "*Resolved at:* " . now()->format('d/m/Y H:i:s');
 
             sendTelegramMessage($chatId, $successMessage);
 
+            // Also notify via API if needed
             try {
                 Http::put(url("/api/emergencies/{$emergency->_id}/resolve"));
                 Log::info('Emergency resolved via API', [
-                    'emergency_id' => $emergency->_id,
+                    'emergency_id' => (string)$emergency->_id,
                     'officer' => $existingOfficer->officerName
                 ]);
             } catch (\Exception $e) {
@@ -639,7 +705,7 @@ Route::post('/telegram/webhook', function (Request $request) {
         }
 
         // Handle /help command
-        if ($text === '/help') {
+        if ($textLower === '/help') {
             $messageText = "📋 *Available Commands*\n\n";
             $messageText .= "*Emergency Commands:*\n";
             $messageText .= "`/myemergencies` - List your active emergencies\n";

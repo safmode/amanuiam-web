@@ -46,15 +46,118 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     officerNotes: '',
     incidentDate: '',
     incidentTime: '',
+    latitude: null,
+    longitude: null,
   });
 
-  // Update full address when locationArea or building changes
-  const updateFullAddress = (locationAreaVal, buildingVal) => {
-    let full = locationAreaVal || '';
-    if (buildingVal && buildingVal.trim() !== '') {
-      full = `${locationAreaVal}, ${buildingVal}`;
+  // Helper function to extract location area from emergency address
+  const extractLocationAreaFromAddress = (address) => {
+    if (!address) return '';
+
+    const addressLower = address.toLowerCase();
+
+    // Check Kulliyyahs first
+    const kulliyyahs = {
+      'kirkhs': 'KIRKHS (AHAS KIRKHS)',
+      'kulliyyah of human sciences': 'KIRKHS (AHAS KIRKHS)',
+      'kict': 'KICT (ICT)',
+      'information technology': 'KICT (ICT)',
+      'koe': 'KOE (Engineering)',
+      'engineering': 'KOE (Engineering)',
+      'kaed': 'KAED (Architecture)',
+      'architecture': 'KAED (Architecture)',
+      'kenms': 'KENMS (Economics)',
+      'economics': 'KENMS (Economics)',
+      'aikol': 'AIKOL (Law)',
+      'law': 'AIKOL (Law)',
+      'koed': 'KOED (Education)',
+      'education': 'KOED (Education)',
+    };
+
+    for (const [keyword, label] of Object.entries(kulliyyahs)) {
+      if (addressLower.includes(keyword)) {
+        return label;
+      }
     }
-    return full;
+
+    // Check Mahallahs
+    const mahallahs = {
+      'asiah': 'Mahallah Asiah',
+      'aminah': 'Mahallah Aminah',
+      'safiyyah': 'Mahallah Safiyyah',
+      'maryam': 'Mahallah Maryam',
+      'ruqayyah': 'Mahallah Ruqayyah',
+      'ali': 'Mahallah Ali',
+      'faruq': 'Mahallah Faruq',
+      'bilal': 'Mahallah Bilal',
+      'asma': 'Mahallah Asma',
+      'hafsah': 'Mahallah Hafsah',
+      'halimah': 'Mahallah Halimah',
+      'siddiq': 'Mahallah Siddiq',
+      'salahuddin': 'Mahallah Salahuddin',
+      'uthman': 'Mahallah Uthman',
+      'nusaibah': 'Mahallah Nusaibah',
+      'zubair': 'Mahallah Zubair',
+      'sumayyah': 'Mahallah Sumayyah',
+    };
+
+    for (const [keyword, label] of Object.entries(mahallahs)) {
+      if (addressLower.includes(keyword)) {
+        return label;
+      }
+    }
+
+    // Check Facilities
+    const facilities = {
+      'library': 'Dar al-Hikmah Library',
+      'stadium': 'Saidina Hamzah Stadium',
+      'mosque': 'Sultan Haji Ahmad Shah Mosque',
+      'masjid': 'Sultan Haji Ahmad Shah Mosque',
+      'sports complex': 'Female Sports Complex',
+      'gym': 'Female Sports Complex',
+      'archery': 'IIUM Archery Range',
+      'football': 'UIA Football Turf',
+      'cricket': 'IIUM Cricket Ground',
+      'rugby': 'IIUM Rugby Field',
+      'educare': 'IIUM Educare',
+    };
+
+    for (const [keyword, label] of Object.entries(facilities)) {
+      if (addressLower.includes(keyword)) {
+        return label;
+      }
+    }
+
+    return '';
+  };
+
+  // Helper function to extract building from address
+  const extractBuildingFromAddress = (address, locationArea) => {
+    if (!address) return '';
+
+    let remaining = address;
+    if (locationArea) {
+      remaining = remaining.replace(new RegExp(locationArea, 'i'), '');
+    }
+    // Remove common prefixes
+    remaining = remaining.replace(/Kulliyyah /gi, '');
+    remaining = remaining.replace(/Mahallah /gi, '');
+    remaining = remaining.trim();
+    remaining = remaining.replace(/^[,-\s]+/, '');
+
+    return remaining || '';
+  };
+
+  // Update full address
+  const updateFullAddress = (locationAreaVal, buildingVal) => {
+    const parts = [];
+    if (locationAreaVal && locationAreaVal.trim() !== '') {
+      parts.push(locationAreaVal);
+    }
+    if (buildingVal && buildingVal.trim() !== '') {
+      parts.push(buildingVal);
+    }
+    return parts.length > 0 ? parts.join(', ') : '';
   };
 
   const handleLocationAreaChange = (value) => {
@@ -108,75 +211,50 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
     }
   };
 
-  // Helper function to extract location area from emergency address
-  const extractLocationAreaFromAddress = (address) => {
-    if (!address) return '';
-
-    for (const group of Object.values(locationLabels)) {
-      for (const [key, label] of Object.entries(group)) {
-        if (address.toLowerCase().includes(key.toLowerCase()) ||
-            address.toLowerCase().includes(label.toLowerCase())) {
-          return label;
-        }
-      }
-    }
-
-    const mahallahNames = ['Asiah', 'Aminah', 'Safiyyah', 'Maryam', 'Ruqayyah', 'Ali', 'Faruq', 'Bilal', 'Asma', 'Hafsah', 'Halimah', 'Siddiq', 'Salahuddin', 'Uthman', 'Nusaibah', 'Zubair', 'Sumayyah'];
-    for (const name of mahallahNames) {
-      if (address.toLowerCase().includes(name.toLowerCase())) {
-        return `Mahallah ${name}`;
-      }
-    }
-
-    return address;
-  };
-
-  const extractBuildingFromAddress = (address, locationArea) => {
-    if (!address) return '';
-    if (locationArea && address.toLowerCase().includes(locationArea.toLowerCase())) {
-      let remaining = address.replace(new RegExp(locationArea, 'i'), '').trim();
-      remaining = remaining.replace(/^[,-\s]+/, '');
-      if (remaining) return remaining;
-    }
-    return '';
-  };
-
   // Populate form with emergency data when modal opens
   useEffect(() => {
     if (emergencyData && isOpen) {
-      const date = new Date(emergencyData.triggeredAt);
-      const formattedDate = date.toISOString().split('T')[0];
-      const formattedTime = date.toTimeString().slice(0, 5);
+      const triggeredAt = emergencyData.triggeredAt ? new Date(emergencyData.triggeredAt) : new Date();
+      const formattedDate = triggeredAt.toISOString().split('T')[0];
+      const formattedTime = triggeredAt.toTimeString().slice(0, 5);
 
       const emergencyAddress = emergencyData.address || '';
+
+      // Extract location area using the enhanced function
       let matchedLocationArea = extractLocationAreaFromAddress(emergencyAddress);
       let extractedBuilding = extractBuildingFromAddress(emergencyAddress, matchedLocationArea);
 
-      if (emergencyData.location && emergencyData.location.building) {
-        extractedBuilding = emergencyData.location.building;
-      }
-
-      if (!matchedLocationArea || matchedLocationArea === emergencyAddress) {
-        matchedLocationArea = 'Mahallah Asiah';
+      // If no location area found from address, use default
+      if (!matchedLocationArea) {
+        matchedLocationArea = 'KOE (Engineering)'; // Default for engineering-related emergencies
       }
 
       const fullAddress = extractedBuilding
         ? `${matchedLocationArea}, ${extractedBuilding}`
         : matchedLocationArea;
 
-      if (emergencyData.student) {
-        setFoundStudent(emergencyData.student);
+      // Get student info from emergency data
+      let studentInfo = null;
+      if (emergencyData.studentId) {
+        // We'll fetch student info separately if needed, or use available data
+        studentInfo = emergencyData.student;
       }
 
+      // Build description
+      const description = `🚨 EMERGENCY ALERT 🚨\n\nOriginal Location: ${emergencyAddress}\nCoordinates: ${emergencyData.latitude}, ${emergencyData.longitude}\n\nTriggered at: ${triggeredAt.toLocaleString()}\n\nThis report was automatically generated from an emergency alert.`;
+
+      // Build officer notes
+      const officerNotes = `Converted from emergency alert. Original alert ID: ${emergencyData._id || emergencyData.id}\nOriginal Address: ${emergencyAddress}\nCoordinates: ${emergencyData.latitude}, ${emergencyData.longitude}\n${emergencyData.dispatch_notes ? `\nDispatch Notes: ${emergencyData.dispatch_notes}` : ''}`;
+
       setNewReport({
-        reporterName: emergencyData.student?.name || emergencyData.reporterName || '',
-        reporterEmail: emergencyData.student?.email || emergencyData.reporterEmail || '',
-        reporterPhone: emergencyData.student?.phone || emergencyData.reporterPhone || '',
-        reporterMatricNo: emergencyData.student?.matrixNumber || emergencyData.reporterMatric || '',
+        reporterName: studentInfo?.name || emergencyData.reporterName || '',
+        reporterEmail: studentInfo?.email || emergencyData.reporterEmail || '',
+        reporterPhone: studentInfo?.phone || emergencyData.reporterPhone || '',
+        reporterMatricNo: studentInfo?.matrixNumber || emergencyData.reporterMatric || '',
         category: 'emergency_alert',
         urgency: 'urgent',
         status: 'pending',
-        description: `🚨 EMERGENCY ALERT 🚨\n\nOriginal Location: ${emergencyAddress}\n\nTriggered at: ${date.toLocaleString()}\n\nThis report was automatically generated from an emergency alert.`,
+        description: description,
         locationArea: matchedLocationArea,
         building: extractedBuilding,
         fullAddress: fullAddress,
@@ -184,10 +262,17 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
         suspectDescription: '',
         injuries: '',
         assignedOfficer: emergencyData.assigned_officer_id || '',
-        officerNotes: `Converted from emergency alert. Original alert ID: ${emergencyData._id || emergencyData.id}\nOriginal Address: ${emergencyAddress}\n${emergencyData.dispatch_notes ? `\nDispatch Notes: ${emergencyData.dispatch_notes}` : ''}`,
+        officerNotes: officerNotes,
         incidentDate: formattedDate,
         incidentTime: formattedTime,
+        latitude: emergencyData.latitude || null,
+        longitude: emergencyData.longitude || null,
       });
+
+      // If student is directly provided, set found student
+      if (studentInfo) {
+        setFoundStudent(studentInfo);
+      }
 
       setAiSuggestion(null);
       setIsAnalyzing(false);
@@ -405,16 +490,28 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
   const handleSubmit = () => {
     setIsSubmitting(true);
 
-    const combinedAddress = (newReport.locationArea && newReport.building)
-      ? `${newReport.locationArea}, ${newReport.building}`
-      : (newReport.locationArea || '');
+    const addressParts = [];
+    if (newReport.locationArea && newReport.locationArea.trim() !== '') {
+      addressParts.push(newReport.locationArea);
+    }
+    if (newReport.building && newReport.building.trim() !== '') {
+      addressParts.push(newReport.building);
+    }
+    const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
 
     const locationObj = {
       locationArea: newReport.locationArea || '',
       building: newReport.building || '',
+      specificPlace: newReport.building || '',
       address: combinedAddress,
       timestamp: new Date().toISOString()
     };
+
+    // Add coordinates if available from emergency
+    if (newReport.latitude && newReport.longitude) {
+      locationObj.latitude = newReport.latitude;
+      locationObj.longitude = newReport.longitude;
+    }
 
     let incidentDateTime = null;
     if (newReport.incidentDate && newReport.incidentTime) {
@@ -429,7 +526,6 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       studentMatric: newReport.reporterMatricNo,
       incidentCategory: newReport.category,
       description: newReport.description,
-      mahallah: newReport.locationArea,
       incidentDateTime: incidentDateTime,
       urgency: newReport.urgency,
       injuries: newReport.injuries || null,
@@ -440,6 +536,10 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       attachmentUrls: attachmentUrls,
       attachmentPublicIds: attachmentPublicIds,
       location: locationObj,
+      mahallah: newReport.locationArea || '',
+      building: newReport.building || '',
+      specificPlace: newReport.building || '',
+      address: combinedAddress,
     };
 
     console.log('Creating report from emergency:', payload);
@@ -470,6 +570,8 @@ export const AddEmergencyReport = ({ isOpen, onClose, onSave, emergencyData }) =
       officerNotes: '',
       incidentDate: '',
       incidentTime: '',
+      latitude: null,
+      longitude: null,
     });
     setAttachmentUrls([]);
     setAttachmentPublicIds([]);

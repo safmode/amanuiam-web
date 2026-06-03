@@ -54,7 +54,8 @@ const extractLocationData = (report) => {
     console.log('Found mahallah field:', locationArea);
   }
 
-  // Extract specific address (building, room, business name)
+  // EXTRACT SPECIFIC ADDRESS
+  // First check if specificPlace exists
   if (report.specificAddress && report.specificAddress !== 'Not specified') {
     specificPlace = report.specificAddress;
     console.log('Using server-provided specific address:', specificPlace);
@@ -64,8 +65,51 @@ const extractLocationData = (report) => {
     } else if (report.location.building && report.location.building.trim() !== '') {
       building = report.location.building;
     }
+    // IF NOTHING ELSE, EXTRACT FROM ADDRESS FIELD!
+    else if (report.location.address && report.location.address.trim() !== '') {
+      let address = report.location.address;
+
+      // List of known location names to remove
+      const locationNames = [
+        'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+        'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
+        'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
+        'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
+        'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
+        'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)',
+        'Dar al-Hikmah Library', 'Female Sports Complex', 'Saidina Hamzah Stadium',
+        'IIUM Archery Range', 'UIA Football Turf', 'IIUM Cricket Ground', 'IIUM Rugby Field',
+        'Padang Kawad UIAM', 'IIUM Educare', 'Sultan Haji Ahmad Shah Mosque'
+      ];
+
+      // Remove the location area from the address to get the specific place
+      if (locationArea) {
+        address = address.replace(new RegExp(locationArea, 'gi'), '');
+      }
+
+      // Remove any known location names
+      for (const name of locationNames) {
+        address = address.replace(new RegExp(name, 'gi'), '');
+      }
+
+      // Clean up
+      address = address.replace(/Mahallah /gi, '');
+      address = address.replace(/Kulliyyah /gi, '');
+      address = address.trim();
+      address = address.replace(/\s+/g, ' ');
+      address = address.replace(/,$/, '');
+      address = address.replace(/^,/, '');
+
+      if (address && address !== '') {
+        specificPlace = address;
+        console.log('Extracted specific place from address:', specificPlace);
+      }
+    }
   } else if (report.building && report.building.trim() !== '') {
     building = report.building;
+  } else if (report.address && report.address.trim() !== '') {
+    // Last resort - use the full address
+    specificPlace = report.address;
   }
 
   // Build full address
