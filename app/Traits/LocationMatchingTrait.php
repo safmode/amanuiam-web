@@ -312,14 +312,10 @@ trait LocationMatchingTrait
         return $returnKey ? $this->getLocationKey($firstLocation) : $firstLocation;
     }
 
-    /*
-    * Get the original location text for Specific Address column
-    * This extracts everything except the matched location name
-    */
     /**
- * Get the original location text for Specific Address column
- * This extracts everything except the matched location name
- */
+     * Get the original location text for Specific Address column
+     * This extracts everything except the matched location name from the address
+     */
     protected function getOriginalLocationText($report)
     {
         $location = $report->location;
@@ -330,79 +326,61 @@ trait LocationMatchingTrait
         }
 
         if (is_array($location)) {
-            $parts = [];
-
             // Priority order for Specific Address:
-            // 1. specificPlace (business names like "7 Eleven", "Co-Mart", "Musallah")
-            // 2. building (block, room numbers)
-            // 3. address (full address)
+            // 1. specificPlace (if already set)
+            // 2. building (if already set)
+            // 3. address - extract from here
 
             if (!empty($location['specificPlace'])) {
-                $parts[] = $location['specificPlace'];
-            }
-            if (!empty($location['building'])) {
-                $parts[] = $location['building'];
-            }
-            if (!empty($location['address'])) {
-                $parts[] = $location['address'];
+                return $location['specificPlace'];
             }
 
-            $fullText = implode(', ', $parts);
+            if (!empty($location['building'])) {
+                return $location['building'];
+            }
+
+            if (!empty($location['address'])) {
+                $fullText = $location['address'];
+            }
         }
 
-        // Fallback to building or address fields
+        // Fallback to report fields
+        if (empty($fullText) && !empty($report->specificPlace)) {
+            return $report->specificPlace;
+        }
         if (empty($fullText) && !empty($report->building)) {
-            $fullText = $report->building;
+            return $report->building;
         }
         if (empty($fullText) && !empty($report->address)) {
             $fullText = $report->address;
         }
-        if (empty($fullText) && !empty($report->specificPlace)) {
-            $fullText = $report->specificPlace;
-        }
 
-        // Remove the matched location name from the text
+        // Find the matched location to remove it
         $matchedLocation = $this->determineReportLocation($report, false);
         if ($matchedLocation && !empty($fullText)) {
             $displayName = $this->getLocationDisplayName($matchedLocation);
             $shortKey = $this->getLocationKey($matchedLocation);
 
-            // Remove the location name variations from the text
+            // Remove the location name and keep everything else
             $fullText = str_ireplace($displayName, '', $fullText);
             $fullText = str_ireplace($shortKey, '', $fullText);
             $fullText = str_ireplace($matchedLocation, '', $fullText);
             $fullText = str_ireplace('Mahallah ', '', $fullText);
+            $fullText = str_ireplace('Kulliyyah ', '', $fullText);
 
-            // Clean up extra spaces and commas
+            // Clean up
             $fullText = preg_replace('/\s+/', ' ', $fullText);
-            $fullText = preg_replace('/,\s*,/', ',', $fullText);
             $fullText = trim($fullText, ' ,');
         }
 
-        // If still empty, try to extract the non-location part from address
+        // If still empty, return the original address (fallback)
         if (empty($fullText) && !empty($location['address'])) {
-            $address = $location['address'];
-
-            // Try to extract the part before the location name
-            $matchedLocation = $this->determineReportLocation($report, false);
-            if ($matchedLocation) {
-                $displayName = $this->getLocationDisplayName($matchedLocation);
-                // Remove the location name and keep everything else
-                $fullText = trim(str_ireplace($displayName, '', $address));
-                $fullText = trim(str_ireplace('Mahallah ', '', $fullText));
-                $fullText = trim($fullText, ' ,');
-            } else {
-                $fullText = $address;
-            }
+            $fullText = $location['address'];
         }
-
-        // For "Musallah Mahallah Ruqayyah", this should return "Musallah"
-        // For "Co-Mart Ruqayyah", this should return "Co-Mart"
-        // For "Block F", this should return "Block F"
 
         return !empty($fullText) ? $fullText : 'Not specified';
     }
-    
+
     /**
      * Get full address string from report
      */
