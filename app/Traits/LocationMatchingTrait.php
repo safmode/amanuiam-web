@@ -8,248 +8,44 @@ trait LocationMatchingTrait
 {
     private $mainLocations = [
         // Mahallahs
-        'Mahallah Asiah' => [
-            'keywords' => ['asiah', 'mahallah asiah'],
-            'proximity_radius' => 150,  // Smaller for precise GPS matching
-            'map_radius' => 300,        // Larger for heatmap grouping
-            'key' => 'Asiah',
-            'display' => 'Mahallah Asiah'
-        ],
-        'Mahallah Aminah' => [
-            'keywords' => ['aminah', 'mahallah aminah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Aminah',
-            'display' => 'Mahallah Aminah'
-        ],
-        'Mahallah Safiyyah' => [
-            'keywords' => ['safiyyah', 'mahallah safiyyah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Safiyyah',
-            'display' => 'Mahallah Safiyyah'
-        ],
-        'Mahallah Maryam' => [
-            'keywords' => ['maryam', 'mahallah maryam'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Maryam',
-            'display' => 'Mahallah Maryam'
-        ],
-        'Mahallah Ruqayyah' => [
-            'keywords' => ['ruqayyah', 'mahallah ruqayyah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Ruqayyah',
-            'display' => 'Mahallah Ruqayyah'
-        ],
-        'Mahallah Ali' => [
-            'keywords' => ['ali', 'mahallah ali'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Ali',
-            'display' => 'Mahallah Ali'
-        ],
-        'Mahallah Faruq' => [
-            'keywords' => ['faruq', 'mahallah faruq'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Faruq',
-            'display' => 'Mahallah Faruq'
-        ],
-        'Mahallah Bilal' => [
-            'keywords' => ['bilal', 'mahallah bilal'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Bilal',
-            'display' => 'Mahallah Bilal'
-        ],
-        'Mahallah Asma' => [
-            'keywords' => ['asma', 'mahallah asma'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Asma',
-            'display' => 'Mahallah Asma'
-        ],
-        'Mahallah Hafsah' => [
-            'keywords' => ['hafsah', 'mahallah hafsah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Hafsah',
-            'display' => 'Mahallah Hafsah'
-        ],
-        'Mahallah Halimah' => [
-            'keywords' => ['halimah', 'mahallah halimah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Halimah',
-            'display' => 'Mahallah Halimah'
-        ],
-        'Mahallah Siddiq' => [
-            'keywords' => ['siddiq', 'mahallah siddiq'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Siddiq',
-            'display' => 'Mahallah Siddiq'
-        ],
-        'Mahallah Salahuddin' => [
-            'keywords' => ['salahuddin', 'mahallah salahuddin'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Salahuddin',
-            'display' => 'Mahallah Salahuddin'
-        ],
-        'Mahallah Uthman' => [
-            'keywords' => ['uthman', 'mahallah uthman'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Uthman',
-            'display' => 'Mahallah Uthman'
-        ],
-        'Mahallah Nusaibah' => [
-            'keywords' => ['nusaibah', 'mahallah nusaibah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Nusaibah',
-            'display' => 'Mahallah Nusaibah'
-        ],
-        'Mahallah Zubair Al-Awwam' => [
-            'keywords' => ['zubair', 'mahallah zubair'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Zubair Al-Awwam',
-            'display' => 'Mahallah Zubair'
-        ],
-        'Mahallah Sumayyah' => [
-            'keywords' => ['sumayyah', 'mahallah sumayyah'],
-            'proximity_radius' => 150,
-            'map_radius' => 300,
-            'key' => 'Sumayyah',
-            'display' => 'Mahallah Sumayyah'
-        ],
+        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Asiah', 'display' => 'Mahallah Asiah'],
+        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Aminah', 'display' => 'Mahallah Aminah'],
+        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Safiyyah', 'display' => 'Mahallah Safiyyah'],
+        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Maryam', 'display' => 'Mahallah Maryam'],
+        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Ruqayyah', 'display' => 'Mahallah Ruqayyah'],
+        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Ali', 'display' => 'Mahallah Ali'],
+        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Faruq', 'display' => 'Mahallah Faruq'],
+        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Bilal', 'display' => 'Mahallah Bilal'],
+        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Asma', 'display' => 'Mahallah Asma'],
+        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Hafsah', 'display' => 'Mahallah Hafsah'],
+        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Halimah', 'display' => 'Mahallah Halimah'],
+        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Siddiq', 'display' => 'Mahallah Siddiq'],
+        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Salahuddin', 'display' => 'Mahallah Salahuddin'],
+        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Uthman', 'display' => 'Mahallah Uthman'],
+        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Nusaibah', 'display' => 'Mahallah Nusaibah'],
+        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Zubair Al-Awwam', 'display' => 'Mahallah Zubair'],
+        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'proximity_radius' => 150, 'map_radius' => 300, 'key' => 'Sumayyah', 'display' => 'Mahallah Sumayyah'],
 
         // Kulliyyahs
-        'KIRKHS (AHAS KIRKHS)' => [
-            'keywords' => ['kirkhs', 'kulliyyah of human sciences', 'human sciences'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'KIRKHS',
-            'display' => 'KIRKHS (AHAS KIRKHS)'
-        ],
-        'KICT (ICT)' => [
-            'keywords' => ['kict', 'ict', 'information technology', 'iibf', 'islamic banking'],
-            'proximity_radius' => 120,
-            'map_radius' => 300,
-            'key' => 'KICT',
-            'display' => 'KICT (ICT)'
-        ],
-        'KOE (Engineering)' => [
-            'keywords' => ['koe', 'engineering'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'KOE',
-            'display' => 'KOE (Engineering)'
-        ],
-        'KAED (Architecture)' => [
-            'keywords' => ['kaed', 'architecture'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'KAED',
-            'display' => 'KAED (Architecture)'
-        ],
-        'KENMS (Economics)' => [
-            'keywords' => ['kenms', 'economics'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'KENMS',
-            'display' => 'KENMS (Economics)'
-        ],
-        'AIKOL (Law)' => [
-            'keywords' => ['aikol', 'law'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'AIKOL',
-            'display' => 'AIKOL (Law)'
-        ],
-        'KOED (Education)' => [
-            'keywords' => ['koed', 'education'],
-            'proximity_radius' => 120,
-            'map_radius' => 250,
-            'key' => 'KOED',
-            'display' => 'KOED (Education)'
-        ],
+        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'human sciences'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'KIRKHS', 'display' => 'KIRKHS (AHAS KIRKHS)'],
+        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'iibf', 'islamic banking'], 'proximity_radius' => 120, 'map_radius' => 300, 'key' => 'KICT', 'display' => 'KICT (ICT)'],
+        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'KOE', 'display' => 'KOE (Engineering)'],
+        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'KAED', 'display' => 'KAED (Architecture)'],
+        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'KENMS', 'display' => 'KENMS (Economics)'],
+        'AIKOL (Law)' => ['keywords' => ['aikol', 'law'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'AIKOL', 'display' => 'AIKOL (Law)'],
+        'KOED (Education)' => ['keywords' => ['koed', 'education'], 'proximity_radius' => 120, 'map_radius' => 250, 'key' => 'KOED', 'display' => 'KOED (Education)'],
 
         // Facilities
-        'Dar al-Hikmah Library' => [
-            'keywords' => ['library', 'dar al-hikmah'],
-            'proximity_radius' => 80,
-            'map_radius' => 200,
-            'key' => 'Dar al-Hikmah Library',
-            'display' => 'Dar al-Hikmah Library'
-        ],
-        'Female Sports Complex' => [
-            'keywords' => ['female sports', 'sports complex', 'gym'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'Female Sports Complex',
-            'display' => 'Female Sports Complex'
-        ],
-        'Saidina Hamzah Stadium' => [
-            'keywords' => ['stadium', 'saidina hamzah'],
-            'proximity_radius' => 120,
-            'map_radius' => 300,
-            'key' => 'Saidina Hamzah Stadium',
-            'display' => 'Saidina Hamzah Stadium'
-        ],
-        'IIUM Archery Range' => [
-            'keywords' => ['archery', 'panahan'],
-            'proximity_radius' => 80,
-            'map_radius' => 200,
-            'key' => 'IIUM Archery Range',
-            'display' => 'IIUM Archery Range'
-        ],
-        'UIA Football Turf' => [
-            'keywords' => ['football', 'soccer', 'turf'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'UIA Football Turf',
-            'display' => 'UIA Football Turf'
-        ],
-        'IIUM Cricket Ground' => [
-            'keywords' => ['cricket', 'ground'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'IIUM Cricket Ground',
-            'display' => 'IIUM Cricket Ground'
-        ],
-        'IIUM Rugby Field' => [
-            'keywords' => ['rugby', 'field'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'IIUM Rugby Field',
-            'display' => 'IIUM Rugby Field'
-        ],
-        'Padang Kawad UIAM' => [
-            'keywords' => ['padang kawad', 'parade'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'Padang Kawad UIAM',
-            'display' => 'Padang Kawad UIAM'
-        ],
-        'IIUM Educare' => [
-            'keywords' => ['educare', 'kindergarten'],
-            'proximity_radius' => 80,
-            'map_radius' => 200,
-            'key' => 'IIUM Educare',
-            'display' => 'IIUM Educare'
-        ],
-        'Sultan Haji Ahmad Shah Mosque' => [
-            'keywords' => ['mosque', 'masjid'],
-            'proximity_radius' => 100,
-            'map_radius' => 250,
-            'key' => 'Sultan Haji Ahmad Shah Mosque',
-            'display' => 'Sultan Haji Ahmad Shah Mosque'
-        ],
+        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah'], 'proximity_radius' => 80, 'map_radius' => 200, 'key' => 'Dar al-Hikmah Library', 'display' => 'Dar al-Hikmah Library'],
+        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'Female Sports Complex', 'display' => 'Female Sports Complex'],
+        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah'], 'proximity_radius' => 120, 'map_radius' => 300, 'key' => 'Saidina Hamzah Stadium', 'display' => 'Saidina Hamzah Stadium'],
+        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'proximity_radius' => 80, 'map_radius' => 200, 'key' => 'IIUM Archery Range', 'display' => 'IIUM Archery Range'],
+        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'UIA Football Turf', 'display' => 'UIA Football Turf'],
+        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'IIUM Cricket Ground', 'display' => 'IIUM Cricket Ground'],
+        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'IIUM Rugby Field', 'display' => 'IIUM Rugby Field'],
+        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'Padang Kawad UIAM', 'display' => 'Padang Kawad UIAM'],
+        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten'], 'proximity_radius' => 80, 'map_radius' => 200, 'key' => 'IIUM Educare', 'display' => 'IIUM Educare'],
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid'], 'proximity_radius' => 100, 'map_radius' => 250, 'key' => 'Sultan Haji Ahmad Shah Mosque', 'display' => 'Sultan Haji Ahmad Shah Mosque'],
     ];
 
     private $mainLocationCoordinates = [];
@@ -457,6 +253,7 @@ trait LocationMatchingTrait
 
     /**
      * Extract location name from text by checking keywords
+     * Returns the matching location display name or null
      */
     protected function extractLocationFromText($text)
     {
@@ -481,6 +278,7 @@ trait LocationMatchingTrait
 
         if (empty($matches)) return null;
 
+        // Sort by priority (longest keyword first)
         usort($matches, function($a, $b) {
             if ($a['priority'] !== $b['priority']) {
                 return $b['priority'] - $a['priority'];
@@ -519,31 +317,33 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine report location - TEXT FIRST, coordinates second (FOR REPORTS)
-     * Uses smaller proximity radius for precise matching
+     * Determine report location - SIMPLE VERSION
+     * Only returns predefined locations (Mahallahs, Kulliyyahs, Facilities)
+     * Returns NULL if no match found (Location Area shows "Not specified")
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // METHOD 1: Extract location from address text FIRST
+        // METHOD 1: Check if locationArea is already a valid predefined location
+        $existingLocationArea = $this->getLocationAreaFromReport($report);
+        if (!empty($existingLocationArea)) {
+            $matched = $this->matchLocationToMainLocation($existingLocationArea);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using existing location: ' . $matched);
+                return $returnKey ? $this->getLocationKey($matched) : $matched;
+            }
+        }
+
+        // METHOD 2: Try to extract location from address text
         $addressText = $this->getFullAddressString($report);
         if (!empty($addressText)) {
             $matched = $this->extractLocationFromText($addressText);
             if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by TEXT KEYWORD: ' . $matched['display']);
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by TEXT: ' . $matched['display']);
                 return $returnKey ? $matched['key'] : $matched['location'];
             }
         }
 
-        // METHOD 2: Try extracting from description if address is empty
-        if (empty($addressText) && !empty($report->description)) {
-            $matched = $this->extractLocationFromText($report->description);
-            if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by DESCRIPTION KEYWORD: ' . $matched['display']);
-                return $returnKey ? $matched['key'] : $matched['location'];
-            }
-        }
-
-        // METHOD 3: Try proximity matching using coordinates (SMALLER RADIUS)
+        // METHOD 3: Try proximity matching using coordinates (only as last resort)
         $reportCoords = $this->getReportCoordinates($report);
         if ($reportCoords && !empty($this->mainLocationCoordinates)) {
             $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
@@ -554,26 +354,14 @@ trait LocationMatchingTrait
             }
         }
 
-        // METHOD 4: Check if locationArea is already manually set
-        $existingLocationArea = $this->getLocationAreaFromReport($report);
-        if (!empty($existingLocationArea)) {
-            $locationAreaLower = strtolower($existingLocationArea);
-            foreach ($this->mainLocations as $mainLocationName => $config) {
-                if (strtolower($config['display']) === $locationAreaLower ||
-                    strtolower($config['key']) === $locationAreaLower ||
-                    $locationAreaLower === strtolower($mainLocationName)) {
-                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $mainLocationName);
-                    return $returnKey ? $this->getLocationKey($mainLocationName) : $mainLocationName;
-                }
-            }
-        }
-
+        // No match found - Location Area will show "Not specified"
         Log::info('Report ' . ($report->reportId ?? 'unknown') . ' has no location match');
         return $returnKey ? null : null;
     }
 
     /**
      * Get the original location text for Specific Address column
+     * This removes the matched location keyword from the text
      */
     protected function getOriginalLocationText($report)
     {
