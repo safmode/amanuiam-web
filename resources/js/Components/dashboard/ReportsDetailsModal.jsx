@@ -449,12 +449,6 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                             {specificAddress}
                           </p>
-                          {reporterResidence && reporterResidence !== 'Unknown Location' &&
-                           !specificAddress.toLowerCase().includes(reporterResidence.toLowerCase()) && (
-                            <p className="text-xs text-gray-500 mt-2 pt-1 border-t border-gray-100 dark:text-gray-400 dark:border-slate-700">
-                              👤 Reporter's residence: {getLocationAreaName(reporterResidence)}
-                            </p>
-                          )}
                         </>
                       ) : (
                         <>
