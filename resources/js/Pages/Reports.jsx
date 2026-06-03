@@ -137,8 +137,6 @@ const getLocationArea = (report) => {
 const getSpecificAddress = (report) => {
   if (!report) return 'Not specified';
 
-  const parts = [];
-
   // PRIORITY: Use server-provided specific address if available
   if (report.specificAddress && report.specificAddress !== 'Not specified') {
     return report.specificAddress;
@@ -148,34 +146,48 @@ const getSpecificAddress = (report) => {
   if (report.location && typeof report.location === 'object') {
     // Add specificPlace (business names like "7 Eleven")
     if (report.location.specificPlace && report.location.specificPlace.trim() !== '') {
-      parts.push(report.location.specificPlace);
+      return report.location.specificPlace;
     }
     // Add building if exists and no specificPlace
     else if (report.location.building && report.location.building.trim() !== '') {
-      parts.push(report.location.building);
+      return report.location.building;
     }
 
-    // Check if locationArea contains a place name
-    if (report.location.locationArea && report.location.locationArea.trim() !== '') {
-      const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
-      const isPlaceName = placeNames.some(place => report.location.locationArea.toLowerCase().includes(place.toLowerCase()));
-      if (isPlaceName && parts.length === 0) {
-        parts.push(report.location.locationArea);
+    // IF NOTHING ELSE, EXTRACT FROM ADDRESS!
+    if (report.location.address && report.location.address.trim() !== '') {
+      let address = report.location.address;
+      // Remove known location names from the address
+      const locationNames = ['Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+        'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal', 'Mahallah Asma',
+        'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq', 'Mahallah Salahuddin', 'Mahallah Uthman',
+        'Mahallah Nusaibah', 'Mahallah Zubair', 'Mahallah Sumayyah', 'KIRKHS', 'KICT', 'KOE', 'KAED', 'KENMS', 'AIKOL', 'KOED'];
+
+      for (const name of locationNames) {
+        address = address.replace(new RegExp(name, 'gi'), '');
+      }
+      address = address.replace(/Mahallah /gi, '');
+      address = address.replace(/Kulliyyah /gi, '');
+      address = address.trim();
+      address = address.replace(/\s+/g, ' ');
+      address = address.replace(/,$/, '');
+
+      if (address && address !== '') {
+        return address;
       }
     }
   }
 
   // Fallback to building field
-  if (parts.length === 0 && report.building && report.building.trim() !== '') {
-    parts.push(report.building);
+  if (report.building && report.building.trim() !== '') {
+    return report.building;
   }
 
   // Fallback to address
-  if (parts.length === 0 && report.address && report.address.trim() !== '') {
+  if (report.address && report.address.trim() !== '') {
     return report.address;
   }
 
-  return parts.length > 0 ? parts.join(', ') : 'Not specified';
+  return 'Not specified';
 };
 
 // Get icon for location area type
