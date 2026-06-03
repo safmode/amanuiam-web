@@ -55,86 +55,102 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
     return mahallahKey;
   };
 
-  // FIXED: Proper function to get incident location from various data structures
+  // UPDATED: Improved function to get incident location with proper extraction
   const getIncidentLocation = (reportData) => {
     if (!reportData) return 'No address specified';
 
     console.log('Getting location for report:', reportData.reportId || reportData.id);
     console.log('Report data structure:', reportData);
 
-    // Method 1: Check locationRaw (passed from formattedReports)
-    if (reportData.locationRaw && typeof reportData.locationRaw === 'object') {
-      if (reportData.locationRaw.address) {
-        console.log('Found locationRaw.address:', reportData.locationRaw.address);
-        return reportData.locationRaw.address;
+    // Helper function to extract specific place from address
+    const extractSpecificPlace = (address, locationArea) => {
+      if (!address) return null;
+
+      let result = address;
+
+      // Remove location area if present
+      if (locationArea) {
+        result = result.replace(new RegExp(locationArea, 'gi'), '');
       }
-      if (reportData.locationRaw.building && reportData.locationRaw.locationArea) {
-        const loc = `${reportData.locationRaw.locationArea}, ${reportData.locationRaw.building}`;
-        console.log('Found locationRaw combo:', loc);
-        return loc;
+
+      // Remove known location names
+      const locationNames = [
+        'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+        'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
+        'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
+        'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
+        'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
+        'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
+      ];
+
+      for (const name of locationNames) {
+        result = result.replace(new RegExp(name, 'gi'), '');
       }
-      if (reportData.locationRaw.locationArea) {
-        console.log('Found locationRaw.locationArea:', reportData.locationRaw.locationArea);
-        return reportData.locationRaw.locationArea;
-      }
-      if (reportData.locationRaw.building) {
-        console.log('Found locationRaw.building:', reportData.locationRaw.building);
-        return reportData.locationRaw.building;
-      }
+
+      result = result.replace(/Mahallah /gi, '');
+      result = result.replace(/Kulliyyah /gi, '');
+      result = result.trim();
+      result = result.replace(/\s+/g, ' ');
+      result = result.replace(/,$/, '');
+      result = result.replace(/^,/, '');
+
+      return result || null;
+    };
+
+    // Priority 1: Check if we have specificPlace directly
+    if (reportData.specificAddress && reportData.specificAddress !== 'Not specified') {
+      return reportData.specificAddress;
     }
 
-    // Method 2: Check direct location property
-    if (reportData.location && typeof reportData.location === 'object') {
-      if (reportData.location.address) {
-        console.log('Found location.address:', reportData.location.address);
-        return reportData.location.address;
-      }
-      if (reportData.location.building && reportData.location.locationArea) {
-        const loc = `${reportData.location.locationArea}, ${reportData.location.building}`;
-        console.log('Found location combo:', loc);
-        return loc;
-      }
-      if (reportData.location.locationArea) {
-        console.log('Found location.locationArea:', reportData.location.locationArea);
-        return reportData.location.locationArea;
-      }
+    if (reportData.location?.specificPlace) {
+      return reportData.location.specificPlace;
     }
 
-    // Method 3: Check address/building fields
-    if (reportData.address) {
-      console.log('Found address field:', reportData.address);
-      return reportData.address;
+    // Priority 2: Check building
+    if (reportData.location?.building) {
+      return reportData.location.building;
     }
-
-    if (reportData.building && reportData.locationArea) {
-      const loc = `${reportData.locationArea}, ${reportData.building}`;
-      console.log('Found building + locationArea combo:', loc);
-      return loc;
-    }
-
-    if (reportData.locationArea) {
-      console.log('Found locationArea field:', reportData.locationArea);
-      return reportData.locationArea;
-    }
-
     if (reportData.building) {
-      console.log('Found building field:', reportData.building);
       return reportData.building;
     }
 
-    // Method 4: Check mahallah as fallback
-    if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-      console.log('Fallback to mahallah:', reportData.mahallah);
-      return `${reportData.mahallah} area`;
+    // Priority 3: Extract from address
+    let address = null;
+    let locationArea = null;
+
+    // Get address from various sources
+    if (reportData.location?.address) {
+      address = reportData.location.address;
+    } else if (reportData.address) {
+      address = reportData.address;
+    } else if (reportData.locationRaw?.address) {
+      address = reportData.locationRaw.address;
     }
 
-    // Method 5: Check incidentLocation from backend
+    // Get location area
+    if (reportData.location?.locationArea) {
+      locationArea = reportData.location.locationArea;
+    } else if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
+      locationArea = reportData.locationArea;
+    } else if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
+      locationArea = reportData.mahallah;
+    } else if (reportData.determinedLocation) {
+      locationArea = reportData.determinedLocation;
+    }
+
+    if (address) {
+      const extracted = extractSpecificPlace(address, locationArea);
+      if (extracted) {
+        return extracted;
+      }
+      return address;
+    }
+
+    // Priority 4: Check incidentLocation from backend
     if (reportData.incidentLocation && reportData.incidentLocation !== 'No address specified') {
-      console.log('Found incidentLocation:', reportData.incidentLocation);
       return reportData.incidentLocation;
     }
 
-    console.log('No location found');
     return 'No address specified';
   };
 
@@ -234,12 +250,23 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
 
   if (!localReport) return null;
 
-  // Get the raw report data (handle both direct and wrapped structures)
   const rawReport = localReport._raw || localReport;
   const { date, time } = formatDateTime(rawReport.incidentDateTime || localReport.incidentDateTime);
 
-  // Get location - use the improved function with the full report data
-  const incidentLocation = getIncidentLocation(localReport);
+  // Get the specific address (not the full location)
+  const specificAddress = getIncidentLocation(localReport);
+
+  // Get the location area separately for display
+  let locationAreaDisplay = '';
+  if (rawReport.determinedLocation) {
+    locationAreaDisplay = formatLocationName(rawReport.determinedLocation);
+  } else if (rawReport.location?.locationArea) {
+    locationAreaDisplay = rawReport.location.locationArea;
+  } else if (rawReport.locationArea && rawReport.locationArea !== 'Not specified') {
+    locationAreaDisplay = rawReport.locationArea;
+  } else if (rawReport.mahallah) {
+    locationAreaDisplay = rawReport.mahallah;
+  }
 
   // Get reporter's residence (mahallah) if available
   const reporterResidence = localReport.mahallah || rawReport.mahallah || '';
@@ -368,7 +395,6 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Incident Details</span>
                 </div>
                 <div className="space-y-4">
-                  {/* Category and Date/Time */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Category</p>
@@ -384,20 +410,33 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                     </div>
                   </div>
 
-                  {/* Incident Location - FIXED */}
+                  {/* Location Area - NEW SECTION */}
+                  {locationAreaDisplay && locationAreaDisplay !== 'Not specified' && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Building2 className="w-3 h-3" /> Location Area
+                      </p>
+                      <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                          {locationAreaDisplay}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Specific Address - UPDATED */}
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> Incident Location
+                      <MapPin className="w-3 h-3" /> Specific Address
                     </p>
                     <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
-                      {incidentLocation && incidentLocation !== 'No address specified' ? (
+                      {specificAddress && specificAddress !== 'No address specified' ? (
                         <>
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {incidentLocation}
+                            {specificAddress}
                           </p>
-                          {/* Show reporter's residence if different from incident location */}
                           {reporterResidence && reporterResidence !== 'Unknown Location' &&
-                           !incidentLocation.toLowerCase().includes(reporterResidence.toLowerCase()) && (
+                           !specificAddress.toLowerCase().includes(reporterResidence.toLowerCase()) && (
                             <p className="text-xs text-gray-500 mt-2 pt-1 border-t border-gray-100 dark:text-gray-400 dark:border-slate-700">
                               👤 Reporter's residence: {getLocationAreaName(reporterResidence)}
                             </p>
@@ -406,7 +445,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
                       ) : (
                         <>
                           <p className="text-sm text-amber-600 dark:text-amber-400">
-                            ⚠️ No specific location provided
+                            ⚠️ No specific address provided
                           </p>
                           {reporterResidence && reporterResidence !== 'Unknown Location' && (
                             <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
