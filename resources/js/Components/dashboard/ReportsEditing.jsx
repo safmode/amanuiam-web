@@ -9,9 +9,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye, Trash2, Calendar, Mail, Phone, MapPin, Sparkles } from 'lucide-react';
-import { categoryLabels, statusLabels, urgencyLabels, locationLabels, formatLocationName } from '@/Pages/Reports';
+import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/axios';
+
+// ============================================
+// FALLBACK FUNCTIONS
+// ============================================
+
+// Fallback formatLocationName function in case import fails
+const formatLocationName = (location) => {
+  if (!location) return '';
+  for (const group of Object.values(locationLabels)) {
+    for (const [key, label] of Object.entries(group)) {
+      if (key === location || label === location) return label;
+    }
+  }
+  return location;
+};
 
 // Helper function to extract location data from report
 const extractLocationData = (report) => {

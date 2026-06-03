@@ -9,6 +9,21 @@ import { CheckCircle, Calendar, MapPin, FileText, User, AlertCircle, Image, Mess
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { ReportsEditing } from '@/components/dashboard/ReportsEditing';
 
+// ============================================
+// FALLBACK FUNCTIONS
+// ============================================
+
+// Fallback formatLocationName function
+const formatLocationName = (location) => {
+  if (!location) return '';
+  for (const group of Object.values(locationLabels)) {
+    for (const [key, label] of Object.entries(group)) {
+      if (key === location || label === location) return label;
+    }
+  }
+  return location;
+};
+
 export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated }) => {
   const [isEditingOpen, setIsEditingOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
@@ -55,47 +70,46 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
     return mahallahKey;
   };
 
-  // UPDATED: Improved function to get incident location with proper extraction
+  // Helper function to extract specific place from address
+  const extractSpecificPlace = (address, locationArea) => {
+    if (!address) return null;
+
+    let result = address;
+
+    // Remove location area if present
+    if (locationArea) {
+      result = result.replace(new RegExp(locationArea, 'gi'), '');
+    }
+
+    // Remove known location names
+    const locationNames = [
+      'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+      'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
+      'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
+      'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
+      'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
+      'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
+    ];
+
+    for (const name of locationNames) {
+      result = result.replace(new RegExp(name, 'gi'), '');
+    }
+
+    result = result.replace(/Mahallah /gi, '');
+    result = result.replace(/Kulliyyah /gi, '');
+    result = result.trim();
+    result = result.replace(/\s+/g, ' ');
+    result = result.replace(/,$/, '');
+    result = result.replace(/^,/, '');
+
+    return result || null;
+  };
+
+  // Updated function to get incident location with proper extraction
   const getIncidentLocation = (reportData) => {
     if (!reportData) return 'No address specified';
 
     console.log('Getting location for report:', reportData.reportId || reportData.id);
-    console.log('Report data structure:', reportData);
-
-    // Helper function to extract specific place from address
-    const extractSpecificPlace = (address, locationArea) => {
-      if (!address) return null;
-
-      let result = address;
-
-      // Remove location area if present
-      if (locationArea) {
-        result = result.replace(new RegExp(locationArea, 'gi'), '');
-      }
-
-      // Remove known location names
-      const locationNames = [
-        'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
-        'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
-        'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
-        'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
-        'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
-        'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
-      ];
-
-      for (const name of locationNames) {
-        result = result.replace(new RegExp(name, 'gi'), '');
-      }
-
-      result = result.replace(/Mahallah /gi, '');
-      result = result.replace(/Kulliyyah /gi, '');
-      result = result.trim();
-      result = result.replace(/\s+/g, ' ');
-      result = result.replace(/,$/, '');
-      result = result.replace(/^,/, '');
-
-      return result || null;
-    };
 
     // Priority 1: Check if we have specificPlace directly
     if (reportData.specificAddress && reportData.specificAddress !== 'Not specified') {
@@ -135,7 +149,7 @@ export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated })
     } else if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
       locationArea = reportData.mahallah;
     } else if (reportData.determinedLocation) {
-      locationArea = reportData.determinedLocation;
+      locationArea = formatLocationName(reportData.determinedLocation);
     }
 
     if (address) {
