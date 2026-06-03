@@ -3,8 +3,8 @@
 return array (
   'Mahallah Asiah' =>
   array (
-    'lat' => 3.2582577,
-    'lng' => 101.7333511,
+    'lat' => 3.258328582170477,
+    'lng' => 101.73342975380814,
   ),
   'Mahallah Aminah' =>
   array (
@@ -23,8 +23,8 @@ return array (
   ),
   'Mahallah Ruqayyah' =>
   array (
-    'lat' => 3.2503254,
-    'lng' => 101.7345347,
+    'lat' => 3.259837590739922,
+    'lng' => 101.73309049709702,
   ),
   'Mahallah Ali' =>
   array (
@@ -43,8 +43,8 @@ return array (
   ),
   'Mahallah Asma' =>
   array (
-    'lat' => 3.2561363,
-    'lng' => 101.7334729,
+    'lat' => 3.2561513058515756,
+    'lng' => 101.73352393657854,
   ),
   'Mahallah Hafsah' =>
   array (
