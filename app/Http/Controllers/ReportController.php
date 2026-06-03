@@ -64,7 +64,7 @@ class ReportController extends Controller
     }
 
     // ============================================
-    // AI METHODS (KEEP YOUR EXISTING IMPLEMENTATIONS)
+    // AI METHODS
     // ============================================
 
     private function aiCategorizeReport($description)
@@ -226,7 +226,6 @@ class ReportController extends Controller
 
         $urgency = $this->aiDetectUrgency($description, $category);
 
-        // For Inertia, you can return a proper response
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -235,7 +234,6 @@ class ReportController extends Controller
             ]);
         }
 
-        // For Inertia visits, share the data
         return back()->with([
             'aiAnalysis' => [
                 'success' => true,
@@ -564,6 +562,23 @@ class ReportController extends Controller
         // Handle location object from AddReport
         if ($request->has('location') && is_array($request->location)) {
             $locationData = $request->location;
+
+            // Auto-split if needed
+            if (!isset($locationData['locationArea']) && isset($locationData['address'])) {
+                // Create a temporary report object for splitting
+                $tempReport = new \stdClass();
+                $tempReport->location = $locationData;
+                $tempReport->description = $validated['description'] ?? '';
+
+                $split = $this->splitLocationIntoAreaAndPlace($tempReport, $locationData['address']);
+                if ($split['locationArea']) {
+                    $locationData['locationArea'] = $split['locationArea'];
+                }
+                if ($split['specificPlace'] && !isset($locationData['specificPlace'])) {
+                    $locationData['specificPlace'] = $split['specificPlace'];
+                }
+            }
+
             $validated['location'] = $locationData;
 
             if (isset($locationData['locationArea'])) {
@@ -827,16 +842,31 @@ class ReportController extends Controller
                 'studentMatrix' => 'nullable|string',
                 'building' => 'nullable|string',
                 'address' => 'nullable|string',
-                'specificPlace' => 'nullable|string', // Add specific place field
+                'specificPlace' => 'nullable|string',
+                'locationArea' => 'nullable|string',
             ]);
 
             if (isset($validated['mahallah'])) {
                 $validated['mahallah'] = $this->capitalizeMahallah($validated['mahallah']);
             }
 
-            // Handle location properly - combine locationArea (mahallah), building, and specificPlace
+            // ============================================
+            // ENHANCED LOCATION HANDLING - Auto-split addresses
+            // ============================================
+
+            // Case 1: User provided a complete location object
             if ($request->has('location') && is_array($request->location)) {
                 $locationData = $request->location;
+
+                // Auto-split if only full address was provided
+                if (!isset($locationData['locationArea']) && isset($locationData['address'])) {
+                    $split = $this->splitLocationIntoAreaAndPlace($report, $locationData['address']);
+                    $locationData['locationArea'] = $split['locationArea'] ?? $locationData['address'];
+                    if ($split['specificPlace'] && !isset($locationData['specificPlace'])) {
+                        $locationData['specificPlace'] = $split['specificPlace'];
+                    }
+                }
+
                 $validated['location'] = $locationData;
 
                 if (isset($locationData['locationArea'])) {
@@ -853,40 +883,85 @@ class ReportController extends Controller
                 }
             }
 
-            // Handle individual location fields
-            if ($request->has('mahallah') || $request->has('building') || $request->has('address') || $request->has('specificPlace')) {
+            // Case 2: User provided locationArea separately
+            elseif ($request->has('locationArea') && $request->locationArea) {
                 $existingLocation = $report->location ?? [];
+                $existingLocation['locationArea'] = $this->capitalizeMahallah($request->locationArea);
+                $validated['location'] = $existingLocation;
+                $validated['mahallah'] = $existingLocation['locationArea'];
+            }
 
-                if ($request->has('mahallah')) {
-                    $existingLocation['locationArea'] = $this->capitalizeMahallah($request->mahallah);
-                    $validated['mahallah'] = $existingLocation['locationArea'];
-                }
-                if ($request->has('building')) {
-                    $existingLocation['building'] = $request->building;
-                    $validated['building'] = $request->building;
-                }
-                if ($request->has('specificPlace')) {
-                    $existingLocation['specificPlace'] = $request->specificPlace;
-                    $validated['specificPlace'] = $request->specificPlace;
-                }
-                if ($request->has('address')) {
-                    $existingLocation['address'] = $request->address;
-                    $validated['address'] = $request->address;
-                }
+            // Case 3: User provided a full address string (for backward compatibility)
+            elseif ($request->has('address') && $request->address && !$request->has('location')) {
+                $split = $this->splitLocationIntoAreaAndPlace($report, $request->address);
 
-                // Generate full address
-                $fullAddress = '';
-                if (isset($existingLocation['locationArea'])) {
-                    $fullAddress = $existingLocation['locationArea'];
+                $newLocation = $report->location ?? [];
+                $newLocation['locationArea'] = $split['locationArea'] ?? $request->address;
+                if ($split['specificPlace']) {
+                    $newLocation['specificPlace'] = $split['specificPlace'];
+                }
+                if ($split['building']) {
+                    $newLocation['building'] = $split['building'];
+                }
+                $newLocation['address'] = $request->address;
+
+                $validated['location'] = $newLocation;
+                $validated['mahallah'] = $newLocation['locationArea'];
+            }
+
+            // Case 4: Handle individual location fields being updated
+            else {
+                $needsLocationUpdate = $request->has('mahallah') ||
+                                      $request->has('building') ||
+                                      $request->has('specificPlace') ||
+                                      $request->has('address');
+
+                if ($needsLocationUpdate) {
+                    $existingLocation = $report->location ?? [];
+
+                    if ($request->has('mahallah')) {
+                        $existingLocation['locationArea'] = $this->capitalizeMahallah($request->mahallah);
+                        $validated['mahallah'] = $existingLocation['locationArea'];
+                    }
+                    if ($request->has('building')) {
+                        $existingLocation['building'] = $request->building;
+                        $validated['building'] = $request->building;
+                    }
+                    if ($request->has('specificPlace')) {
+                        $existingLocation['specificPlace'] = $request->specificPlace;
+                        $validated['specificPlace'] = $request->specificPlace;
+                    }
+                    if ($request->has('address')) {
+                        $existingLocation['address'] = $request->address;
+                        $validated['address'] = $request->address;
+                    }
+
+                    // Build the full address for display
+                    $fullAddress = $existingLocation['locationArea'] ?? '';
                     if (isset($existingLocation['specificPlace']) && $existingLocation['specificPlace']) {
                         $fullAddress .= ', ' . $existingLocation['specificPlace'];
                     } elseif (isset($existingLocation['building']) && $existingLocation['building']) {
                         $fullAddress .= ', ' . $existingLocation['building'];
                     }
-                }
-                $existingLocation['fullAddress'] = $fullAddress;
+                    if (isset($existingLocation['address']) && $existingLocation['address'] && $existingLocation['address'] !== $fullAddress) {
+                        $fullAddress = $existingLocation['address'];
+                    }
+                    $existingLocation['fullAddress'] = $fullAddress;
 
-                $validated['location'] = $existingLocation;
+                    $validated['location'] = $existingLocation;
+                }
+            }
+
+            // Auto-detect locationArea from coordinates if still not set and coordinates exist
+            if ((!isset($validated['location']['locationArea']) || empty($validated['location']['locationArea'])) &&
+                $this->getReportCoordinates($report)) {
+                $detectedArea = $this->determineReportLocation($report, false);
+                if ($detectedArea) {
+                    $location = $validated['location'] ?? [];
+                    $location['locationArea'] = $detectedArea;
+                    $validated['location'] = $location;
+                    $validated['mahallah'] = $detectedArea;
+                }
             }
 
             if ($request->has('attachmentUrls')) {
@@ -922,7 +997,7 @@ class ReportController extends Controller
 
             $report->update($validated);
 
-            // Telegram notifications (keep your existing code)
+            // Telegram notifications
             $newAssignedOfficer = $report->assignedOfficer;
             $wasAssignedNow = ($oldAssignedOfficer !== $newAssignedOfficer) && !empty($newAssignedOfficer);
 

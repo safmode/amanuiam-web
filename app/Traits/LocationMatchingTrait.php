@@ -327,10 +327,6 @@ trait LocationMatchingTrait
         return !empty($locationArea) ? ($returnKey ? $locationArea : $locationArea) : null;
     }
 
-    // ============================================
-    // EMERGENCY METHODS - ADD THIS SECTION
-    // ============================================
-
     /**
      * Get coordinates from emergency
      */
@@ -410,5 +406,219 @@ trait LocationMatchingTrait
 
         Log::warning('No location match for emergency - Address: ' . ($emergency->address ?? 'no address'));
         return null;
+    }
+
+    // ============================================
+    // NEW LOCATION SPLITTING METHODS
+    // ============================================
+
+    /**
+     * Split location into area and specific place/building
+     * This intelligently separates the main location area from specific places
+     */
+    protected function splitLocationIntoAreaAndPlace($report, $inputAddress = null)
+    {
+        // Get raw address or location text
+        $address = $inputAddress;
+        if (!$address) {
+            $address = $this->getFullAddressString($report);
+        }
+
+        if (empty($address)) {
+            return ['locationArea' => null, 'specificPlace' => null, 'building' => null];
+        }
+
+        $addressLower = strtolower($address);
+
+        // Predefined specific places (businesses, facilities, etc.)
+        $specificPlaces = [
+            '7 eleven', '7-eleven', 'seven eleven',
+            'office', 'cafe', 'cafeteria', 'restaurant', 'food court',
+            'gym', 'library', 'store', 'shop', 'convenience store',
+            'kfc', 'mcdonald', 'starbucks', 'tealive', 'chatime',
+            'clinic', 'pharmacy', 'bank', 'atm', 'laundry',
+            'computer lab', 'study room', 'lecture hall', 'classroom',
+            'auditorium', 'conference room', 'meeting room',
+            'prayer room', 'surau', 'toilet', 'washroom'
+        ];
+
+        // Check if address contains a specific place
+        $foundSpecificPlace = null;
+        foreach ($specificPlaces as $place) {
+            if (strpos($addressLower, $place) !== false) {
+                $foundSpecificPlace = $place;
+                break;
+            }
+        }
+
+        // Try to extract building/block/room numbers
+        $buildingPattern = '/(block|blk|building|bldg|tower|wing|floor|level|room|rm|suite|unit|no\.|#)\s*([a-z0-9\-]+)/i';
+        $foundBuilding = null;
+        if (preg_match($buildingPattern, $address, $matches)) {
+            $foundBuilding = trim($matches[0]);
+        }
+
+        // First, try to determine the main location area by proximity
+        $locationArea = $this->determineReportLocation($report, false);
+
+        // If proximity didn't work, try to extract from address
+        if (!$locationArea) {
+            // Try to find Mahallah names
+            $mahallahs = [
+                'asiah', 'aminah', 'safiyyah', 'maryam', 'ruqayyah',
+                'ali', 'faruq', 'bilal', 'asma', 'hafsah', 'halimah',
+                'siddiq', 'salahuddin', 'uthman', 'nusaibah', 'zubair', 'sumayyah'
+            ];
+
+            foreach ($mahallahs as $mahallah) {
+                if (strpos($addressLower, $mahallah) !== false) {
+                    $locationArea = 'Mahallah ' . ucfirst($mahallah);
+                    break;
+                }
+            }
+
+            // Try to find Kulliyyah names
+            if (!$locationArea) {
+                $kulliyyahs = [
+                    'kirkhs' => 'KIRKHS (AHAS KIRKHS)',
+                    'kict' => 'KICT (ICT)',
+                    'koe' => 'KOE (Engineering)',
+                    'kaed' => 'KAED (Architecture)',
+                    'kenms' => 'KENMS (Economics)',
+                    'aikol' => 'AIKOL (Law)',
+                    'koed' => 'KOED (Education)'
+                ];
+
+                foreach ($kulliyyahs as $key => $name) {
+                    if (strpos($addressLower, $key) !== false) {
+                        $locationArea = $name;
+                        break;
+                    }
+                }
+            }
+
+            // Try to find facilities
+            if (!$locationArea) {
+                $facilities = [
+                    'library' => 'Dar al-Hikmah Library',
+                    'stadium' => 'Saidina Hamzah Stadium',
+                    'mosque' => 'Sultan Haji Ahmad Shah Mosque',
+                    'masjid' => 'Sultan Haji Ahmad Shah Mosque',
+                    'sports complex' => 'Female Sports Complex',
+                    'archery' => 'IIUM Archery Range',
+                    'football' => 'UIA Football Turf',
+                    'cricket' => 'IIUM Cricket Ground',
+                    'rugby' => 'IIUM Rugby Field',
+                    'educare' => 'IIUM Educare'
+                ];
+
+                foreach ($facilities as $keyword => $name) {
+                    if (strpos($addressLower, $keyword) !== false) {
+                        $locationArea = $name;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If still no location area, use default or extract from address
+        if (!$locationArea) {
+            // Try to extract anything that looks like a place name
+            $words = explode(' ', $address);
+            foreach ($words as $word) {
+                if (strlen($word) > 5 && ctype_alpha($word)) {
+                    $locationArea = ucfirst(strtolower($word));
+                    break;
+                }
+            }
+        }
+
+        // Determine specific place based on what we found
+        $specificPlace = $foundSpecificPlace;
+
+        // If we have a building but no specific place, use building as specific place
+        if ($foundBuilding && !$specificPlace) {
+            $specificPlace = $foundBuilding;
+        }
+
+        // If we have remaining text after removing the location area, use as specific place
+        $remainingAddress = $address;
+        if ($locationArea && strpos($addressLower, strtolower($locationArea)) !== false) {
+            $remainingAddress = trim(str_ireplace($locationArea, '', $address));
+            $remainingAddress = trim(str_ireplace($specificPlace ?? '', '', $remainingAddress));
+            $remainingAddress = preg_replace('/^[,]+|[,]+$/', '', $remainingAddress);
+            $remainingAddress = trim($remainingAddress);
+
+            if ($remainingAddress && !$specificPlace) {
+                $specificPlace = $remainingAddress;
+            }
+        }
+
+        return [
+            'locationArea' => $locationArea,
+            'specificPlace' => $specificPlace,
+            'building' => $foundBuilding
+        ];
+    }
+
+    /**
+     * Get full address string from report
+     */
+    protected function getFullAddressString($report)
+    {
+        $addressParts = [];
+
+        // Check location object
+        $location = $report->location;
+        if (is_array($location)) {
+            if (!empty($location['locationArea'])) {
+                $addressParts[] = $location['locationArea'];
+            }
+            if (!empty($location['specificPlace'])) {
+                $addressParts[] = $location['specificPlace'];
+            }
+            if (!empty($location['building'])) {
+                $addressParts[] = $location['building'];
+            }
+            if (!empty($location['address'])) {
+                $addressParts[] = $location['address'];
+            }
+        } elseif (is_object($location)) {
+            if (!empty($location->locationArea)) {
+                $addressParts[] = $location->locationArea;
+            }
+            if (!empty($location->specificPlace)) {
+                $addressParts[] = $location->specificPlace;
+            }
+            if (!empty($location->building)) {
+                $addressParts[] = $location->building;
+            }
+            if (!empty($location->address)) {
+                $addressParts[] = $location->address;
+            }
+        }
+
+        // Fallback to old fields
+        if (empty($addressParts)) {
+            if (!empty($report->mahallah)) {
+                $addressParts[] = $report->mahallah;
+            }
+            if (!empty($report->building)) {
+                $addressParts[] = $report->building;
+            }
+            if (!empty($report->address)) {
+                $addressParts[] = $report->address;
+            }
+        }
+
+        // If still empty, try from description (first line only)
+        if (empty($addressParts) && !empty($report->description)) {
+            $firstLine = explode("\n", $report->description)[0];
+            if (strlen($firstLine) < 100) {
+                $addressParts[] = $firstLine;
+            }
+        }
+
+        return implode(', ', array_filter($addressParts));
     }
 }
