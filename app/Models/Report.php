@@ -32,17 +32,53 @@ class Report extends Model
         'mahallah',
         'building',
         'address',
-        'specificPlace', // Add specificPlace to fillable
+        'specificPlace',
     ];
 
+    // Only cast dates, NOT location (MongoDB handles arrays natively)
     protected $casts = [
-        'location' => 'array',
         'incidentDateTime' => 'datetime',
         'reportedAt' => 'datetime',
         'updatedAt' => 'datetime',
-        'attachmentUrls' => 'array',
-        'attachmentPublicIds' => 'array',
     ];
+
+    /**
+     * Get the location attribute safely
+     */
+    public function getLocationAttribute($value)
+    {
+        // If it's already an array, return it directly
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // If it's a string, try to decode it
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return [];
+    }
+
+    /**
+     * Set the location attribute safely
+     */
+    public function setLocationAttribute($value)
+    {
+        // If it's an array, store it directly (MongoDB will handle it)
+        if (is_array($value)) {
+            $this->attributes['location'] = $value;
+        }
+        // If it's a string, try to decode it
+        elseif (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $this->attributes['location'] = is_array($decoded) ? $decoded : [];
+        }
+        else {
+            $this->attributes['location'] = [];
+        }
+    }
 
     /**
      * Generate sequential Report ID
@@ -85,7 +121,6 @@ class Report extends Model
      */
     public function getLocationArea()
     {
-        // Check location array first
         $location = $this->location;
 
         if (is_array($location) && isset($location['locationArea']) && !empty($location['locationArea'])) {
@@ -111,14 +146,13 @@ class Report extends Model
     }
 
     /**
-     * Get the building or specific location detail (block, office, store name, etc.)
+     * Get the building or specific location detail
      */
     public function getBuildingDetail()
     {
         $location = $this->location;
 
         if (is_array($location)) {
-            // Return specificPlace if it exists
             if (isset($location['specificPlace']) && !empty($location['specificPlace'])) {
                 return '';
             }
@@ -128,7 +162,6 @@ class Report extends Model
             }
         }
 
-        // Fallback to building field
         if (!empty($this->building)) {
             return $this->building;
         }
@@ -137,30 +170,27 @@ class Report extends Model
     }
 
     /**
-     * Get specific place name (like "7 Eleven", "Office", "Cafeteria")
+     * Get specific place name
      */
     public function getSpecificPlace()
     {
         $location = $this->location;
 
         if (is_array($location)) {
-            // Check for specificPlace field first
             if (isset($location['specificPlace']) && !empty($location['specificPlace'])) {
                 return $location['specificPlace'];
             }
 
-            // Check if locationArea contains a known place name
             if (isset($location['locationArea']) && !empty($location['locationArea'])) {
                 $locationArea = $location['locationArea'];
                 $knownPlaces = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
                 foreach ($knownPlaces as $place) {
                     if (stripos($locationArea, $place) !== false) {
-                        return $locationArea; // Return the place name
+                        return $locationArea;
                     }
                 }
             }
 
-            // Check building for place names
             if (isset($location['building']) && !empty($location['building'])) {
                 $building = $location['building'];
                 $knownPlaces = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
@@ -172,7 +202,6 @@ class Report extends Model
             }
         }
 
-        // Fallback to specificPlace field (if we add it as a direct field)
         if (!empty($this->specificPlace)) {
             return $this->specificPlace;
         }
@@ -199,23 +228,19 @@ class Report extends Model
 
         $parts = [];
 
-        // Add location area if it exists and is valid
         if ($locationArea && $locationArea !== '') {
             $parts[] = $locationArea;
         }
 
-        // Prioritize specificPlace (business names like "7 Eleven") over building
         if ($specificPlace && $specificPlace !== '') {
             $parts[] = $specificPlace;
         } elseif ($building && $building !== '') {
             $parts[] = $building;
         }
 
-        // Add address if available and not already included
         $location = $this->location;
         if (is_array($location) && isset($location['address']) && !empty($location['address'])) {
             $address = $location['address'];
-            // Only add if not already represented in parts
             if (!in_array($address, $parts)) {
                 $parts[] = $address;
             }
@@ -228,7 +253,6 @@ class Report extends Model
 
     /**
      * Get the full location array with all details
-     * This is the primary method to get complete location data
      */
     public function getFullLocation()
     {
@@ -238,181 +262,17 @@ class Report extends Model
             $location = [];
         }
 
-        // Build the complete location array
-        $fullLocation = [
+        return [
             'locationArea' => $this->getLocationArea(),
             'specificPlace' => $this->getSpecificPlace(),
             'building' => $this->getBuildingDetail(),
             'address' => $location['address'] ?? $this->address ?? '',
             'fullAddress' => $this->getFullAddress(),
         ];
-
-        // Preserve any existing coordinates if present
-        if (isset($location['latitude']) && isset($location['longitude'])) {
-            $fullLocation['latitude'] = $location['latitude'];
-            $fullLocation['longitude'] = $location['longitude'];
-        }
-
-        if (isset($location['lat']) && isset($location['lng'])) {
-            $fullLocation['lat'] = $location['lat'];
-            $fullLocation['lng'] = $location['lng'];
-        }
-
-        // Preserve timestamp if present
-        if (isset($location['timestamp'])) {
-            $fullLocation['timestamp'] = $location['timestamp'];
-        }
-
-        return $fullLocation;
     }
 
     /**
-     * Set location data with intelligent splitting
-     * This method can be called before saving to ensure proper location structure
-     */
-    public function setLocationWithSplitting($address, $locationArea = null, $specificPlace = null, $building = null)
-    {
-        $location = [];
-
-        // If location area is provided directly, use it
-        if ($locationArea) {
-            $location['locationArea'] = $locationArea;
-        } else {
-            // Try to extract location area from address
-            $location['locationArea'] = $this->extractLocationAreaFromAddress($address);
-        }
-
-        // Set specific place or building
-        if ($specificPlace) {
-            $location['specificPlace'] = $specificPlace;
-        } elseif ($building) {
-            $location['building'] = $building;
-        } else {
-            // Try to extract specific place from address
-            $extracted = $this->extractSpecificPlaceFromAddress($address);
-            if ($extracted) {
-                $location['specificPlace'] = $extracted;
-            }
-        }
-
-        // Store the original address
-        $location['address'] = $address;
-        $location['timestamp'] = now()->toISOString();
-
-        $this->location = $location;
-
-        // Also set individual fields for backward compatibility
-        $this->mahallah = $location['locationArea'] ?? '';
-        $this->specificPlace = $location['specificPlace'] ?? '';
-        $this->building = $location['building'] ?? '';
-        $this->address = $address;
-
-        return $this;
-    }
-
-    /**
-     * Extract location area (Mahallah/Kulliyyah) from address
-     */
-    protected function extractLocationAreaFromAddress($address)
-    {
-        if (empty($address)) return '';
-
-        $addressLower = strtolower($address);
-
-        // Check for Mahallahs
-        $mahallahs = [
-            'asiah', 'aminah', 'safiyyah', 'maryam', 'ruqayyah',
-            'ali', 'faruq', 'bilal', 'asma', 'hafsah', 'halimah',
-            'siddiq', 'salahuddin', 'uthman', 'nusaibah', 'zubair', 'sumayyah'
-        ];
-
-        foreach ($mahallahs as $mahallah) {
-            if (strpos($addressLower, $mahallah) !== false) {
-                return 'Mahallah ' . ucfirst($mahallah);
-            }
-        }
-
-        // Check for Kulliyyahs
-        $kulliyyahs = [
-            'kirkhs' => 'KIRKHS (AHAS KIRKHS)',
-            'kict' => 'KICT (ICT)',
-            'koe' => 'KOE (Engineering)',
-            'kaed' => 'KAED (Architecture)',
-            'kenms' => 'KENMS (Economics)',
-            'aikol' => 'AIKOL (Law)',
-            'koed' => 'KOED (Education)'
-        ];
-
-        foreach ($kulliyyahs as $key => $name) {
-            if (strpos($addressLower, $key) !== false) {
-                return $name;
-            }
-        }
-
-        // Check for Facilities
-        $facilities = [
-            'library' => 'Dar al-Hikmah Library',
-            'stadium' => 'Saidina Hamzah Stadium',
-            'mosque' => 'Sultan Haji Ahmad Shah Mosque',
-            'sports complex' => 'Female Sports Complex',
-            'archery' => 'IIUM Archery Range',
-            'football' => 'UIA Football Turf',
-            'cricket' => 'IIUM Cricket Ground',
-            'rugby' => 'IIUM Rugby Field',
-            'educare' => 'IIUM Educare'
-        ];
-
-        foreach ($facilities as $keyword => $name) {
-            if (strpos($addressLower, $keyword) !== false) {
-                return $name;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Extract specific place from address
-     */
-    protected function extractSpecificPlaceFromAddress($address)
-    {
-        if (empty($address)) return '';
-
-        $addressLower = strtolower($address);
-
-        $specificPlaces = [
-            '7 eleven', '7-eleven', 'seven eleven',
-            'office', 'cafe', 'cafeteria', 'restaurant', 'food court',
-            'gym', 'library', 'store', 'shop', 'convenience store',
-            'kfc', 'mcdonald', 'starbucks', 'tealive', 'chatime',
-            'clinic', 'pharmacy', 'bank', 'atm', 'laundry',
-            'computer lab', 'study room', 'lecture hall', 'classroom',
-            'auditorium', 'conference room', 'meeting room',
-            'prayer room', 'surau', 'toilet', 'washroom'
-        ];
-
-        foreach ($specificPlaces as $place) {
-            if (strpos($addressLower, $place) !== false) {
-                // Return the original case version if possible
-                $pattern = '/' . preg_quote($place, '/') . '/i';
-                if (preg_match($pattern, $address, $matches)) {
-                    return $matches[0];
-                }
-                return $place;
-            }
-        }
-
-        // Check for building/room patterns
-        $buildingPattern = '/(block|blk|building|bldg|tower|wing|floor|level|room|rm|suite|unit|no\.|#)\s+([a-z0-9\-]+)/i';
-        if (preg_match($buildingPattern, $address, $matches)) {
-            return trim($matches[0]);
-        }
-
-        return '';
-    }
-
-    /**
-     * Get location as formatted string for display in lists
+     * Get short location for display
      */
     public function getShortLocation()
     {
@@ -476,11 +336,8 @@ class Report extends Model
     {
         parent::boot();
 
-        // Auto-sync location data before saving
         static::saving(function ($model) {
-            // If location is being set and it's an array, ensure it has all fields
             if ($model->location && is_array($model->location)) {
-                // Sync individual fields from location array
                 if (isset($model->location['locationArea'])) {
                     $model->mahallah = $model->location['locationArea'];
                 }
@@ -495,7 +352,6 @@ class Report extends Model
                 }
             }
 
-            // If individual fields are set, sync to location array
             if (($model->mahallah || $model->specificPlace || $model->building || $model->address) &&
                 (!$model->location || !is_array($model->location))) {
                 $model->location = [
@@ -503,7 +359,6 @@ class Report extends Model
                     'specificPlace' => $model->specificPlace ?? '',
                     'building' => $model->building ?? '',
                     'address' => $model->address ?? '',
-                    'timestamp' => now()->toISOString(),
                 ];
             }
         });

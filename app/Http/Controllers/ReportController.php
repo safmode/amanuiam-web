@@ -455,14 +455,17 @@ class ReportController extends Controller
         $officers = Officer::all()->keyBy('officerId');
 
         // Add student names, officer names, and determined location to reports
+        // In your index method, update the transform section:
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
-            // Get proximity-matched location for FILTERING only (don't change original)
-            $report->determinedLocation = $this->determineReportLocation($report);
+            // SAFETY: Ensure location is properly formatted
+            if (isset($report->location) && is_string($report->location)) {
+                $report->location = json_decode($report->location, true);
+            }
 
-            // Keep the original location for DISPLAY
-            // The original location is already in $report->location['locationArea'] or $report->mahallah
+            // Get proximity-matched location for FILTERING only
+            $report->determinedLocation = $this->determineReportLocation($report);
 
             // Get student info
             if (isset($students[$studentId])) {
@@ -485,7 +488,10 @@ class ReportController extends Controller
                 $report->officerName = 'Not Assigned';
             }
 
-            $report->incidentLocation = $report->getFullAddress();
+            // Add location helpers for frontend
+            $report->locationArea = $report->getLocationArea();
+            $report->specificAddress = $report->getSpecificPlace() ?: $report->getBuildingDetail();
+            $report->fullAddress = $report->getFullAddress();
 
             return $report;
         });
