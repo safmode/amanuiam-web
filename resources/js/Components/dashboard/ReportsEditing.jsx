@@ -17,80 +17,58 @@ import api from '@/lib/axios';
 const extractLocationData = (report) => {
   if (!report) return { locationArea: '', building: '', specificPlace: '', fullAddress: '' };
 
-  console.log('FULL REPORT OBJECT:', report);
-  console.log('REPORT LOCATION:', report.location);
+  console.log('Extracting location data from report:', report);
 
   let locationArea = '';
   let building = '';
   let specificPlace = '';
   let fullAddress = '';
 
-  // Try multiple ways to get the data
-  // Method 1: Direct from location object (your database structure)
-  if (report.location) {
-    if (report.location.locationArea) {
-      locationArea = report.location.locationArea;
-      console.log('Found locationArea in report.location:', locationArea);
-    }
-    if (report.location.building) {
-      building = report.location.building;
-      console.log('Found building in report.location:', building);
-    }
-    if (report.location.specificPlace) {
-      specificPlace = report.location.specificPlace;
-      console.log('Found specificPlace in report.location:', specificPlace);
-    }
-    if (report.location.address) {
-      fullAddress = report.location.address;
-      console.log('Found address in report.location:', fullAddress);
-    }
+  // PRIORITY 1: Use server-determined location (from proximity matching)
+  if (report.determinedLocation && report.determinedLocation !== 'Unknown') {
+    locationArea = formatLocationName(report.determinedLocation);
+    console.log('Using server-determined location area:', locationArea);
   }
 
-  // Method 2: Check if location is an array with index 0
-  if (!locationArea && Array.isArray(report.location) && report.location[0]) {
-    if (report.location[0].locationArea) {
-      locationArea = report.location[0].locationArea;
-      console.log('Found locationArea in location[0]:', locationArea);
-    }
-    if (report.location[0].building) {
-      building = report.location[0].building;
-      console.log('Found building in location[0]:', building);
-    }
-    if (report.location[0].specificPlace) {
-      specificPlace = report.location[0].specificPlace;
-      console.log('Found specificPlace in location[0]:', specificPlace);
-    }
-  }
-
-  // Method 3: Check direct properties on report (fallback)
-  if (!locationArea && report.locationArea) {
+  // PRIORITY 2: Check location object from server
+  if (!locationArea && report.locationArea && report.locationArea !== 'Not specified') {
     locationArea = report.locationArea;
     console.log('Found locationArea on report:', locationArea);
   }
-  if (!building && report.building) {
+
+  // PRIORITY 3: Check location object
+  if (!locationArea && report.location && typeof report.location === 'object') {
+    if (report.location.locationArea && report.location.locationArea.trim() !== '') {
+      const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
+      const isPlaceName = placeNames.some(place => report.location.locationArea.toLowerCase().includes(place.toLowerCase()));
+      if (!isPlaceName) {
+        locationArea = report.location.locationArea;
+        console.log('Found locationArea in report.location:', locationArea);
+      }
+    }
+  }
+
+  // PRIORITY 4: Fallback to mahallah field
+  if (!locationArea && report.mahallah && report.mahallah.trim() !== '') {
+    locationArea = report.mahallah;
+    console.log('Found mahallah field:', locationArea);
+  }
+
+  // Extract specific address (building, room, business name)
+  if (report.specificAddress && report.specificAddress !== 'Not specified') {
+    specificPlace = report.specificAddress;
+    console.log('Using server-provided specific address:', specificPlace);
+  } else if (report.location && typeof report.location === 'object') {
+    if (report.location.specificPlace && report.location.specificPlace.trim() !== '') {
+      specificPlace = report.location.specificPlace;
+    } else if (report.location.building && report.location.building.trim() !== '') {
+      building = report.location.building;
+    }
+  } else if (report.building && report.building.trim() !== '') {
     building = report.building;
-    console.log('Found building on report:', building);
-  }
-  if (!specificPlace && report.specificPlace) {
-    specificPlace = report.specificPlace;
-    console.log('Found specificPlace on report:', specificPlace);
   }
 
-  // Method 4: Check _raw property (Inertia sometimes wraps data)
-  if (!locationArea && report._raw?.location?.locationArea) {
-    locationArea = report._raw.location.locationArea;
-    console.log('Found locationArea in _raw:', locationArea);
-  }
-  if (!building && report._raw?.location?.building) {
-    building = report._raw.location.building;
-    console.log('Found building in _raw:', building);
-  }
-  if (!specificPlace && report._raw?.location?.specificPlace) {
-    specificPlace = report._raw.location.specificPlace;
-    console.log('Found specificPlace in _raw:', specificPlace);
-  }
-
-  // Build full address - prioritize specificPlace over building
+  // Build full address
   const addressParts = [];
   if (locationArea && locationArea.trim() !== '') {
     addressParts.push(locationArea);
@@ -100,7 +78,6 @@ const extractLocationData = (report) => {
   } else if (building && building.trim() !== '') {
     addressParts.push(building);
   }
-
   fullAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No address specified';
 
   console.log('FINAL EXTRACTED DATA:', { locationArea, building, specificPlace, fullAddress });
@@ -194,7 +171,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
   // Initialize form when report changes or modal opens
   useEffect(() => {
     if (report && isOpen) {
-      // Extract location data properly
       console.log('RAW REPORT FROM PROPS:', report);
       const { locationArea, building, specificPlace, fullAddress } = extractLocationData(report);
 
@@ -286,7 +262,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     }
 
     try {
-      // Axios automatically handles CSRF - no manual token needed!
       const response = await api.post('/api/ai/analyze-report', {
         description: description
       });
@@ -304,7 +279,6 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
-      // Silent fail - better UX, no error message to user
       setAiSuggestion(null);
     } finally {
       setIsAnalyzing(false);
@@ -524,6 +498,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
       const allUrls = [...existingUrls, ...finalAttachmentUrls];
       const allPublicIds = [...existingPublicIds, ...finalAttachmentPublicIds];
 
+      // Build location object - prioritize specificPlace over building
       const addressParts = [];
       if (editedReport.locationArea && editedReport.locationArea.trim() !== '') {
         addressParts.push(editedReport.locationArea);
@@ -945,6 +920,9 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
+                        💡 Tip: Location Area is automatically determined from GPS coordinates when available
+                      </p>
                     </div>
 
                     {/* Specific Address */}
@@ -968,7 +946,7 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
                     </div>
 
                     {/* Full Address (Combined) */}
-                    {editedReport.fullAddress && (
+                    {editedReport.fullAddress && editedReport.fullAddress !== 'No address specified' && (
                       <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />

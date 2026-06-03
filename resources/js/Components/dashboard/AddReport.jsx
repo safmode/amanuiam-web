@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, Search, Sparkles, MapPin } from 'lucide-react';
+import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Mail, Phone, Loader2, Eye, Trash2, Search, Sparkles, MapPin, Crosshair } from 'lucide-react';
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
 
@@ -21,6 +21,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   const [isSearchingStudent, setIsSearchingStudent] = useState(false);
   const [foundStudent, setFoundStudent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Location detection state
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [detectedLocation, setDetectedLocation] = useState(null);
 
   // AI suggestion state
   const [aiSuggestion, setAiSuggestion] = useState(null);
@@ -42,6 +46,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     description: '',
     locationArea: '',
     building: '',
+    specificPlace: '',
     fullAddress: '',
     damages: '',
     suspectDescription: '',
@@ -50,18 +55,25 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     officerNotes: '',
     incidentDate: '',
     incidentTime: '',
+    latitude: null,
+    longitude: null,
   });
 
-  const updateFullAddress = (locationAreaVal, buildingVal) => {
-    let full = locationAreaVal || '';
-    if (buildingVal && buildingVal.trim() !== '') {
-      full = `${locationAreaVal}, ${buildingVal}`;
+  const updateFullAddress = (locationAreaVal, buildingVal, specificPlaceVal) => {
+    const parts = [];
+    if (locationAreaVal && locationAreaVal.trim() !== '') {
+      parts.push(locationAreaVal);
     }
-    return full;
+    if (specificPlaceVal && specificPlaceVal.trim() !== '') {
+      parts.push(specificPlaceVal);
+    } else if (buildingVal && buildingVal.trim() !== '') {
+      parts.push(buildingVal);
+    }
+    return parts.length > 0 ? parts.join(', ') : '';
   };
 
   const handleLocationAreaChange = (value) => {
-    const newFullAddress = updateFullAddress(value, newReport.building);
+    const newFullAddress = updateFullAddress(value, newReport.building, newReport.specificPlace);
     setNewReport(prev => ({
       ...prev,
       locationArea: value,
@@ -70,7 +82,10 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleBuildingChange = (value) => {
-    const newFullAddress = updateFullAddress(newReport.locationArea, value);
+    if (value && newReport.specificPlace) {
+      setNewReport(prev => ({ ...prev, specificPlace: '' }));
+    }
+    const newFullAddress = updateFullAddress(newReport.locationArea, value, newReport.specificPlace);
     setNewReport(prev => ({
       ...prev,
       building: value,
@@ -78,7 +93,109 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
-  // ✅ FETCH OFFICERS – USE AXIOS
+  const handleSpecificPlaceChange = (value) => {
+    if (value && newReport.building) {
+      setNewReport(prev => ({ ...prev, building: '' }));
+    }
+    const newFullAddress = updateFullAddress(newReport.locationArea, newReport.building, value);
+    setNewReport(prev => ({
+      ...prev,
+      specificPlace: value,
+      fullAddress: newFullAddress
+    }));
+  };
+
+  const handleCombinedAddressChange = (value) => {
+    if (!value || value.trim() === '') {
+      handleBuildingChange('');
+      handleSpecificPlaceChange('');
+      return;
+    }
+
+    const exactPlaceNames = ['7 Eleven', 'Seven Eleven', 'Office', 'Cafe', 'Cafeteria', 'Gym', 'Store', 'Shop', 'Restaurant', 'Food Court'];
+    const isShortPlaceName = value.split(' ').length <= 2;
+    const isExactPlace = exactPlaceNames.some(place =>
+      value.toLowerCase() === place.toLowerCase() ||
+      (value.toLowerCase().includes(place.toLowerCase()) && isShortPlaceName)
+    );
+
+    if (isExactPlace) {
+      handleSpecificPlaceChange(value);
+    } else {
+      handleBuildingChange(value);
+    }
+  };
+
+  // Detect user's current location using browser geolocation
+  const detectCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation is not supported by your browser', 'error');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        // Store coordinates
+        setNewReport(prev => ({
+          ...prev,
+          latitude: latitude,
+          longitude: longitude
+        }));
+
+        // Send coordinates to server to determine location area
+        try {
+          const response = await axios.post('/api/location/detect', {
+            latitude: latitude,
+            longitude: longitude
+          });
+
+          const data = response.data;
+          if (data.success && data.locationArea) {
+            setDetectedLocation(data.locationArea);
+            setNewReport(prev => ({
+              ...prev,
+              locationArea: data.locationArea
+            }));
+            showToast(`Location detected: ${data.locationArea}`, 'success');
+          } else {
+            showToast('Could not determine location area from coordinates', 'info');
+          }
+        } catch (error) {
+          console.error('Location detection failed:', error);
+          showToast('Could not detect location area. Please select manually.', 'info');
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (error) => {
+        setIsDetectingLocation(false);
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            showToast('Location permission denied. Please select location manually.', 'error');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            showToast('Location information unavailable. Please select manually.', 'error');
+            break;
+          case error.TIMEOUT:
+            showToast('Location request timed out. Please select manually.', 'error');
+            break;
+          default:
+            showToast('An error occurred while detecting location.', 'error');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // FETCH OFFICERS – USE AXIOS
   useEffect(() => {
     fetchOfficers();
   }, []);
@@ -87,7 +204,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     setIsLoadingOfficers(true);
     try {
       const response = await axios.get('/api/officers/list');
-      // The API returns an array directly, not wrapped in {data}
       setOfficersList(response.data);
     } catch (error) {
       console.error('Failed to fetch officers:', error);
@@ -96,7 +212,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  // Debounced AI analysis – already using axios ✅
+  // Debounced AI analysis
   useEffect(() => {
     if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
     if (!newReport.description || newReport.description.length < 15) {
@@ -175,7 +291,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     return officer ? officer.officerName : 'Not Assigned';
   };
 
-  // ✅ SEARCH STUDENT – USE AXIOS
+  // SEARCH STUDENT – USE AXIOS
   const searchStudentByMatric = async () => {
     if (!newReport.reporterMatricNo) {
       showToast('Please enter a matric number', 'error');
@@ -207,6 +323,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
   };
 
   const isImageFile = (url) => {
+    if (!url) return false;
     const extension = url.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) return true;
     if (url.startsWith('blob:')) return true;
@@ -247,7 +364,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ✅ UPLOAD PENDING FILES – USE AXIOS
+  // UPLOAD PENDING FILES – USE AXIOS
   const uploadPendingFiles = async () => {
     if (pendingFiles.length === 0) return { urls: [], publicIds: [] };
     setIsUploadingOnSubmit(true);
@@ -284,7 +401,6 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
     }
     if (!confirm('Are you sure you want to delete this attachment?')) return;
     try {
-      // Deletion also uses axios (or you could keep router.delete, but it's safer with axios)
       await axios.delete('/reports/delete-attachment', {
         data: {
           attachmentUrl: url,
@@ -317,25 +433,45 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       if (pendingFiles.length > 0) {
         newAttachments = await uploadPendingFiles();
       }
+
       let incidentDateTime = null;
       if (newReport.incidentDate && newReport.incidentTime) {
         incidentDateTime = new Date(`${newReport.incidentDate}T${newReport.incidentTime}:00`).toISOString();
       }
+
       const existingUrls = attachmentUrls.filter(url =>
         url.startsWith('http') && !url.startsWith('blob:')
       );
       const existingPublicIds = attachmentPublicIds.filter(id => id !== null);
       const finalUrls = [...existingUrls, ...newAttachments.urls];
       const finalPublicIds = [...existingPublicIds, ...newAttachments.publicIds];
-      const combinedAddress = (newReport.locationArea && newReport.building)
-        ? `${newReport.locationArea}, ${newReport.building}`
-        : (newReport.locationArea || '');
+
+      // Build address from components
+      const addressParts = [];
+      if (newReport.locationArea && newReport.locationArea.trim() !== '') {
+        addressParts.push(newReport.locationArea);
+      }
+      if (newReport.specificPlace && newReport.specificPlace.trim() !== '') {
+        addressParts.push(newReport.specificPlace);
+      } else if (newReport.building && newReport.building.trim() !== '') {
+        addressParts.push(newReport.building);
+      }
+      const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
+
       const locationObj = {
         locationArea: newReport.locationArea || '',
         building: newReport.building || '',
+        specificPlace: newReport.specificPlace || '',
         address: combinedAddress,
         timestamp: new Date().toISOString()
       };
+
+      // Add coordinates if detected
+      if (newReport.latitude && newReport.longitude) {
+        locationObj.latitude = newReport.latitude;
+        locationObj.longitude = newReport.longitude;
+      }
+
       const payload = {
         studentId: foundStudent ? foundStudent._id : null,
         studentName: newReport.reporterName,
@@ -355,6 +491,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         attachmentPublicIds: finalPublicIds,
         location: locationObj
       };
+
       console.log('Sending payload:', payload);
       onSave(payload);
       resetForm();
@@ -382,6 +519,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       description: '',
       locationArea: '',
       building: '',
+      specificPlace: '',
       fullAddress: '',
       damages: '',
       suspectDescription: '',
@@ -390,12 +528,15 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
       officerNotes: '',
       incidentDate: '',
       incidentTime: '',
+      latitude: null,
+      longitude: null,
     });
     setAttachmentUrls([]);
     setAttachmentPublicIds([]);
     setPendingFiles([]);
     setFoundStudent(null);
     setAiSuggestion(null);
+    setDetectedLocation(null);
     setIsAnalyzing(false);
     if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
   };
@@ -435,7 +576,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
         </DialogHeader>
 
         <div className="p-6 space-y-5">
-          {/* Reporter Information – unchanged except the search uses axios */}
+          {/* Reporter Information */}
           <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -516,7 +657,7 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
             </CardContent>
           </Card>
 
-          {/* Incident Details – unchanged */}
+          {/* Incident Details */}
           <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -639,10 +780,30 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                   </div>
                 </div>
 
+                {/* Location Section with GPS Detection */}
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-gray-700 dark:text-gray-400">Location Area *</Label>
-                    <p className="text-[10px] text-gray-600 dark:text-gray-400">Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className="text-xs text-gray-700 dark:text-gray-400">Location Area *</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={detectCurrentLocation}
+                        disabled={isDetectingLocation}
+                        className="gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                      >
+                        {isDetectingLocation ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Crosshair className="w-3 h-3" />
+                        )}
+                        Detect My Location
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mb-1 dark:text-gray-400">
+                      Select the general area where the incident occurred (Mahallah, Kulliyyah, or Facility)
+                    </p>
                     <Select value={newReport.locationArea || ""} onValueChange={handleLocationAreaChange}>
                       <SelectTrigger className="mt-1 bg-white text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200">
                         <SelectValue placeholder="Select location area" />
@@ -658,18 +819,27 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                         ))}
                       </SelectContent>
                     </Select>
+                    {detectedLocation && (
+                      <p className="text-xs text-green-600 mt-1 dark:text-green-400">
+                        ✓ Location detected: {detectedLocation}
+                      </p>
+                    )}
                   </div>
+
                   <div>
-                    <Label className="text-xs text-gray-700 dark:text-gray-400">Specific Address (Building/Room/Block)</Label>
+                    <Label className="text-xs text-gray-700 dark:text-gray-400">Specific Address (Building/Room/Block/Specific Place)</Label>
                     <Textarea
-                      value={newReport.building || ''}
-                      onChange={(e) => handleBuildingChange(e.target.value)}
+                      value={newReport.specificPlace || newReport.building || ''}
+                      onChange={(e) => handleCombinedAddressChange(e.target.value)}
                       className="mt-1 bg-white text-sm text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
-                      placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, etc."
+                      placeholder="e.g., Block A, Room 4.3, Floor 2, Near Canteen, 7 Eleven, Office, etc."
                       rows={2}
                     />
-                    <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">💡 Tip: Be as specific as possible to help security personnel locate the exact spot</p>
+                    <p className="text-[10px] text-blue-600 mt-1 dark:text-blue-400">
+                      💡 Tip: Be as specific as possible to help security personnel locate the exact spot
+                    </p>
                   </div>
+
                   {newReport.fullAddress && (
                     <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                       <div className="flex items-center gap-2">
@@ -694,11 +864,21 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Injuries</Label>
-                  <Textarea value={newReport.injuries} onChange={(e) => setNewReport({...newReport, injuries: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe any injuries sustained..." />
+                  <Textarea
+                    value={newReport.injuries}
+                    onChange={(e) => setNewReport({...newReport, injuries: e.target.value})}
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    placeholder="Describe any injuries sustained..."
+                  />
                 </div>
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Damages</Label>
-                  <Textarea value={newReport.damages} onChange={(e) => setNewReport({...newReport, damages: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe any property damage..." />
+                  <Textarea
+                    value={newReport.damages}
+                    onChange={(e) => setNewReport({...newReport, damages: e.target.value})}
+                    className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    placeholder="Describe any property damage..."
+                  />
                 </div>
               </div>
             </CardContent>
@@ -713,7 +893,12 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
               </div>
               <div>
                 <Label className="text-xs text-gray-700 dark:text-gray-400">Suspect Description</Label>
-                <Textarea value={newReport.suspectDescription} onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})} className="mt-1 bg-white min-h-[80px]" placeholder="Describe the suspect (height, build, clothing, distinguishing features)..." />
+                <Textarea
+                  value={newReport.suspectDescription}
+                  onChange={(e) => setNewReport({...newReport, suspectDescription: e.target.value})}
+                  className="mt-1 bg-white min-h-[80px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                  placeholder="Describe the suspect (height, build, clothing, distinguishing features)..."
+                />
               </div>
             </CardContent>
           </Card>
@@ -802,20 +987,31 @@ export const AddReport = ({ isOpen, onClose, onSave }) => {
                 </div>
                 <div>
                   <Label className="text-xs text-gray-700 dark:text-gray-400">Internal Notes</Label>
-                  <Textarea value={newReport.officerNotes} onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})} className="mt-1 bg-white min-h-[60px]" placeholder="Add internal notes..." />
+                  <Textarea
+                    value={newReport.officerNotes}
+                    onChange={(e) => setNewReport({...newReport, officerNotes: e.target.value})}
+                    className="mt-1 bg-white min-h-[60px] text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    placeholder="Add internal notes..."
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" className="text-gray-700 border-gray-700 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={handleClose} disabled={isSubmitting}>Cancel</Button>
-            <Button className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl text-white" onClick={handleSubmit} disabled={
-              isSubmitting || isUploadingOnSubmit ||
-              !newReport.reporterName || !newReport.reporterEmail || !newReport.reporterPhone ||
-              !newReport.category || !newReport.description ||
-              !newReport.locationArea || !newReport.incidentDate || !newReport.incidentTime
-            }>
+            <Button variant="outline" className="text-gray-700 border-gray-700 rounded-xl dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700" onClick={handleClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#D4A853] hover:bg-[#C49A48] rounded-xl text-white"
+              onClick={handleSubmit}
+              disabled={
+                isSubmitting || isUploadingOnSubmit ||
+                !newReport.reporterName || !newReport.reporterEmail || !newReport.reporterPhone ||
+                !newReport.category || !newReport.description ||
+                !newReport.locationArea || !newReport.incidentDate || !newReport.incidentTime
+              }
+            >
               {isSubmitting || isUploadingOnSubmit ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : 'Create Report'}
             </Button>
           </div>
