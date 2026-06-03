@@ -219,7 +219,7 @@ class NotificationController extends Controller
             $notification = SystemNotification::create([
                 'type' => 'new_report',
                 'title' => '📋 New Report Submitted',
-                'message' => "New {$formattedCategory} report from {$report->address}",
+                'message' => "New {$formattedCategory} report",
                 'report_id' => $report->reportId,
                 'report_title' => $report->description ?? 'No description',
                 'read_by' => [],
