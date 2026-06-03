@@ -18,7 +18,7 @@ class MapController extends Controller
         $this->googleApiKey = env('GOOGLE_MAPS_API_KEY', '');
 
         // Initialize the trait
-        $this->initMapLocationMatching();
+        $this->initLocationMatching();
     }
 
     public function index(Request $request)
