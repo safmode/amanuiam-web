@@ -3,23 +3,23 @@
 return array (
   'Mahallah Asiah' => 
   array (
-    'lat' => 3.2582577,
-    'lng' => 101.7333511,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Aminah' => 
   array (
-    'lat' => 3.2565195,
-    'lng' => 101.7318572,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Safiyyah' => 
   array (
-    'lat' => 3.2482136,
-    'lng' => 101.7340588,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Maryam' => 
   array (
-    'lat' => 3.247642,
-    'lng' => 101.7377777,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Ruqayyah' => 
   array (
@@ -28,23 +28,23 @@ return array (
   ),
   'Mahallah Ali' => 
   array (
-    'lat' => 3.247642,
-    'lng' => 101.7377777,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Faruq' => 
   array (
-    'lat' => 3.248576,
-    'lng' => 101.7400305,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Bilal' => 
   array (
-    'lat' => 3.247642,
-    'lng' => 101.7377777,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Asma' => 
   array (
-    'lat' => 3.2561363,
-    'lng' => 101.7334729,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Hafsah' => 
   array (
@@ -53,23 +53,23 @@ return array (
   ),
   'Mahallah Halimah' => 
   array (
-    'lat' => 3.2586235,
-    'lng' => 101.7342165,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Siddiq' => 
   array (
-    'lat' => 3.2477493,
-    'lng' => 101.7385177,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Salahuddin' => 
   array (
-    'lat' => 3.2570275,
-    'lng' => 101.7385388,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Uthman' => 
   array (
-    'lat' => 3.2491575,
-    'lng' => 101.7405593,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Nusaibah' => 
   array (
@@ -78,13 +78,13 @@ return array (
   ),
   'Mahallah Zubair Al-Awwam' => 
   array (
-    'lat' => 3.2465761,
-    'lng' => 101.7359093,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'Mahallah Sumayyah' => 
   array (
-    'lat' => 3.2555813,
-    'lng' => 101.7393246,
+    'lat' => 3.2503254,
+    'lng' => 101.7345347,
   ),
   'KIRKHS (AHAS KIRKHS)' => 
   array (
@@ -108,8 +108,8 @@ return array (
   ),
   'KENMS (Economics)' => 
   array (
-    'lat' => 3.2503254,
-    'lng' => 101.7345347,
+    'lat' => 3.24991,
+    'lng' => 101.7379458,
   ),
   'AIKOL (Law)' => 
   array (
@@ -158,8 +158,8 @@ return array (
   ),
   'Padang Kawad UIAM' => 
   array (
-    'lat' => 3.2555412,
-    'lng' => 101.7409924,
+    'lat' => 3.1572924,
+    'lng' => 101.5547356,
   ),
   'IIUM Educare' => 
   array (

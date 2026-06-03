@@ -455,6 +455,7 @@ class ReportController extends Controller
         $officers = Officer::all()->keyBy('officerId');
 
         // Add student names, officer names, and determined location to reports
+        // In your index method, update the transform section:
         $reports->getCollection()->transform(function ($report) use ($students, $officers) {
             $studentId = (string)$report->studentId;
 
@@ -562,47 +563,25 @@ class ReportController extends Controller
             'attachmentUrls'   => 'nullable|array',
             'attachmentPublicIds' => 'nullable|array',
             'location'         => 'nullable|array',
-            'combined_address' => 'nullable|string', // NEW: for smart splitting
         ]);
 
-        // ============================================
-        // SMART LOCATION SPLITTING
-        // ============================================
-
-        // If a combined address was provided (like "Co-Mart Ruqayyah"), split it intelligently
-        if ($request->has('combined_address') && !empty($request->combined_address)) {
-            $split = $this->smartSplitLocation($request->combined_address);
-
-            $locationData = [
-                'locationArea' => $split['locationArea'],
-                'specificPlace' => $split['specificAddress'],
-                'address' => $request->combined_address,
-                'timestamp' => now()->toISOString()
-            ];
-
-            $validated['location'] = $locationData;
-
-            if ($split['locationArea']) {
-                $validated['mahallah'] = $split['locationArea'];
-            }
-            if ($split['specificAddress']) {
-                $validated['specificPlace'] = $split['specificAddress'];
-            }
-
-            \Log::info('Smart split result on store:', $split);
-        }
-        // Handle location object from AddReport (manual dropdown selection)
-        elseif ($request->has('location') && is_array($request->location)) {
+        // Handle location object from AddReport
+        if ($request->has('location') && is_array($request->location)) {
             $locationData = $request->location;
 
-            // Auto-split if only full address was provided
+            // Auto-split if needed
             if (!isset($locationData['locationArea']) && isset($locationData['address'])) {
-                $split = $this->smartSplitLocation($locationData['address']);
+                // Create a temporary report object for splitting
+                $tempReport = new \stdClass();
+                $tempReport->location = $locationData;
+                $tempReport->description = $validated['description'] ?? '';
+
+                $split = $this->splitLocationIntoAreaAndPlace($tempReport, $locationData['address']);
                 if ($split['locationArea']) {
                     $locationData['locationArea'] = $split['locationArea'];
                 }
-                if ($split['specificAddress'] && !isset($locationData['specificPlace'])) {
-                    $locationData['specificPlace'] = $split['specificAddress'];
+                if ($split['specificPlace'] && !isset($locationData['specificPlace'])) {
+                    $locationData['specificPlace'] = $split['specificPlace'];
                 }
             }
 
@@ -613,9 +592,6 @@ class ReportController extends Controller
             }
             if (isset($locationData['building'])) {
                 $validated['building'] = $locationData['building'];
-            }
-            if (isset($locationData['specificPlace'])) {
-                $validated['specificPlace'] = $locationData['specificPlace'];
             }
             if (isset($locationData['address'])) {
                 $validated['address'] = $locationData['address'];
@@ -874,7 +850,6 @@ class ReportController extends Controller
                 'address' => 'nullable|string',
                 'specificPlace' => 'nullable|string',
                 'locationArea' => 'nullable|string',
-                'combined_address' => 'nullable|string', // NEW: for smart splitting
             ]);
 
             if (isset($validated['mahallah'])) {
@@ -882,41 +857,19 @@ class ReportController extends Controller
             }
 
             // ============================================
-            // SMART LOCATION SPLITTING FOR UPDATE
+            // ENHANCED LOCATION HANDLING - Auto-split addresses
             // ============================================
 
-            // If a combined address was provided, split it intelligently
-            if ($request->has('combined_address') && !empty($request->combined_address)) {
-                $split = $this->smartSplitLocation($request->combined_address);
-
-                $locationData = [
-                    'locationArea' => $split['locationArea'],
-                    'specificPlace' => $split['specificAddress'],
-                    'address' => $request->combined_address,
-                    'timestamp' => now()->toISOString()
-                ];
-
-                $validated['location'] = $locationData;
-
-                if ($split['locationArea']) {
-                    $validated['mahallah'] = $split['locationArea'];
-                }
-                if ($split['specificAddress']) {
-                    $validated['specificPlace'] = $split['specificAddress'];
-                }
-
-                \Log::info('Smart split result on update:', $split);
-            }
             // Case 1: User provided a complete location object
-            elseif ($request->has('location') && is_array($request->location)) {
+            if ($request->has('location') && is_array($request->location)) {
                 $locationData = $request->location;
 
                 // Auto-split if only full address was provided
                 if (!isset($locationData['locationArea']) && isset($locationData['address'])) {
-                    $split = $this->smartSplitLocation($locationData['address']);
+                    $split = $this->splitLocationIntoAreaAndPlace($report, $locationData['address']);
                     $locationData['locationArea'] = $split['locationArea'] ?? $locationData['address'];
-                    if ($split['specificAddress'] && !isset($locationData['specificPlace'])) {
-                        $locationData['specificPlace'] = $split['specificAddress'];
+                    if ($split['specificPlace'] && !isset($locationData['specificPlace'])) {
+                        $locationData['specificPlace'] = $split['specificPlace'];
                     }
                 }
 
@@ -935,6 +888,7 @@ class ReportController extends Controller
                     $validated['address'] = $locationData['address'];
                 }
             }
+
             // Case 2: User provided locationArea separately
             elseif ($request->has('locationArea') && $request->locationArea) {
                 $existingLocation = $report->location ?? [];
@@ -942,14 +896,15 @@ class ReportController extends Controller
                 $validated['location'] = $existingLocation;
                 $validated['mahallah'] = $existingLocation['locationArea'];
             }
+
             // Case 3: User provided a full address string (for backward compatibility)
             elseif ($request->has('address') && $request->address && !$request->has('location')) {
-                $split = $this->smartSplitLocation($request->address);
+                $split = $this->splitLocationIntoAreaAndPlace($report, $request->address);
 
                 $newLocation = $report->location ?? [];
                 $newLocation['locationArea'] = $split['locationArea'] ?? $request->address;
-                if ($split['specificAddress']) {
-                    $newLocation['specificPlace'] = $split['specificAddress'];
+                if ($split['specificPlace']) {
+                    $newLocation['specificPlace'] = $split['specificPlace'];
                 }
                 if ($split['building']) {
                     $newLocation['building'] = $split['building'];
@@ -959,6 +914,7 @@ class ReportController extends Controller
                 $validated['location'] = $newLocation;
                 $validated['mahallah'] = $newLocation['locationArea'];
             }
+
             // Case 4: Handle individual location fields being updated
             else {
                 $needsLocationUpdate = $request->has('mahallah') ||

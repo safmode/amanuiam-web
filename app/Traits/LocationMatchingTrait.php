@@ -8,44 +8,44 @@ trait LocationMatchingTrait
 {
     private $mainLocations = [
         // Mahallahs
-        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 200, 'key' => 'Asiah', 'display' => 'Mahallah Asiah'],
-        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 200, 'key' => 'Aminah', 'display' => 'Mahallah Aminah'],
-        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 200, 'key' => 'Safiyyah', 'display' => 'Mahallah Safiyyah'],
-        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 200, 'key' => 'Maryam', 'display' => 'Mahallah Maryam'],
-        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 200, 'key' => 'Ruqayyah', 'display' => 'Mahallah Ruqayyah'],
-        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 200, 'key' => 'Ali', 'display' => 'Mahallah Ali'],
-        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 200, 'key' => 'Faruq', 'display' => 'Mahallah Faruq'],
-        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 200, 'key' => 'Bilal', 'display' => 'Mahallah Bilal'],
-        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 200, 'key' => 'Asma', 'display' => 'Mahallah Asma'],
-        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 200, 'key' => 'Hafsah', 'display' => 'Mahallah Hafsah'],
-        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 200, 'key' => 'Halimah', 'display' => 'Mahallah Halimah'],
-        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 200, 'key' => 'Siddiq', 'display' => 'Mahallah Siddiq'],
-        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 200, 'key' => 'Salahuddin', 'display' => 'Mahallah Salahuddin'],
-        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 200, 'key' => 'Uthman', 'display' => 'Mahallah Uthman'],
-        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 200, 'key' => 'Nusaibah', 'display' => 'Mahallah Nusaibah'],
-        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 200, 'key' => 'Zubair Al-Awwam', 'display' => 'Mahallah Zubair'],
-        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 200, 'key' => 'Sumayyah', 'display' => 'Mahallah Sumayyah'],
+        'Mahallah Asiah' => ['keywords' => ['asiah', 'mahallah asiah'], 'radius' => 300, 'key' => 'Asiah', 'display' => 'Mahallah Asiah'],
+        'Mahallah Aminah' => ['keywords' => ['aminah', 'mahallah aminah'], 'radius' => 300, 'key' => 'Aminah', 'display' => 'Mahallah Aminah'],
+        'Mahallah Safiyyah' => ['keywords' => ['safiyyah', 'mahallah safiyyah'], 'radius' => 300, 'key' => 'Safiyyah', 'display' => 'Mahallah Safiyyah'],
+        'Mahallah Maryam' => ['keywords' => ['maryam', 'mahallah maryam'], 'radius' => 300, 'key' => 'Maryam', 'display' => 'Mahallah Maryam'],
+        'Mahallah Ruqayyah' => ['keywords' => ['ruqayyah', 'mahallah ruqayyah'], 'radius' => 300, 'key' => 'Ruqayyah', 'display' => 'Mahallah Ruqayyah'],
+        'Mahallah Ali' => ['keywords' => ['ali', 'mahallah ali'], 'radius' => 300, 'key' => 'Ali', 'display' => 'Mahallah Ali'],
+        'Mahallah Faruq' => ['keywords' => ['faruq', 'mahallah faruq'], 'radius' => 300, 'key' => 'Faruq', 'display' => 'Mahallah Faruq'],
+        'Mahallah Bilal' => ['keywords' => ['bilal', 'mahallah bilal'], 'radius' => 300, 'key' => 'Bilal', 'display' => 'Mahallah Bilal'],
+        'Mahallah Asma' => ['keywords' => ['asma', 'mahallah asma'], 'radius' => 300, 'key' => 'Asma', 'display' => 'Mahallah Asma'],
+        'Mahallah Hafsah' => ['keywords' => ['hafsah', 'mahallah hafsah'], 'radius' => 300, 'key' => 'Hafsah', 'display' => 'Mahallah Hafsah'],
+        'Mahallah Halimah' => ['keywords' => ['halimah', 'mahallah halimah'], 'radius' => 300, 'key' => 'Halimah', 'display' => 'Mahallah Halimah'],
+        'Mahallah Siddiq' => ['keywords' => ['siddiq', 'mahallah siddiq'], 'radius' => 300, 'key' => 'Siddiq', 'display' => 'Mahallah Siddiq'],
+        'Mahallah Salahuddin' => ['keywords' => ['salahuddin', 'mahallah salahuddin'], 'radius' => 300, 'key' => 'Salahuddin', 'display' => 'Mahallah Salahuddin'],
+        'Mahallah Uthman' => ['keywords' => ['uthman', 'mahallah uthman'], 'radius' => 300, 'key' => 'Uthman', 'display' => 'Mahallah Uthman'],
+        'Mahallah Nusaibah' => ['keywords' => ['nusaibah', 'mahallah nusaibah'], 'radius' => 300, 'key' => 'Nusaibah', 'display' => 'Mahallah Nusaibah'],
+        'Mahallah Zubair Al-Awwam' => ['keywords' => ['zubair', 'mahallah zubair'], 'radius' => 300, 'key' => 'Zubair Al-Awwam', 'display' => 'Mahallah Zubair'],
+        'Mahallah Sumayyah' => ['keywords' => ['sumayyah', 'mahallah sumayyah'], 'radius' => 300, 'key' => 'Sumayyah', 'display' => 'Mahallah Sumayyah'],
 
         // Kulliyyahs
-        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'human sciences'], 'radius' => 150, 'key' => 'KIRKHS', 'display' => 'KIRKHS (AHAS KIRKHS)'],
-        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'iibf', 'islamic banking'], 'radius' => 200, 'key' => 'KICT', 'display' => 'KICT (ICT)'],
-        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering'], 'radius' => 150, 'key' => 'KOE', 'display' => 'KOE (Engineering)'],
-        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture'], 'radius' => 150, 'key' => 'KAED', 'display' => 'KAED (Architecture)'],
-        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics'], 'radius' => 150, 'key' => 'KENMS', 'display' => 'KENMS (Economics)'],
-        'AIKOL (Law)' => ['keywords' => ['aikol', 'law'], 'radius' => 150, 'key' => 'AIKOL', 'display' => 'AIKOL (Law)'],
-        'KOED (Education)' => ['keywords' => ['koed', 'education'], 'radius' => 150, 'key' => 'KOED', 'display' => 'KOED (Education)'],
+        'KIRKHS (AHAS KIRKHS)' => ['keywords' => ['kirkhs', 'kulliyyah of human sciences', 'human sciences'], 'radius' => 250, 'key' => 'KIRKHS', 'display' => 'KIRKHS (AHAS KIRKHS)'],
+        'KICT (ICT)' => ['keywords' => ['kict', 'ict', 'information technology', 'iibf', 'islamic banking'], 'radius' => 300, 'key' => 'KICT', 'display' => 'KICT (ICT)'],
+        'KOE (Engineering)' => ['keywords' => ['koe', 'engineering'], 'radius' => 250, 'key' => 'KOE', 'display' => 'KOE (Engineering)'],
+        'KAED (Architecture)' => ['keywords' => ['kaed', 'architecture'], 'radius' => 250, 'key' => 'KAED', 'display' => 'KAED (Architecture)'],
+        'KENMS (Economics)' => ['keywords' => ['kenms', 'economics'], 'radius' => 250, 'key' => 'KENMS', 'display' => 'KENMS (Economics)'],
+        'AIKOL (Law)' => ['keywords' => ['aikol', 'law'], 'radius' => 250, 'key' => 'AIKOL', 'display' => 'AIKOL (Law)'],
+        'KOED (Education)' => ['keywords' => ['koed', 'education'], 'radius' => 250, 'key' => 'KOED', 'display' => 'KOED (Education)'],
 
         // Facilities
-        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah'], 'radius' => 100, 'key' => 'Dar al-Hikmah Library', 'display' => 'Dar al-Hikmah Library'],
-        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym'], 'radius' => 150, 'key' => 'Female Sports Complex', 'display' => 'Female Sports Complex'],
-        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah'], 'radius' => 200, 'key' => 'Saidina Hamzah Stadium', 'display' => 'Saidina Hamzah Stadium'],
-        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 100, 'key' => 'IIUM Archery Range', 'display' => 'IIUM Archery Range'],
-        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 120, 'key' => 'UIA Football Turf', 'display' => 'UIA Football Turf'],
-        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 150, 'key' => 'IIUM Cricket Ground', 'display' => 'IIUM Cricket Ground'],
-        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 150, 'key' => 'IIUM Rugby Field', 'display' => 'IIUM Rugby Field'],
-        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade'], 'radius' => 150, 'key' => 'Padang Kawad UIAM', 'display' => 'Padang Kawad UIAM'],
-        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten'], 'radius' => 100, 'key' => 'IIUM Educare', 'display' => 'IIUM Educare'],
-        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid'], 'radius' => 150, 'key' => 'Sultan Haji Ahmad Shah Mosque', 'display' => 'Sultan Haji Ahmad Shah Mosque'],
+        'Dar al-Hikmah Library' => ['keywords' => ['library', 'dar al-hikmah'], 'radius' => 200, 'key' => 'Dar al-Hikmah Library', 'display' => 'Dar al-Hikmah Library'],
+        'Female Sports Complex' => ['keywords' => ['female sports', 'sports complex', 'gym'], 'radius' => 250, 'key' => 'Female Sports Complex', 'display' => 'Female Sports Complex'],
+        'Saidina Hamzah Stadium' => ['keywords' => ['stadium', 'saidina hamzah'], 'radius' => 300, 'key' => 'Saidina Hamzah Stadium', 'display' => 'Saidina Hamzah Stadium'],
+        'IIUM Archery Range' => ['keywords' => ['archery', 'panahan'], 'radius' => 200, 'key' => 'IIUM Archery Range', 'display' => 'IIUM Archery Range'],
+        'UIA Football Turf' => ['keywords' => ['football', 'soccer', 'turf'], 'radius' => 250, 'key' => 'UIA Football Turf', 'display' => 'UIA Football Turf'],
+        'IIUM Cricket Ground' => ['keywords' => ['cricket', 'ground'], 'radius' => 250, 'key' => 'IIUM Cricket Ground', 'display' => 'IIUM Cricket Ground'],
+        'IIUM Rugby Field' => ['keywords' => ['rugby', 'field'], 'radius' => 250, 'key' => 'IIUM Rugby Field', 'display' => 'IIUM Rugby Field'],
+        'Padang Kawad UIAM' => ['keywords' => ['padang kawad', 'parade'], 'radius' => 250, 'key' => 'Padang Kawad UIAM', 'display' => 'Padang Kawad UIAM'],
+        'IIUM Educare' => ['keywords' => ['educare', 'kindergarten'], 'radius' => 200, 'key' => 'IIUM Educare', 'display' => 'IIUM Educare'],
+        'Sultan Haji Ahmad Shah Mosque' => ['keywords' => ['mosque', 'masjid'], 'radius' => 250, 'key' => 'Sultan Haji Ahmad Shah Mosque', 'display' => 'Sultan Haji Ahmad Shah Mosque'],
     ];
 
     private $mainLocationCoordinates = [];
@@ -221,7 +221,8 @@ trait LocationMatchingTrait
                         'location' => $mainLocationName,
                         'display' => $config['display'],
                         'key' => $config['key'],
-                        'keyword' => $keyword
+                        'keyword' => $keyword,
+                        'priority' => strlen($keyword) // Longer keywords get priority
                     ];
                 }
             }
@@ -229,68 +230,16 @@ trait LocationMatchingTrait
 
         if (empty($matches)) return null;
 
-        // Sort by keyword length (longest first) to get most specific match
+        // Sort by priority (longest keyword first)
         usort($matches, function($a, $b) {
-            return strlen($b['keyword']) - strlen($a['keyword']);
+            if ($a['priority'] !== $b['priority']) {
+                return $b['priority'] - $a['priority'];
+            }
+            return strcmp($a['display'], $b['display']);
         });
 
         Log::info('Text matched location by KEYWORD: ' . $matches[0]['display'] . ' (keyword: ' . $matches[0]['keyword'] . ')');
         return $matches[0];
-    }
-
-    /**
-     * Smart location splitter - splits a combined address into Location Area and Specific Address
-     * Example: "Co-Mart Ruqayyah" -> Location Area: "Mahallah Ruqayyah", Specific Address: "Co-Mart"
-     */
-    protected function smartSplitLocation($inputText)
-    {
-        if (empty($inputText)) {
-            return ['locationArea' => null, 'specificAddress' => null];
-        }
-
-        $inputLower = strtolower($inputText);
-        $matchedLocation = null;
-        $matchedKeyword = null;
-        $matchedDisplay = null;
-        $matchedKey = null;
-
-        // Find if any predefined location keyword exists in the text
-        foreach ($this->mainLocations as $mainLocationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($inputLower, strtolower($keyword)) !== false) {
-                    $matchedLocation = $mainLocationName;
-                    $matchedKeyword = $keyword;
-                    $matchedDisplay = $config['display'];
-                    $matchedKey = $config['key'];
-                    break 2;
-                }
-            }
-        }
-
-        if ($matchedLocation) {
-            // Remove the matched keyword/location from the text to get specific address
-            $specificAddress = $inputText;
-            $specificAddress = str_ireplace($matchedKeyword, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedDisplay, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedKey, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedLocation, '', $specificAddress);
-
-            // Clean up
-            $specificAddress = preg_replace('/\s+/', ' ', $specificAddress);
-            $specificAddress = preg_replace('/,\s*,/', ',', $specificAddress);
-            $specificAddress = trim($specificAddress, ' ,');
-
-            return [
-                'locationArea' => $matchedDisplay,
-                'specificAddress' => !empty($specificAddress) ? $specificAddress : null
-            ];
-        }
-
-        // No location found, everything goes to specific address
-        return [
-            'locationArea' => null,
-            'specificAddress' => $inputText
-        ];
     }
 
     /**
@@ -320,33 +269,36 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine report location - SMART HYBRID APPROACH
+     * Determine report location - TEXT FIRST, coordinates second
      * Priority:
-     * 1. Manual selection from dropdown (admin)
-     * 2. Coordinates proximity (mobile user)
-     * 3. Text keyword matching (for reports without coordinates but with text like "Co-Mart Ruqayyah")
-     *
-     * If no match found, returns null (Location Area shows "Not specified")
+     * 1. Text keyword matching (if address contains "Ruqayyah", use Mahallah Ruqayyah)
+     * 2. Coordinates proximity (for reports without text clues)
+     * 3. Manual selection from dropdown
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // METHOD 1: Check if locationArea is already manually set by admin (from dropdown)
-        $existingLocationArea = $this->getLocationAreaFromReport($report);
-        if (!empty($existingLocationArea)) {
-            // Check if it's a valid predefined location
-            $locationAreaLower = strtolower($existingLocationArea);
-            foreach ($this->mainLocations as $mainLocationName => $config) {
-                if (strtolower($config['display']) === $locationAreaLower ||
-                    strtolower($config['key']) === $locationAreaLower ||
-                    $locationAreaLower === strtolower($mainLocationName)) {
-                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $mainLocationName);
-                    return $returnKey ? $this->getLocationKey($mainLocationName) : $mainLocationName;
-                }
+        // METHOD 1: Extract location from address text FIRST (most reliable for named locations)
+        // This handles cases like "Co-Mart Ruqayyah" -> "Mahallah Ruqayyah"
+        // Even if GPS is wrong, trust what the user wrote
+        $addressText = $this->getFullAddressString($report);
+        if (!empty($addressText)) {
+            $matched = $this->extractLocationFromText($addressText);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by TEXT KEYWORD: ' . $matched['display']);
+                return $returnKey ? $matched['key'] : $matched['location'];
             }
-            // If manual value is not valid, don't use it - continue to other methods
         }
 
-        // METHOD 2: Try proximity matching using coordinates (MOST ACCURATE)
+        // METHOD 2: Try extracting from description if address is empty
+        if (empty($addressText) && !empty($report->description)) {
+            $matched = $this->extractLocationFromText($report->description);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by DESCRIPTION KEYWORD: ' . $matched['display']);
+                return $returnKey ? $matched['key'] : $matched['location'];
+            }
+        }
+
+        // METHOD 3: Try proximity matching using coordinates (for reports without text clues)
         $reportCoords = $this->getReportCoordinates($report);
         if ($reportCoords && !empty($this->mainLocationCoordinates)) {
             $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
@@ -357,23 +309,17 @@ trait LocationMatchingTrait
             }
         }
 
-        // METHOD 3: Extract location from address text (for reports without coordinates)
-        // This handles cases like "Co-Mart Ruqayyah" -> "Mahallah Ruqayyah"
-        $addressText = $this->getFullAddressString($report);
-        if (!empty($addressText)) {
-            $matched = $this->extractLocationFromText($addressText);
-            if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by TEXT KEYWORD: ' . $matched['display']);
-                return $returnKey ? $matched['key'] : $matched['location'];
-            }
-        }
-
-        // METHOD 4: Try extracting from description if address is empty
-        if (empty($addressText) && !empty($report->description)) {
-            $matched = $this->extractLocationFromText($report->description);
-            if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by DESCRIPTION KEYWORD: ' . $matched['display']);
-                return $returnKey ? $matched['key'] : $matched['location'];
+        // METHOD 4: Check if locationArea is already manually set (admin from dropdown)
+        $existingLocationArea = $this->getLocationAreaFromReport($report);
+        if (!empty($existingLocationArea)) {
+            $locationAreaLower = strtolower($existingLocationArea);
+            foreach ($this->mainLocations as $mainLocationName => $config) {
+                if (strtolower($config['display']) === $locationAreaLower ||
+                    strtolower($config['key']) === $locationAreaLower ||
+                    $locationAreaLower === strtolower($mainLocationName)) {
+                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $mainLocationName);
+                    return $returnKey ? $this->getLocationKey($mainLocationName) : $mainLocationName;
+                }
             }
         }
 
@@ -441,8 +387,10 @@ trait LocationMatchingTrait
 
             // Also remove any common location prefixes
             $fullText = str_ireplace('Mahallah ', '', $fullText);
+            $fullText = str_ireplace('Kulliyyah ', '', $fullText);
 
             // Clean up extra commas and spaces
+            $fullText = preg_replace('/\s+/', ' ', $fullText);
             $fullText = preg_replace('/,\s*,/', ',', $fullText);
             $fullText = preg_replace('/^\s*,\s*/', '', $fullText);
             $fullText = preg_replace('/\s*,\s*$/', '', $fullText);
@@ -450,7 +398,6 @@ trait LocationMatchingTrait
         }
 
         // If fullText is empty but we have matched location, return empty string
-        // The matched location will be shown in Location Area, nothing in Specific Address
         return !empty($fullText) ? $fullText : '';
     }
 
@@ -511,7 +458,7 @@ trait LocationMatchingTrait
         foreach ($reports as $report) {
             $assigned = false;
 
-            // Try to determine location using the smart hybrid method
+            // Try to determine location using the text-first hybrid method
             $determinedLocation = $this->determineReportLocation($report, false);
 
             if ($determinedLocation) {
