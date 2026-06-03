@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Models\SystemNotification;
 use App\Models\Admins;
+use App\Models\Student;
 use App\Events\NotificationSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -84,4 +85,25 @@ Route::post('/notifications/emergency', function (Request $request) {
         Log::error('Failed to create emergency notification: ' . $e->getMessage());
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
+});
+
+
+// ============================================
+// STUDENT SEARCH
+// ============================================
+
+Route::get('/students/search', function (Request $request) {
+    $student = Student::where('matrixNumber', $request->matric)->first();
+        if ($student) {
+            return response()->json([
+                'student' => [
+                    '_id' => (string)$student->_id,
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'matrixNumber' => $student->matrixNumber,
+                ]
+            ]);
+        }
+        return response()->json(['student' => null]);
 });
