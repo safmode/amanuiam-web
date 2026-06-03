@@ -90,17 +90,35 @@ export const locationLabels = {
   },
 };
 
-// Helper function to get location area (Mahallah/Kulliyyah/Facility)
+// Helper function to get location area - NOW USES SERVER-DETERMINED VALUE
 const getLocationArea = (report) => {
   if (!report) return 'Not specified';
 
-  // Check location object first
+  // PRIORITY 1: Use server-determined location (from proximity matching)
+  if (report.determinedLocation && report.determinedLocation !== 'Unknown') {
+    // Convert the key to display name
+    for (const group of Object.values(locationLabels)) {
+      for (const [key, label] of Object.entries(group)) {
+        if (key === report.determinedLocation ||
+            label === report.determinedLocation ||
+            report.determinedLocation.includes(key)) {
+          return label;
+        }
+      }
+    }
+    return report.determinedLocation;
+  }
+
+  // PRIORITY 2: Check location object from server (already processed)
+  if (report.locationArea && report.locationArea !== 'Not specified') {
+    return report.locationArea;
+  }
+
+  // PRIORITY 3: Check location object
   if (report.location && typeof report.location === 'object') {
     if (report.location.locationArea && report.location.locationArea.trim() !== '') {
-      // Check if it's a place name that should be in specific address
       const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
       const isPlaceName = placeNames.some(place => report.location.locationArea.toLowerCase().includes(place.toLowerCase()));
-
       if (!isPlaceName) {
         return report.location.locationArea;
       }
@@ -121,6 +139,11 @@ const getSpecificAddress = (report) => {
 
   const parts = [];
 
+  // PRIORITY: Use server-provided specific address if available
+  if (report.specificAddress && report.specificAddress !== 'Not specified') {
+    return report.specificAddress;
+  }
+
   // Check location object
   if (report.location && typeof report.location === 'object') {
     // Add specificPlace (business names like "7 Eleven")
@@ -136,7 +159,6 @@ const getSpecificAddress = (report) => {
     if (report.location.locationArea && report.location.locationArea.trim() !== '') {
       const placeNames = ['7 eleven', 'seven eleven', 'office', 'cafe', 'cafeteria', 'library', 'gym', 'store', 'shop', 'restaurant', 'food court'];
       const isPlaceName = placeNames.some(place => report.location.locationArea.toLowerCase().includes(place.toLowerCase()));
-
       if (isPlaceName && parts.length === 0) {
         parts.push(report.location.locationArea);
       }
@@ -167,6 +189,8 @@ const getLocationIcon = (locationArea) => {
       areaLower.includes('kaed') || areaLower.includes('kenms') || areaLower.includes('aikol') ||
       areaLower.includes('koed')) return <Landmark className="w-3 h-3 text-blue-600 dark:text-blue-400" />;
   if (areaLower.includes('library')) return <Library className="w-3 h-3 text-purple-600 dark:text-purple-400" />;
+  if (areaLower.includes('stadium')) return <Landmark className="w-3 h-3 text-green-600 dark:text-green-400" />;
+  if (areaLower.includes('mosque')) return <Landmark className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />;
 
   return <Building className="w-3 h-3 text-gray-600 dark:text-gray-400" />;
 };
@@ -273,7 +297,8 @@ const Reports = () => {
       reporterFullName: r.studentName,
       category: r.incidentCategory,
       categoryDisplay: categoryLabels[r.incidentCategory] || r.incidentCategory,
-      locationArea: getLocationArea(r),
+      // Use server-determined location if available
+      locationArea: r.determinedLocation ? formatLocationName(r.determinedLocation) : getLocationArea(r),
       specificAddress: getSpecificAddress(r),
       description: r.description,
       date: r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString('en-MY') : '—',
@@ -501,7 +526,7 @@ const Reports = () => {
           escapeCSV(r.studentEmail || '—'),
           escapeCSV(r.studentPhone || '—'),
           escapeCSV(categoryLabels[r.incidentCategory] || r.incidentCategory || '—'),
-          escapeCSV(getLocationArea(r)),
+          escapeCSV(r.determinedLocation ? formatLocationName(r.determinedLocation) : getLocationArea(r)),
           escapeCSV(getSpecificAddress(r)),
           r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString('en-MY') : '—',
           r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleTimeString('en-MY') : '—',
@@ -595,8 +620,8 @@ const Reports = () => {
           bVal = categoryLabels[b.incidentCategory] || b.incidentCategory || '';
           break;
         case 'locationArea':
-          aVal = getLocationArea(a);
-          bVal = getLocationArea(b);
+          aVal = a.determinedLocation ? formatLocationName(a.determinedLocation) : getLocationArea(a);
+          bVal = b.determinedLocation ? formatLocationName(b.determinedLocation) : getLocationArea(b);
           break;
         case 'specificAddress':
           aVal = getSpecificAddress(a);
