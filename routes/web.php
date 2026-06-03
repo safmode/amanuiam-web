@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
 use App\Models\Emergencies;
+use App\Models\Student;
 
 // ============================================
 // TEST ROUTES
@@ -47,6 +48,26 @@ Route::get('/health', function () {
         'app' => 'Emergency Alert System'
     ]);
 })->name('health.check');
+
+// ============================================
+// STUDENT SEARCH
+// ============================================
+
+Route::get('/students/search', function (Request $request) {
+    $student = Student::where('matrixNumber', $request->matric)->first();
+    if ($student) {
+        return response()->json([
+            'student' => [
+                '_id' => (string)$student->_id,
+                'name' => $student->name,
+                'email' => $student->email,
+                'phone' => $student->phone,
+                'matrixNumber' => $student->matrixNumber,
+            ]
+        ]);
+    }
+    return response()->json(['student' => null]);
+});
 
 
 // ============================================

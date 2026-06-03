@@ -98,7 +98,39 @@ class EmergencyController extends Controller
 
             NotificationController::createEmergencyAlert($emergency, $student);
 
-            Log::info('Emergency created - waiting for dispatch before sending Telegram');
+            // ✅ SEND TELEGRAM NOTIFICATION TO ALL ELIGIBLE OFFICERS FOR NEW EMERGENCY
+            try {
+                $officers = Officer::where('receive_emergency', true)
+                    ->whereNotNull('telegram_chat_id')
+                    ->get();
+
+                $studentName = $student->name ?? 'Unknown Student';
+                $matrixNumber = $student->matrixNumber ?? 'N/A';
+                $phone = $student->phone ?? 'N/A';
+                $location = $validated['address'] ?? 'Unknown location';
+
+                $message = "🚨 *EMERGENCY ALERT* 🚨\n\n";
+                $message .= "*Student:* {$studentName}\n";
+                $message .= "*Matrix:* {$matrixNumber}\n";
+                $message .= "*Phone:* {$phone}\n";
+                $message .= "*Location:* {$location}\n";
+                $message .= "*Time:* " . now()->format('d/m/Y H:i:s') . "\n\n";
+                $message .= "⚠️ *URGENT: Immediate action required!*\n\n";
+                $message .= "Use `/myemergencies` to view active emergencies.\n";
+                $message .= "Use `/resolve EMERGENCY_ID` to resolve.";
+
+                $sentCount = 0;
+                foreach ($officers as $officer) {
+                    if ($this->sendTelegramMessage($officer->telegram_chat_id, $message)) {
+                        $sentCount++;
+                    }
+                }
+                Log::info("Telegram emergency alert sent to {$sentCount} officers");
+            } catch (\Exception $e) {
+                Log::error('Failed to send Telegram for new emergency: ' . $e->getMessage());
+            }
+
+            Log::info('Emergency created - Telegram notifications sent to officers');
 
             // Mobile notification via Node.js
             try {
@@ -401,6 +433,47 @@ class EmergencyController extends Controller
             // Clear cache
             cache()->forget('emergency_counts');
 
+            // ✅ SEND TELEGRAM NOTIFICATION TO THE ASSIGNED OFFICER ONLY
+            try {
+                $assignedOfficer = Officer::where('officerId', $validated['officerId'])->first();
+
+                if ($assignedOfficer && $assignedOfficer->telegram_chat_id && $assignedOfficer->receive_emergency) {
+                    $student = Student::find($emergency->studentId);
+                    $studentName = $student ? $student->name : 'Unknown Student';
+                    $matrixNumber = $student ? $student->matrixNumber : 'N/A';
+                    $phone = $student ? $student->phone : 'N/A';
+
+                    $message = "👮 *TASK ASSIGNED TO YOU* 👮\n\n";
+                    $message .= "*{$assignedOfficer->officerName}*, you have been assigned to an emergency.\n\n";
+                    $message .= "*Student:* {$studentName}\n";
+                    $message .= "*Matrix:* {$matrixNumber}\n";
+                    $message .= "*Phone:* {$phone}\n";
+                    $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
+                    $message .= "*Reported at:* " . ($emergency->triggeredAt instanceof \DateTime
+                        ? $emergency->triggeredAt->format('d/m/Y H:i:s')
+                        : date('d/m/Y H:i:s', strtotime($emergency->triggeredAt))) . "\n\n";
+                    $message .= "📋 *Your Task:*\n";
+                    $message .= "• Respond to the location immediately\n";
+                    $message .= "• Assess the situation\n";
+                    $message .= "• Provide assistance to the student\n";
+                    $message .= "• Update the status when resolved\n\n";
+                    $message .= "⚠️ *Please respond to this emergency as soon as possible!*\n\n";
+                    $message .= "Use `/myemergencies` to view your active emergencies.\n";
+                    $message .= "Use `/resolve` to mark as resolved when done.";
+
+                    $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
+                    Log::info('Telegram dispatch notification sent to assigned officer: ' . $assignedOfficer->officerName);
+                } else {
+                    Log::info('Assigned officer has no Telegram or disabled notifications', [
+                        'officer_id' => $validated['officerId'],
+                        'has_chat_id' => isset($assignedOfficer->telegram_chat_id),
+                        'receive_emergency' => $assignedOfficer->receive_emergency ?? false
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send Telegram dispatch notification: ' . $e->getMessage());
+            }
+
             // 🔥 FIX: Always return redirect for Inertia, JSON for API
             if ($request->header('X-Inertia')) {
                 return redirect()->back()->with('success', 'Officer dispatched successfully');
@@ -681,6 +754,8 @@ class EmergencyController extends Controller
             if (!$student) {
                 $student = new \stdClass();
                 $student->name = 'Unknown Student';
+                $student->matrixNumber = 'N/A';
+                $student->phone = 'N/A';
             }
 
             $emergency->status = $newStatus;
@@ -707,7 +782,7 @@ class EmergencyController extends Controller
                 Log::error('Failed to notify mobile server for emergency revert: ' . $e->getMessage());
             }
 
-            // Send Telegram notification ONLY to the assigned officer for revert
+            // ✅ SEND TELEGRAM NOTIFICATION TO THE ASSIGNED OFFICER FOR REVERT
             try {
                 $assignedOfficer = null;
                 if ($emergency->assigned_officer_id) {
@@ -721,21 +796,48 @@ class EmergencyController extends Controller
                     Log::info('Sending Telegram revert notification to assigned officer only: ' . $assignedOfficer->officerName);
 
                     if ($newStatus === 'responding') {
+                        // COMPLETE message for responding status
                         $message = "👮 *OFFICER DISPATCHED* 👮\n\n";
+                        $message .= "*{$assignedOfficer->officerName}*, you have been assigned to an emergency.\n\n";
                         $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                        $message .= "*Officer:* " . ($emergency->assigned_officer_name ?? 'An officer') . "\n";
-                        $message .= "*Status:* Responding to emergency\n\n";
-                        $message .= "✅ You have been assigned to respond to this emergency.";
+                        $message .= "*Matrix:* " . ($student->matrixNumber ?? 'N/A') . "\n";
+                        $message .= "*Phone:* " . ($student->phone ?? 'N/A') . "\n";
+                        $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
+                        $message .= "*Reported at:* " . ($emergency->triggeredAt instanceof \DateTime
+                            ? $emergency->triggeredAt->format('d/m/Y H:i:s')
+                            : date('d/m/Y H:i:s', strtotime($emergency->triggeredAt))) . "\n\n";
+                        $message .= "📋 *Your Task:*\n";
+                        $message .= "• Respond to the location immediately\n";
+                        $message .= "• Assess the situation\n";
+                        $message .= "• Provide assistance to the student\n";
+                        $message .= "• Update the status when resolved\n\n";
+                        $message .= "⚠️ *Please respond to this emergency as soon as possible!*\n\n";
+                        $message .= "Use `/myemergencies` to view your active emergencies.\n";
+                        $message .= "Use `/resolve` to mark as resolved when done.";
                     } else {
+                        // Message for active status
                         $message = "🚨 *EMERGENCY ACTIVE* 🚨\n\n";
                         $message .= "*Student:* " . ($student->name ?? 'Unknown') . "\n";
-                        $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n\n";
-                        $message .= "⚠️ You are assigned to this emergency. Please respond as soon as possible.";
+                        $message .= "*Matrix:* " . ($student->matrixNumber ?? 'N/A') . "\n";
+                        $message .= "*Phone:* " . ($student->phone ?? 'N/A') . "\n";
+                        $message .= "*Location:* " . ($emergency->address ?? 'Unknown') . "\n";
+                        $message .= "*Reported at:* " . ($emergency->triggeredAt instanceof \DateTime
+                            ? $emergency->triggeredAt->format('d/m/Y H:i:s')
+                            : date('d/m/Y H:i:s', strtotime($emergency->triggeredAt))) . "\n\n";
+                        $message .= "⚠️ You are assigned to this emergency. Please respond as soon as possible.\n\n";
+                        $message .= "Use `/myemergencies` to view your active emergencies.\n";
+                        $message .= "Use `/resolve` to mark as resolved when done.";
                     }
 
                     $this->sendTelegramMessage($assignedOfficer->telegram_chat_id, $message);
+                    Log::info('Telegram revert notification sent to assigned officer: ' . $assignedOfficer->officerName);
                 } else {
-                    Log::info('No assigned officer found with Telegram for revert notification');
+                    Log::info('No assigned officer found with Telegram for revert notification', [
+                        'officer_id' => $emergency->assigned_officer_id,
+                        'officer_name' => $emergency->assigned_officer_name,
+                        'has_chat_id' => isset($assignedOfficer->telegram_chat_id),
+                        'receive_emergency' => $assignedOfficer->receive_emergency ?? false
+                    ]);
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to send Telegram revert notification to assigned officer: ' . $e->getMessage());
