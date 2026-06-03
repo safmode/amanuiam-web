@@ -319,66 +319,71 @@ trait LocationMatchingTrait
     protected function getOriginalLocationText($report)
     {
         $location = $report->location;
-        $fullText = '';
+        $address = '';
+        $matchedLocationDisplay = null;
 
         if (is_string($location)) {
             $location = json_decode($location, true);
         }
 
         if (is_array($location)) {
-            // Priority order for Specific Address:
-            // 1. specificPlace (if already set)
-            // 2. building (if already set)
-            // 3. address - extract from here
-
+            // Priority: specificPlace, building, then address
             if (!empty($location['specificPlace'])) {
                 return $location['specificPlace'];
             }
-
             if (!empty($location['building'])) {
                 return $location['building'];
             }
-
             if (!empty($location['address'])) {
-                $fullText = $location['address'];
+                $address = $location['address'];
             }
         }
 
-        // Fallback to report fields
-        if (empty($fullText) && !empty($report->specificPlace)) {
-            return $report->specificPlace;
+        // Fallback
+        if (empty($address) && !empty($report->address)) {
+            $address = $report->address;
         }
-        if (empty($fullText) && !empty($report->building)) {
+        if (empty($address) && !empty($report->building)) {
             return $report->building;
         }
-        if (empty($fullText) && !empty($report->address)) {
-            $fullText = $report->address;
+        if (empty($address) && !empty($report->specificPlace)) {
+            return $report->specificPlace;
         }
 
-        // Find the matched location to remove it
-        $matchedLocation = $this->determineReportLocation($report, false);
-        if ($matchedLocation && !empty($fullText)) {
-            $displayName = $this->getLocationDisplayName($matchedLocation);
-            $shortKey = $this->getLocationKey($matchedLocation);
-
-            // Remove the location name and keep everything else
-            $fullText = str_ireplace($displayName, '', $fullText);
-            $fullText = str_ireplace($shortKey, '', $fullText);
-            $fullText = str_ireplace($matchedLocation, '', $fullText);
-            $fullText = str_ireplace('Mahallah ', '', $fullText);
-            $fullText = str_ireplace('Kulliyyah ', '', $fullText);
-
-            // Clean up
-            $fullText = preg_replace('/\s+/', ' ', $fullText);
-            $fullText = trim($fullText, ' ,');
+        if (empty($address)) {
+            return 'Not specified';
         }
 
-        // If still empty, return the original address (fallback)
-        if (empty($fullText) && !empty($location['address'])) {
-            $fullText = $location['address'];
+        // Extract the location name directly from the address using keywords
+        $addressLower = strtolower($address);
+        $foundLocation = null;
+
+        foreach ($this->mainLocations as $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($addressLower, strtolower($keyword)) !== false) {
+                    $foundLocation = $config['display'];
+                    break 2;
+                }
+            }
         }
 
-        return !empty($fullText) ? $fullText : 'Not specified';
+        // If we found a location in the address, remove it
+        if ($foundLocation) {
+            $result = str_ireplace($foundLocation, '', $address);
+            // Also remove common prefixes
+            $result = str_ireplace('Mahallah ', '', $result);
+            $result = str_ireplace('Kulliyyah ', '', $result);
+            $result = preg_replace('/\s+/', ' ', $result);
+            $result = trim($result, ' ,');
+
+            // For "Musallah Mahallah Ruqayyah" -> "Musallah"
+            // For "Co-Mart Ruqayyah" -> "Co-Mart"
+            // For "Block F" -> "Block F" (no location found)
+            return !empty($result) ? $result : 'Not specified';
+        }
+
+        // No location found in address, return the whole address
+        return !empty($address) ? $address : 'Not specified';
     }
 
     /**

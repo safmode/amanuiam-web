@@ -49,26 +49,6 @@ Route::get('/health', function () {
     ]);
 })->name('health.check');
 
-// ============================================
-// STUDENT SEARCH
-// ============================================
-
-Route::get('/students/search', function (Request $request) {
-    $student = Student::where('matrixNumber', $request->matric)->first();
-    if ($student) {
-        return response()->json([
-            'student' => [
-                '_id' => (string)$student->_id,
-                'name' => $student->name,
-                'email' => $student->email,
-                'phone' => $student->phone,
-                'matrixNumber' => $student->matrixNumber,
-            ]
-        ]);
-    }
-    return response()->json(['student' => null]);
-});
-
 
 // ============================================
 // WEBHOOK ROUTES
@@ -804,6 +784,27 @@ Route::middleware('auth')->group(function () {
             ->orderBy('created_at', 'desc')
             ->get();
     });
+
+    // ============================================
+    // STUDENT SEARCH
+    // ============================================
+
+    Route::get('/students/search', function (Request $request) {
+        $student = Student::where('matrixNumber', $request->matric)->first();
+        if ($student) {
+            return response()->json([
+                'student' => [
+                    '_id' => (string)$student->_id,
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'phone' => $student->phone,
+                    'matrixNumber' => $student->matrixNumber,
+                ]
+            ]);
+        }
+        return response()->json(['student' => null]);
+    });
+
     Route::put('/admin/update-status/{adminId}', [AdminAuthController::class, 'updateStatus']);
     Route::put('/admin/approve/{adminId}', [AdminAuthController::class, 'approve']);
     Route::put('/admin/reject/{adminId}', [AdminAuthController::class, 'reject']);
