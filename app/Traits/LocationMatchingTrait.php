@@ -126,6 +126,32 @@ trait LocationMatchingTrait
     }
 
     /**
+     * Get specificPlace from report
+     */
+    protected function getSpecificPlaceFromReport($report)
+    {
+        if (!isset($report->location)) {
+            return '';
+        }
+
+        $location = $report->location;
+
+        if (is_string($location)) {
+            $location = json_decode($location, true);
+        }
+
+        if (is_array($location)) {
+            return $location['specificPlace'] ?? '';
+        }
+
+        if (is_object($location) && isset($location->specificPlace)) {
+            return $location->specificPlace;
+        }
+
+        return '';
+    }
+
+    /**
      * Calculate distance between two points in meters (Haversine formula)
      */
     protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
@@ -203,9 +229,68 @@ trait LocationMatchingTrait
 
         if (empty($matches)) return null;
 
-        // Return the first match (or you could sort by keyword length to get most specific)
+        // Sort by keyword length (longest first) to get most specific match
+        usort($matches, function($a, $b) {
+            return strlen($b['keyword']) - strlen($a['keyword']);
+        });
+
         Log::info('Text matched location by KEYWORD: ' . $matches[0]['display'] . ' (keyword: ' . $matches[0]['keyword'] . ')');
         return $matches[0];
+    }
+
+    /**
+     * Smart location splitter - splits a combined address into Location Area and Specific Address
+     * Example: "Co-Mart Ruqayyah" -> Location Area: "Mahallah Ruqayyah", Specific Address: "Co-Mart"
+     */
+    protected function smartSplitLocation($inputText)
+    {
+        if (empty($inputText)) {
+            return ['locationArea' => null, 'specificAddress' => null];
+        }
+
+        $inputLower = strtolower($inputText);
+        $matchedLocation = null;
+        $matchedKeyword = null;
+        $matchedDisplay = null;
+        $matchedKey = null;
+
+        // Find if any predefined location keyword exists in the text
+        foreach ($this->mainLocations as $mainLocationName => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (strpos($inputLower, strtolower($keyword)) !== false) {
+                    $matchedLocation = $mainLocationName;
+                    $matchedKeyword = $keyword;
+                    $matchedDisplay = $config['display'];
+                    $matchedKey = $config['key'];
+                    break 2;
+                }
+            }
+        }
+
+        if ($matchedLocation) {
+            // Remove the matched keyword/location from the text to get specific address
+            $specificAddress = $inputText;
+            $specificAddress = str_ireplace($matchedKeyword, '', $specificAddress);
+            $specificAddress = str_ireplace($matchedDisplay, '', $specificAddress);
+            $specificAddress = str_ireplace($matchedKey, '', $specificAddress);
+            $specificAddress = str_ireplace($matchedLocation, '', $specificAddress);
+
+            // Clean up
+            $specificAddress = preg_replace('/\s+/', ' ', $specificAddress);
+            $specificAddress = preg_replace('/,\s*,/', ',', $specificAddress);
+            $specificAddress = trim($specificAddress, ' ,');
+
+            return [
+                'locationArea' => $matchedDisplay,
+                'specificAddress' => !empty($specificAddress) ? $specificAddress : null
+            ];
+        }
+
+        // No location found, everything goes to specific address
+        return [
+            'locationArea' => null,
+            'specificAddress' => $inputText
+        ];
     }
 
     /**
@@ -299,7 +384,7 @@ trait LocationMatchingTrait
 
     /**
      * Get the original location text for Specific Address column
-     * This removes the matched location keyword from the text
+     * This removes the matched location keyword from the text and preserves everything else
      */
     protected function getOriginalLocationText($report)
     {
@@ -313,6 +398,12 @@ trait LocationMatchingTrait
         if (is_array($location)) {
             // Build the full text from all available fields
             $parts = [];
+
+            // Priority order for Specific Address:
+            // 1. specificPlace (business names like "7 Eleven", "Co-Mart")
+            // 2. building (block, room numbers)
+            // 3. address (full address)
+
             if (!empty($location['specificPlace'])) {
                 $parts[] = $location['specificPlace'];
             }
@@ -322,10 +413,7 @@ trait LocationMatchingTrait
             if (!empty($location['address'])) {
                 $parts[] = $location['address'];
             }
-            if (!empty($location['locationArea']) && empty($parts)) {
-                // Only use locationArea if no other fields exist
-                $parts[] = $location['locationArea'];
-            }
+
             $fullText = implode(', ', $parts);
         }
 
@@ -336,19 +424,33 @@ trait LocationMatchingTrait
         if (empty($fullText) && !empty($report->address)) {
             $fullText = $report->address;
         }
+        if (empty($fullText) && !empty($report->specificPlace)) {
+            $fullText = $report->specificPlace;
+        }
 
         // If we have a matched location, try to remove it from the text to avoid duplication
         $matchedLocation = $this->determineReportLocation($report, false);
         if ($matchedLocation && !empty($fullText)) {
             $displayName = $this->getLocationDisplayName($matchedLocation);
-            // Remove the location name from the text
+            $shortKey = $this->getLocationKey($matchedLocation);
+
+            // Remove the location name variations from the text
             $fullText = str_ireplace($displayName, '', $fullText);
+            $fullText = str_ireplace($shortKey, '', $fullText);
             $fullText = str_ireplace($matchedLocation, '', $fullText);
+
+            // Also remove any common location prefixes
+            $fullText = str_ireplace('Mahallah ', '', $fullText);
+
             // Clean up extra commas and spaces
             $fullText = preg_replace('/,\s*,/', ',', $fullText);
+            $fullText = preg_replace('/^\s*,\s*/', '', $fullText);
+            $fullText = preg_replace('/\s*,\s*$/', '', $fullText);
             $fullText = trim($fullText, ' ,');
         }
 
+        // If fullText is empty but we have matched location, return empty string
+        // The matched location will be shown in Location Area, nothing in Specific Address
         return !empty($fullText) ? $fullText : '';
     }
 
