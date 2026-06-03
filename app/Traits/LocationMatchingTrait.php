@@ -126,32 +126,6 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Get specificPlace from report
-     */
-    protected function getSpecificPlaceFromReport($report)
-    {
-        if (!isset($report->location)) {
-            return '';
-        }
-
-        $location = $report->location;
-
-        if (is_string($location)) {
-            $location = json_decode($location, true);
-        }
-
-        if (is_array($location)) {
-            return $location['specificPlace'] ?? '';
-        }
-
-        if (is_object($location) && isset($location->specificPlace)) {
-            return $location->specificPlace;
-        }
-
-        return '';
-    }
-
-    /**
      * Calculate distance between two points in meters (Haversine formula)
      */
     protected function calculateDistance($lat1, $lng1, $lat2, $lng2)
@@ -204,93 +178,24 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Extract location name from text by checking keywords
-     * Returns the matching location display name or null
+     * Match locationArea to main location using keywords (only against predefined list)
      */
-    protected function extractLocationFromText($text)
+    protected function matchLocationToMainLocation($locationArea)
     {
-        if (empty($text)) return null;
+        if (empty($locationArea)) return null;
 
-        $textLower = strtolower($text);
-        $matches = [];
+        $locationAreaLower = strtolower($locationArea);
 
         foreach ($this->mainLocations as $mainLocationName => $config) {
             foreach ($config['keywords'] as $keyword) {
-                if (strpos($textLower, strtolower($keyword)) !== false) {
-                    $matches[] = [
-                        'location' => $mainLocationName,
-                        'display' => $config['display'],
-                        'key' => $config['key'],
-                        'keyword' => $keyword
-                    ];
+                if (strpos($locationAreaLower, strtolower($keyword)) !== false) {
+                    Log::info('Location matched by KEYWORD: ' . $mainLocationName . ' (keyword: ' . $keyword . ')');
+                    return $mainLocationName;
                 }
             }
         }
 
-        if (empty($matches)) return null;
-
-        // Sort by keyword length (longest first) to get most specific match
-        usort($matches, function($a, $b) {
-            return strlen($b['keyword']) - strlen($a['keyword']);
-        });
-
-        Log::info('Text matched location by KEYWORD: ' . $matches[0]['display'] . ' (keyword: ' . $matches[0]['keyword'] . ')');
-        return $matches[0];
-    }
-
-    /**
-     * Smart location splitter - splits a combined address into Location Area and Specific Address
-     * Example: "Co-Mart Ruqayyah" -> Location Area: "Mahallah Ruqayyah", Specific Address: "Co-Mart"
-     */
-    protected function smartSplitLocation($inputText)
-    {
-        if (empty($inputText)) {
-            return ['locationArea' => null, 'specificAddress' => null];
-        }
-
-        $inputLower = strtolower($inputText);
-        $matchedLocation = null;
-        $matchedKeyword = null;
-        $matchedDisplay = null;
-        $matchedKey = null;
-
-        // Find if any predefined location keyword exists in the text
-        foreach ($this->mainLocations as $mainLocationName => $config) {
-            foreach ($config['keywords'] as $keyword) {
-                if (strpos($inputLower, strtolower($keyword)) !== false) {
-                    $matchedLocation = $mainLocationName;
-                    $matchedKeyword = $keyword;
-                    $matchedDisplay = $config['display'];
-                    $matchedKey = $config['key'];
-                    break 2;
-                }
-            }
-        }
-
-        if ($matchedLocation) {
-            // Remove the matched keyword/location from the text to get specific address
-            $specificAddress = $inputText;
-            $specificAddress = str_ireplace($matchedKeyword, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedDisplay, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedKey, '', $specificAddress);
-            $specificAddress = str_ireplace($matchedLocation, '', $specificAddress);
-
-            // Clean up
-            $specificAddress = preg_replace('/\s+/', ' ', $specificAddress);
-            $specificAddress = preg_replace('/,\s*,/', ',', $specificAddress);
-            $specificAddress = trim($specificAddress, ' ,');
-
-            return [
-                'locationArea' => $matchedDisplay,
-                'specificAddress' => !empty($specificAddress) ? $specificAddress : null
-            ];
-        }
-
-        // No location found, everything goes to specific address
-        return [
-            'locationArea' => null,
-            'specificAddress' => $inputText
-        ];
+        return null;
     }
 
     /**
@@ -320,33 +225,23 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Determine report location - SMART HYBRID APPROACH
-     * Priority:
-     * 1. Manual selection from dropdown (admin)
-     * 2. Coordinates proximity (mobile user)
-     * 3. Text keyword matching (for reports without coordinates but with text like "Co-Mart Ruqayyah")
-     *
-     * If no match found, returns null (Location Area shows "Not specified")
+     * Determine report location - HYBRID APPROACH
+     * Priority: 1. Manually set locationArea, 2. Coordinates proximity, 3. Keyword matching
      */
     protected function determineReportLocation($report, $returnKey = true)
     {
-        // METHOD 1: Check if locationArea is already manually set by admin (from dropdown)
+        // METHOD 1: Check if locationArea is already manually set (admin created)
         $existingLocationArea = $this->getLocationAreaFromReport($report);
         if (!empty($existingLocationArea)) {
-            // Check if it's a valid predefined location
-            $locationAreaLower = strtolower($existingLocationArea);
-            foreach ($this->mainLocations as $mainLocationName => $config) {
-                if (strtolower($config['display']) === $locationAreaLower ||
-                    strtolower($config['key']) === $locationAreaLower ||
-                    $locationAreaLower === strtolower($mainLocationName)) {
-                    Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $mainLocationName);
-                    return $returnKey ? $this->getLocationKey($mainLocationName) : $mainLocationName;
-                }
+            // Check if it's already a valid predefined location
+            $matched = $this->matchLocationToMainLocation($existingLocationArea);
+            if ($matched) {
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' using manually set location: ' . $matched);
+                return $returnKey ? $this->getLocationKey($matched) : $matched;
             }
-            // If manual value is not valid, don't use it - continue to other methods
         }
 
-        // METHOD 2: Try proximity matching using coordinates (MOST ACCURATE)
+        // METHOD 2: Try proximity matching using coordinates (for mobile reports)
         $reportCoords = $this->getReportCoordinates($report);
         if ($reportCoords && !empty($this->mainLocationCoordinates)) {
             $matchedLocation = $this->findClosestLocationByProximity($reportCoords);
@@ -357,23 +252,12 @@ trait LocationMatchingTrait
             }
         }
 
-        // METHOD 3: Extract location from address text (for reports without coordinates)
-        // This handles cases like "Co-Mart Ruqayyah" -> "Mahallah Ruqayyah"
-        $addressText = $this->getFullAddressString($report);
-        if (!empty($addressText)) {
-            $matched = $this->extractLocationFromText($addressText);
+        // METHOD 3: Fallback to keyword matching (for legacy data)
+        if (!empty($existingLocationArea)) {
+            $matched = $this->matchLocationToMainLocation($existingLocationArea);
             if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by TEXT KEYWORD: ' . $matched['display']);
-                return $returnKey ? $matched['key'] : $matched['location'];
-            }
-        }
-
-        // METHOD 4: Try extracting from description if address is empty
-        if (empty($addressText) && !empty($report->description)) {
-            $matched = $this->extractLocationFromText($report->description);
-            if ($matched) {
-                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by DESCRIPTION KEYWORD: ' . $matched['display']);
-                return $returnKey ? $matched['key'] : $matched['location'];
+                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched by KEYWORD: ' . $matched);
+                return $returnKey ? $this->getLocationKey($matched) : $matched;
             }
         }
 
@@ -383,75 +267,26 @@ trait LocationMatchingTrait
     }
 
     /**
-     * Get the original location text for Specific Address column
-     * This removes the matched location keyword from the text and preserves everything else
+     * Get the original location text (for Specific Address column)
      */
     protected function getOriginalLocationText($report)
     {
         $location = $report->location;
-        $fullText = '';
 
         if (is_string($location)) {
             $location = json_decode($location, true);
         }
 
         if (is_array($location)) {
-            // Build the full text from all available fields
-            $parts = [];
-
-            // Priority order for Specific Address:
-            // 1. specificPlace (business names like "7 Eleven", "Co-Mart")
-            // 2. building (block, room numbers)
-            // 3. address (full address)
-
-            if (!empty($location['specificPlace'])) {
-                $parts[] = $location['specificPlace'];
-            }
-            if (!empty($location['building'])) {
-                $parts[] = $location['building'];
-            }
             if (!empty($location['address'])) {
-                $parts[] = $location['address'];
+                return $location['address'];
             }
-
-            $fullText = implode(', ', $parts);
+            if (!empty($location['locationArea'])) {
+                return $location['locationArea'];
+            }
         }
 
-        // Fallback to building or address fields
-        if (empty($fullText) && !empty($report->building)) {
-            $fullText = $report->building;
-        }
-        if (empty($fullText) && !empty($report->address)) {
-            $fullText = $report->address;
-        }
-        if (empty($fullText) && !empty($report->specificPlace)) {
-            $fullText = $report->specificPlace;
-        }
-
-        // If we have a matched location, try to remove it from the text to avoid duplication
-        $matchedLocation = $this->determineReportLocation($report, false);
-        if ($matchedLocation && !empty($fullText)) {
-            $displayName = $this->getLocationDisplayName($matchedLocation);
-            $shortKey = $this->getLocationKey($matchedLocation);
-
-            // Remove the location name variations from the text
-            $fullText = str_ireplace($displayName, '', $fullText);
-            $fullText = str_ireplace($shortKey, '', $fullText);
-            $fullText = str_ireplace($matchedLocation, '', $fullText);
-
-            // Also remove any common location prefixes
-            $fullText = str_ireplace('Mahallah ', '', $fullText);
-
-            // Clean up extra commas and spaces
-            $fullText = preg_replace('/,\s*,/', ',', $fullText);
-            $fullText = preg_replace('/^\s*,\s*/', '', $fullText);
-            $fullText = preg_replace('/\s*,\s*$/', '', $fullText);
-            $fullText = trim($fullText, ' ,');
-        }
-
-        // If fullText is empty but we have matched location, return empty string
-        // The matched location will be shown in Location Area, nothing in Specific Address
-        return !empty($fullText) ? $fullText : '';
+        return '';
     }
 
     /**
@@ -471,6 +306,8 @@ trait LocationMatchingTrait
             if (is_array($location)) {
                 if (!empty($location['address'])) {
                     $addressParts[] = $location['address'];
+                } elseif (!empty($location['locationArea'])) {
+                    $addressParts[] = $location['locationArea'];
                 }
                 if (!empty($location['building'])) {
                     $addressParts[] = $location['building'];
@@ -478,22 +315,6 @@ trait LocationMatchingTrait
                 if (!empty($location['specificPlace'])) {
                     $addressParts[] = $location['specificPlace'];
                 }
-                if (!empty($location['locationArea'])) {
-                    $addressParts[] = $location['locationArea'];
-                }
-            }
-        }
-
-        // Fallback to old fields
-        if (empty($addressParts)) {
-            if (!empty($report->building)) {
-                $addressParts[] = $report->building;
-            }
-            if (!empty($report->address)) {
-                $addressParts[] = $report->address;
-            }
-            if (!empty($report->mahallah)) {
-                $addressParts[] = $report->mahallah;
             }
         }
 
@@ -511,15 +332,48 @@ trait LocationMatchingTrait
         foreach ($reports as $report) {
             $assigned = false;
 
-            // Try to determine location using the smart hybrid method
-            $determinedLocation = $this->determineReportLocation($report, false);
-
-            if ($determinedLocation) {
-                if (!isset($grouped[$determinedLocation])) {
-                    $grouped[$determinedLocation] = collect();
+            // Check manually set location first
+            $locationArea = $this->getLocationAreaFromReport($report);
+            if (!empty($locationArea)) {
+                $matched = $this->matchLocationToMainLocation($locationArea);
+                if ($matched) {
+                    if (!isset($grouped[$matched])) {
+                        $grouped[$matched] = collect();
+                    }
+                    $grouped[$matched]->push($report);
+                    $assigned = true;
                 }
-                $grouped[$determinedLocation]->push($report);
-                $assigned = true;
+            }
+
+            // If not manually set, try proximity
+            if (!$assigned) {
+                $reportCoords = $this->getReportCoordinates($report);
+                if ($reportCoords && !empty($this->mainLocationCoordinates)) {
+                    $bestMatch = null;
+                    $bestDistance = PHP_FLOAT_MAX;
+
+                    foreach ($this->mainLocationCoordinates as $locationName => $locationCoords) {
+                        $radius = $this->mainLocations[$locationName]['radius'] ?? 200;
+
+                        $distance = $this->calculateDistance(
+                            $reportCoords['lat'], $reportCoords['lng'],
+                            $locationCoords['lat'], $locationCoords['lng']
+                        );
+
+                        if ($distance <= $radius && $distance < $bestDistance) {
+                            $bestDistance = $distance;
+                            $bestMatch = $locationName;
+                        }
+                    }
+
+                    if ($bestMatch) {
+                        if (!isset($grouped[$bestMatch])) {
+                            $grouped[$bestMatch] = collect();
+                        }
+                        $grouped[$bestMatch]->push($report);
+                        $assigned = true;
+                    }
+                }
             }
 
             if (!$assigned) {
