@@ -497,77 +497,159 @@ const Reports = () => {
   };
 
   const handleExportCSV = async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (filters.status.length) params.append('status', filters.status.join(','));
-      if (filters.urgency.length) params.append('urgency', filters.urgency.join(','));
-      if (filters.category.length) params.append('category', filters.category.join(','));
-      if (filters.locations.length) params.append('locations', filters.locations.join(','));
-      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-      if (filters.dateTo) params.append('dateTo', filters.dateTo);
-      params.append('export', 'true');
-      params.append('per_page', '10000');
+  setIsLoading(true);
+  try {
+    const params = new URLSearchParams();
+    if (searchQuery) params.append('search', searchQuery);
+    if (filters.status.length) params.append('status', filters.status.join(','));
+    if (filters.urgency.length) params.append('urgency', filters.urgency.join(','));
+    if (filters.category.length) params.append('category', filters.category.join(','));
+    if (filters.locations.length) params.append('locations', filters.locations.join(','));
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    params.append('export', 'true');
+    params.append('per_page', '10000');
 
-      const response = await fetch(`/Reports?${params.toString()}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-      });
+    const response = await fetch(`/Reports?${params.toString()}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    });
 
-      if (!response.ok) throw new Error('Failed to fetch reports for export');
-      const data = await response.json();
-      const allReports = data.data || data.reports?.data || [];
+    if (!response.ok) throw new Error('Failed to fetch reports for export');
+    const data = await response.json();
+    const allReports = data.data || data.reports?.data || [];
 
-      if (allReports.length === 0) {
-        showToast('No reports found matching your filters', 'error');
-        setIsLoading(false);
-        return;
+    if (allReports.length === 0) {
+      showToast('No reports found matching your filters', 'error');
+      setIsLoading(false);
+      return;
+    }
+
+    const headers = ['Report ID', 'Student Name', 'Student Email', 'Student Phone', 'Category', 'Location Area', 'Specific Address', 'Date', 'Time', 'Urgency', 'Status', 'Assigned Officer', 'Description'];
+
+    const csvData = allReports.map(r => {
+      const escapeCSV = (str) => {
+        if (!str) return '';
+        if (typeof str !== 'string') str = String(str);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str.replace(/"/g, '""')}"`;
+        return str;
+      };
+
+      // Get location area
+      let locationArea = '';
+      if (r.determinedLocation) {
+        // Convert key to display name
+        for (const group of Object.values(locationLabels)) {
+          for (const [key, label] of Object.entries(group)) {
+            if (key === r.determinedLocation || label === r.determinedLocation || r.determinedLocation.includes(key)) {
+              locationArea = label;
+              break;
+            }
+          }
+        }
+        if (!locationArea) locationArea = r.determinedLocation;
+      } else if (r.locationArea && r.locationArea !== 'Not specified') {
+        locationArea = r.locationArea;
+      } else if (r.location?.locationArea) {
+        locationArea = r.location.locationArea;
+      } else if (r.mahallah) {
+        locationArea = r.mahallah;
+      } else {
+        locationArea = 'Not specified';
       }
 
-      const headers = ['Report ID', 'Student Name', 'Student Email', 'Student Phone', 'Category', 'Location Area', 'Specific Address', 'Date', 'Time', 'Urgency', 'Status', 'Assigned Officer', 'Description'];
-      const csvData = allReports.map(r => {
-        const escapeCSV = (str) => {
-          if (!str) return '';
-          if (typeof str !== 'string') str = String(str);
-          if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str.replace(/"/g, '""')}"`;
-          return str;
-        };
-        return [
-          escapeCSV(r.reportId),
-          escapeCSV(r.studentName || '—'),
-          escapeCSV(r.studentEmail || '—'),
-          escapeCSV(r.studentPhone || '—'),
-          escapeCSV(categoryLabels[r.incidentCategory] || r.incidentCategory || '—'),
-          escapeCSV(r.determinedLocation ? formatLocationName(r.determinedLocation) : getLocationArea(r)),
-          escapeCSV(getSpecificAddress(r)),
-          r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString('en-MY') : '—',
-          r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleTimeString('en-MY') : '—',
-          escapeCSV(urgencyLabels[r.urgency] || r.urgency || '—'),
-          escapeCSV(statusLabels[r.status] || r.status || '—'),
-          escapeCSV(r.assignedOfficer || '—'),
-          escapeCSV(r.description || '—')
-        ];
-      });
+      // Get specific address - PRIORITIZE extraction from location object
+      let specificAddress = '';
 
-      const BOM = "\uFEFF";
-      const csvContent = BOM + [headers, ...csvData].map(row => row.join(',')).join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `reports_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      showToast(`Exported ${allReports.length} reports successfully`, 'success');
-    } catch (error) {
-      console.error('Export failed:', error);
-      showToast('Failed to export reports: ' + error.message, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // Check location object first
+      if (r.location && typeof r.location === 'object') {
+        // Priority 1: specificPlace
+        if (r.location.specificPlace && r.location.specificPlace.trim() !== '') {
+          specificAddress = r.location.specificPlace;
+        }
+        // Priority 2: building
+        else if (r.location.building && r.location.building.trim() !== '') {
+          specificAddress = r.location.building;
+        }
+        // Priority 3: extract from address
+        else if (r.location.address && r.location.address.trim() !== '') {
+          let address = r.location.address;
+          // Remove all known location names
+          const locationNames = ['Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+            'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal', 'Mahallah Asma',
+            'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq', 'Mahallah Salahuddin', 'Mahallah Uthman',
+            'Mahallah Nusaibah', 'Mahallah Zubair', 'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)',
+            'KOE (Engineering)', 'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)',
+            'Dar al-Hikmah Library', 'Female Sports Complex', 'Saidina Hamzah Stadium', 'IIUM Archery Range',
+            'UIA Football Turf', 'IIUM Cricket Ground', 'IIUM Rugby Field', 'Padang Kawad UIAM',
+            'IIUM Educare', 'Sultan Haji Ahmad Shah Mosque'];
+
+          for (const name of locationNames) {
+            address = address.replace(new RegExp(name, 'gi'), '');
+          }
+          address = address.replace(/Mahallah /gi, '');
+          address = address.replace(/Kulliyyah /gi, '');
+          address = address.trim();
+          address = address.replace(/\s+/g, ' ');
+          address = address.replace(/,$/, '');
+          address = address.replace(/^,/, '');
+
+          if (address && address !== '') {
+            specificAddress = address;
+          }
+        }
+      }
+
+      // Fallback to direct fields
+      if (!specificAddress && r.specificAddress && r.specificAddress !== 'Not specified') {
+        specificAddress = r.specificAddress;
+      }
+      if (!specificAddress && r.building) {
+        specificAddress = r.building;
+      }
+      if (!specificAddress && r.address) {
+        specificAddress = r.address;
+      }
+
+      if (!specificAddress) {
+        specificAddress = 'Not specified';
+      }
+
+      return [
+        escapeCSV(r.reportId),
+        escapeCSV(r.studentName || '—'),
+        escapeCSV(r.studentEmail || '—'),
+        escapeCSV(r.studentPhone || '—'),
+        escapeCSV(categoryLabels[r.incidentCategory] || r.incidentCategory || '—'),
+        escapeCSV(locationArea),
+        escapeCSV(specificAddress),
+        r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString('en-MY') : '—',
+        r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleTimeString('en-MY') : '—',
+        escapeCSV(urgencyLabels[r.urgency] || r.urgency || '—'),
+        escapeCSV(statusLabels[r.status] || r.status || '—'),
+        escapeCSV(r.assignedOfficer || '—'),
+        escapeCSV(r.description || '—')
+      ];
+    });
+
+    const BOM = "\uFEFF";
+    const csvContent = BOM + [headers, ...csvData].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reports_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    showToast(`Exported ${allReports.length} reports successfully`, 'success');
+  } catch (error) {
+    console.error('Export failed:', error);
+    showToast('Failed to export reports: ' + error.message, 'error');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const openReportDetails = (rawReport) => {
     const normalized = normalise(rawReport);
