@@ -316,6 +316,10 @@ trait LocationMatchingTrait
     * Get the original location text for Specific Address column
     * This extracts everything except the matched location name
     */
+    /**
+ * Get the original location text for Specific Address column
+ * This extracts everything except the matched location name
+ */
     protected function getOriginalLocationText($report)
     {
         $location = $report->location;
@@ -329,9 +333,9 @@ trait LocationMatchingTrait
             $parts = [];
 
             // Priority order for Specific Address:
-            // 1. specificPlace (business names like "7 Eleven", "Co-Mart")
+            // 1. specificPlace (business names like "7 Eleven", "Co-Mart", "Musallah")
             // 2. building (block, room numbers)
-            // 3. address (full address) - THIS IS WHERE "Musallah" is stored!
+            // 3. address (full address)
 
             if (!empty($location['specificPlace'])) {
                 $parts[] = $location['specificPlace'];
@@ -375,22 +379,30 @@ trait LocationMatchingTrait
             $fullText = trim($fullText, ' ,');
         }
 
-        // If fullText is empty after removing location, return the original address without the location
+        // If still empty, try to extract the non-location part from address
         if (empty($fullText) && !empty($location['address'])) {
             $address = $location['address'];
+
+            // Try to extract the part before the location name
             $matchedLocation = $this->determineReportLocation($report, false);
             if ($matchedLocation) {
                 $displayName = $this->getLocationDisplayName($matchedLocation);
+                // Remove the location name and keep everything else
                 $fullText = trim(str_ireplace($displayName, '', $address));
+                $fullText = trim(str_ireplace('Mahallah ', '', $fullText));
                 $fullText = trim($fullText, ' ,');
             } else {
                 $fullText = $address;
             }
         }
 
+        // For "Musallah Mahallah Ruqayyah", this should return "Musallah"
+        // For "Co-Mart Ruqayyah", this should return "Co-Mart"
+        // For "Block F", this should return "Block F"
+
         return !empty($fullText) ? $fullText : 'Not specified';
     }
-
+    
     /**
      * Get full address string from report
      */
