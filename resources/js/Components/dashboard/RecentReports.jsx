@@ -68,10 +68,42 @@ const extractSpecificPlace = (address, locationArea) => {
 };
 
 // ============================================
-// MAIN LOCATION FUNCTION - MATCHES ReportDetailsModal
+// FIXED LOCATION FUNCTIONS
 // ============================================
 
-const getIncidentLocation = (reportData) => {
+// Get location area - FIXED to prioritize determinedLocation
+const getLocationAreaDisplay = (reportData) => {
+  if (!reportData) return '';
+
+  // PRIORITY 1: Use determinedLocation (most accurate from backend)
+  if (reportData.determinedLocation) {
+    const formatted = formatLocationName(reportData.determinedLocation);
+    if (formatted) return formatted;
+  }
+
+  // PRIORITY 2: Check location.locationArea
+  if (reportData.location?.locationArea) {
+    const formatted = formatLocationName(reportData.location.locationArea);
+    if (formatted) return formatted;
+  }
+
+  // PRIORITY 3: Check locationArea root field
+  if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
+    const formatted = formatLocationName(reportData.locationArea);
+    if (formatted) return formatted;
+  }
+
+  // PRIORITY 4: Check mahallah
+  if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
+    const formatted = formatLocationName(reportData.mahallah);
+    if (formatted) return formatted;
+  }
+
+  return '';
+};
+
+// Get specific address/place
+const getSpecificAddress = (reportData) => {
   if (!reportData) return 'No address specified';
 
   // Priority 1: Check if we have specificAddress directly
@@ -93,7 +125,7 @@ const getIncidentLocation = (reportData) => {
 
   // Priority 3: Extract from address
   let address = null;
-  let locationArea = null;
+  let locationArea = getLocationAreaDisplay(reportData);
 
   // Get address from various sources
   if (reportData.location?.address) {
@@ -102,17 +134,6 @@ const getIncidentLocation = (reportData) => {
     address = reportData.address;
   } else if (reportData.locationRaw?.address) {
     address = reportData.locationRaw.address;
-  }
-
-  // Get location area
-  if (reportData.location?.locationArea) {
-    locationArea = reportData.location.locationArea;
-  } else if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
-    locationArea = reportData.locationArea;
-  } else if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-    locationArea = reportData.mahallah;
-  } else if (reportData.determinedLocation) {
-    locationArea = formatLocationName(reportData.determinedLocation);
   }
 
   if (address) {
@@ -131,23 +152,33 @@ const getIncidentLocation = (reportData) => {
   return 'No address specified';
 };
 
-// Get location area for display
-const getLocationAreaDisplay = (reportData) => {
-  if (!reportData) return '';
+// Get full location for display (combines area + specific address)
+const getFullLocationDisplay = (reportData) => {
+  if (!reportData) return 'Location not specified';
 
-  if (reportData.determinedLocation) {
-    return formatLocationName(reportData.determinedLocation);
+  const locationArea = getLocationAreaDisplay(reportData);
+  const specificAddress = getSpecificAddress(reportData);
+
+  // If we have both, combine them
+  if (locationArea && specificAddress && specificAddress !== 'No address specified') {
+    // Check if specific address already contains the location area
+    if (specificAddress.includes(locationArea)) {
+      return specificAddress;
+    }
+    return `${locationArea} - ${specificAddress}`;
   }
-  if (reportData.location?.locationArea) {
-    return reportData.location.locationArea;
+
+  // If only location area exists
+  if (locationArea) {
+    return locationArea;
   }
-  if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
-    return reportData.locationArea;
+
+  // If only specific address exists
+  if (specificAddress && specificAddress !== 'No address specified') {
+    return specificAddress;
   }
-  if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-    return reportData.mahallah;
-  }
-  return '';
+
+  return 'Location not specified';
 };
 
 // ============================================
@@ -269,16 +300,19 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
             const reporterDetails = getReporterDetails(report);
             const displayName = getReporterDisplayName(report);
 
-            // Use the same location functions as ReportDetailsModal
-            const specificAddress = getIncidentLocation(report);
-            const locationAreaDisplay = getLocationAreaDisplay(report);
+            // Use the fixed location functions
+            const locationArea = getLocationAreaDisplay(report);
+            const specificAddress = getSpecificAddress(report);
+            const fullLocation = getFullLocationDisplay(report);
 
             // Get full location details for tooltip
             const locationDetails = {
-              locationArea: locationAreaDisplay,
+              locationArea: locationArea,
               building: report.location?.building || report.building || '',
               address: report.location?.address || report.address || '',
-              mahallah: report.mahallah || ''
+              mahallah: report.mahallah || '',
+              determinedLocation: report.determinedLocation || '',
+              specificAddress: specificAddress
             };
 
             const hasDetailedLocation = locationDetails.locationArea || locationDetails.building || locationDetails.address;
@@ -314,7 +348,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
 
                 <h4 className="font-semibold mb-2 line-clamp-2">{report.description || report.issue}</h4>
 
-                {/* Location Section - Matches ReportDetailsModal */}
+                {/* Location Section - FIXED to show KICT (ICT) */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <TooltipProvider>
                     <Tooltip>
@@ -322,19 +356,29 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
                         <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
                           <MapPin className="w-4 h-4" />
                           <span className="line-clamp-1">
-                            {specificAddress && specificAddress !== 'No address specified'
-                              ? specificAddress
-                              : locationAreaDisplay || 'Location not specified'}
+                            {fullLocation}
                           </span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-sm">
                         <div className="text-xs space-y-1.5 p-1">
                           <p className="font-semibold text-[#D4A853] mb-1">📍 Location Details</p>
-                          {locationDetails.locationArea && (
+                          {locationDetails.determinedLocation && (
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Detected Area:</span>
+                              <span className="font-semibold">{formatLocationName(locationDetails.determinedLocation)}</span>
+                            </p>
+                          )}
+                          {locationDetails.locationArea && !locationDetails.determinedLocation && (
                             <p className="flex items-start gap-1">
                               <span className="font-medium min-w-[70px]">Area:</span>
                               <span>{locationDetails.locationArea}</span>
+                            </p>
+                          )}
+                          {locationDetails.specificAddress && locationDetails.specificAddress !== 'No address specified' && (
+                            <p className="flex items-start gap-1">
+                              <span className="font-medium min-w-[70px]">Specific:</span>
+                              <span className="break-words">{locationDetails.specificAddress}</span>
                             </p>
                           )}
                           {locationDetails.building && (
@@ -343,19 +387,13 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
                               <span className="break-words">{locationDetails.building}</span>
                             </p>
                           )}
-                          {locationDetails.address && locationDetails.address !== locationDetails.locationArea && (
+                          {locationDetails.address && locationDetails.address !== locationDetails.locationArea && locationDetails.address !== locationDetails.specificAddress && (
                             <p className="flex items-start gap-1">
                               <span className="font-medium min-w-[70px]">Address:</span>
                               <span className="break-words">{locationDetails.address}</span>
                             </p>
                           )}
-                          {specificAddress && specificAddress !== 'No address specified' && specificAddress !== locationDetails.address && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Specific:</span>
-                              <span className="break-words">{specificAddress}</span>
-                            </p>
-                          )}
-                          {locationDetails.mahallah && !locationDetails.locationArea && (
+                          {locationDetails.mahallah && !locationDetails.locationArea && !locationDetails.determinedLocation && (
                             <p className="flex items-start gap-1">
                               <span className="font-medium min-w-[70px]">Mahallah:</span>
                               <span>{locationDetails.mahallah}</span>
