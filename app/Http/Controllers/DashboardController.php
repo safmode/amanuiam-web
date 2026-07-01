@@ -9,19 +9,19 @@ use App\Models\Officer;
 use App\Models\Admins;
 use App\Models\Emergencies;
 use App\Models\UnregisteredReporter;
-use App\Traits\LocationMatchingTrait; // ADD THIS
+use App\Traits\LocationMatchingTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
-    use LocationMatchingTrait; // ADD THIS
+    use LocationMatchingTrait;
 
     public function __construct()
     {
         // Initialize location matching trait
-        $this->initLocationMatching(); // ADD THIS
+        $this->initLocationMatching();
     }
 
     public function getRecentReports(Request $request)
@@ -32,17 +32,35 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get();
 
-            // Transform reports for frontend
+            // DEBUG: Check coordinates file
+            Log::info('=== DASHBOARD DEBUG ===');
+            Log::info('map_coordinates.php exists: ' . (file_exists(config_path('map_coordinates.php')) ? 'YES' : 'NO'));
+            Log::info('mainLocationCoordinates count: ' . count($this->mainLocationCoordinates));
+            Log::info('mainLocationCoordinates keys: ' . implode(', ', array_keys($this->mainLocationCoordinates)));
+
             $transformedReports = [];
 
             foreach ($recentReports as $report) {
                 try {
+                    // DEBUG: Log the report
+                    Log::info('Processing report: ' . ($report->reportId ?? 'unknown'), [
+                        'location' => $report->location,
+                        'mahallah' => $report->mahallah ?? 'null',
+                    ]);
+
                     // ============================================
-                    // FIX: ADD DETERMINED LOCATION USING TRAIT
+                    // GET DETERMINED LOCATION USING TRAIT
                     // ============================================
                     $determinedLocation = $this->determineReportLocation($report);
                     $specificAddress = $this->getOriginalLocationText($report);
                     $locationAreaFromReport = $this->getLocationAreaFromReport($report);
+
+                    // DEBUG: Log the determined location
+                    Log::info('Determined location for report ' . ($report->reportId ?? 'unknown'), [
+                        'determinedLocation' => $determinedLocation,
+                        'specificAddress' => $specificAddress,
+                        'locationAreaFromReport' => $locationAreaFromReport,
+                    ]);
 
                     // Get reporter info
                     $studentName = 'Unknown Reporter';
@@ -104,8 +122,8 @@ class DashboardController extends Controller
                         }
                     }
 
-                    // Build the report object
-                    $transformedReports[] = [
+                    // Build the report object - MAKE SURE determinedLocation is included
+                    $transformedReport = [
                         '_id' => (string)$report->_id,
                         'reportId' => $report->reportId ?? 'Unknown',
                         'description' => $report->description ?? 'No description',
@@ -141,6 +159,15 @@ class DashboardController extends Controller
                         'officerName' => $officerName,
                     ];
 
+                    // DEBUG: Log the final transformed report
+                    Log::info('Transformed report for ' . ($report->reportId ?? 'unknown'), [
+                        'determinedLocation_in_response' => $transformedReport['determinedLocation'] ?? 'MISSING',
+                        'specificAddress_in_response' => $transformedReport['specificAddress'] ?? 'MISSING',
+                        'locationArea_in_response' => $transformedReport['locationArea'] ?? 'MISSING',
+                    ]);
+
+                    $transformedReports[] = $transformedReport;
+
                 } catch (\Exception $e) {
                     Log::error('Error processing single report: ' . $e->getMessage());
                     continue;
@@ -168,14 +195,16 @@ class DashboardController extends Controller
                 'emergencyAlerts' => $emergencyAlerts,
             ];
 
-            Log::info('Dashboard recent reports fetched', [
-                'count' => count($transformedReports),
-                'first_report' => count($transformedReports) > 0 ? [
+            // DEBUG: Log the first few reports being sent to frontend
+            if (count($transformedReports) > 0) {
+                Log::info('First report being sent to frontend:', [
                     'reportId' => $transformedReports[0]['reportId'],
-                    'determinedLocation' => $transformedReports[0]['determinedLocation'] ?? 'missing',
-                    'specificAddress' => $transformedReports[0]['specificAddress'] ?? 'missing',
-                ] : null
-            ]);
+                    'determinedLocation' => $transformedReports[0]['determinedLocation'] ?? 'MISSING',
+                    'specificAddress' => $transformedReports[0]['specificAddress'] ?? 'MISSING',
+                ]);
+            }
+
+            Log::info('=== DASHBOARD DEBUG END ===');
 
             return response()->json([
                 'success' => true,
