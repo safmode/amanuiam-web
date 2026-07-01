@@ -38,14 +38,14 @@ const formatLocationName = (location) => {
 const getLocationAreaDisplay = (report) => {
   if (!report) return '';
 
-  // ✅ Use the pre-formatted locationArea from Dashboard
-  if (report.locationArea && report.locationArea !== 'Unknown') {
-    return report.locationArea;
+  // ✅ PRIORITY 1: Use determinedLocation (this is what you want!)
+  if (report.determinedLocation && report.determinedLocation !== 'Unknown') {
+    return formatLocationName(report.determinedLocation);
   }
 
-  // Fallback: Check determinedLocation
-  if (report.determinedLocation) {
-    return formatLocationName(report.determinedLocation);
+  // PRIORITY 2: Use the pre-formatted locationArea from Dashboard
+  if (report.locationArea && report.locationArea !== 'Unknown') {
+    return report.locationArea;
   }
 
   // Fallback: Check raw data

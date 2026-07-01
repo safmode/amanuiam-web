@@ -191,19 +191,18 @@ const Dashboard = () => {
   // FIXED: Transform report data with ALL fields
   // ============================================
   const formattedReports = recentReports.map(report => {
-    // Get the raw report data (in case it's wrapped)
     const raw = report._raw || report;
 
-    // Determine location area - PRIORITIZE determinedLocation from backend
+    // ✅ PRIORITIZE determinedLocation from backend
     let locationArea = 'Unknown';
     if (raw.determinedLocation) {
-      locationArea = formatLocationName(raw.determinedLocation);
+        locationArea = formatLocationName(raw.determinedLocation);
     } else if (raw.location?.locationArea) {
-      locationArea = formatLocationName(raw.location.locationArea);
+        locationArea = formatLocationName(raw.location.locationArea);
     } else if (raw.mahallah && raw.mahallah !== 'Unknown Location') {
-      locationArea = formatLocationName(raw.mahallah);
+        locationArea = formatLocationName(raw.mahallah);
     } else if (raw.locationArea && raw.locationArea !== 'Not specified') {
-      locationArea = formatLocationName(raw.locationArea);
+        locationArea = formatLocationName(raw.locationArea);
     }
 
     // Determine specific address
