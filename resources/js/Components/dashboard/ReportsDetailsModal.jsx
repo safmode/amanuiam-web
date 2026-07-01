@@ -1,27 +1,19 @@
-import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail, Building2, LocateFixed } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { router } from '@inertiajs/react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
-import { Link } from '@inertiajs/react';
-
-const statusColors = {
-  pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700',
-  inProgress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700',
-  resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700',
-};
-
-const urgencyColors = {
-  general: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700',
-  urgent: 'bg-red-50 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
-};
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CheckCircle, Calendar, MapPin, FileText, User, AlertCircle, Image, MessageSquare, Edit, X, Loader2, Mail, Phone, Building2 } from 'lucide-react';
+import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
+import { ReportsEditing } from '@/components/dashboard/ReportsEditing';
 
 // ============================================
-// MATCHING FUNCTIONS FROM ReportDetailsModal
+// FALLBACK FUNCTIONS
 // ============================================
 
-// Format location name using locationLabels
+// Fallback formatLocationName function
 const formatLocationName = (location) => {
   if (!location) return '';
   for (const group of Object.values(locationLabels)) {
@@ -32,400 +24,652 @@ const formatLocationName = (location) => {
   return location;
 };
 
-// Extract specific place from address
-const extractSpecificPlace = (address, locationArea) => {
-  if (!address) return null;
+export const ReportDetailsModal = ({ report, isOpen, onClose, onReportUpdated }) => {
+  const [isEditingOpen, setIsEditingOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [localReport, setLocalReport] = useState(report);
+  const [isResolving, setIsResolving] = useState(false);
 
-  let result = address;
+  useEffect(() => {
+    setLocalReport(report);
+  }, [report]);
 
-  // Remove location area if present
-  if (locationArea) {
-    result = result.replace(new RegExp(locationArea, 'gi'), '');
-  }
-
-  // Remove known location names
-  const locationNames = [
-    'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
-    'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
-    'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
-    'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
-    'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
-    'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
-  ];
-
-  for (const name of locationNames) {
-    result = result.replace(new RegExp(name, 'gi'), '');
-  }
-
-  result = result.replace(/Mahallah /gi, '');
-  result = result.replace(/Kulliyyah /gi, '');
-  result = result.trim();
-  result = result.replace(/\s+/g, ' ');
-  result = result.replace(/,$/, '');
-  result = result.replace(/^,/, '');
-
-  return result || null;
-};
-
-// ============================================
-// MAIN LOCATION FUNCTION - MATCHES ReportDetailsModal
-// ============================================
-
-const getIncidentLocation = (reportData) => {
-  if (!reportData) return 'No address specified';
-
-  // Priority 1: Check if we have specificAddress directly
-  if (reportData.specificAddress && reportData.specificAddress !== 'Not specified') {
-    return reportData.specificAddress;
-  }
-
-  if (reportData.location?.specificPlace) {
-    return reportData.location.specificPlace;
-  }
-
-  // Priority 2: Check building
-  if (reportData.location?.building) {
-    return reportData.location.building;
-  }
-  if (reportData.building) {
-    return reportData.building;
-  }
-
-  // Priority 3: Extract from address
-  let address = null;
-  let locationArea = null;
-
-  // Get address from various sources
-  if (reportData.location?.address) {
-    address = reportData.location.address;
-  } else if (reportData.address) {
-    address = reportData.address;
-  } else if (reportData.locationRaw?.address) {
-    address = reportData.locationRaw.address;
-  }
-
-  // Get location area
-  if (reportData.location?.locationArea) {
-    locationArea = reportData.location.locationArea;
-  } else if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
-    locationArea = reportData.locationArea;
-  } else if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-    locationArea = reportData.mahallah;
-  } else if (reportData.determinedLocation) {
-    locationArea = formatLocationName(reportData.determinedLocation);
-  }
-
-  if (address) {
-    const extracted = extractSpecificPlace(address, locationArea);
-    if (extracted) {
-      return extracted;
-    }
-    return address;
-  }
-
-  // Priority 4: Check incidentLocation from backend
-  if (reportData.incidentLocation && reportData.incidentLocation !== 'No address specified') {
-    return reportData.incidentLocation;
-  }
-
-  return 'No address specified';
-};
-
-// Get location area for display
-const getLocationAreaDisplay = (reportData) => {
-  if (!reportData) return '';
-
-  if (reportData.determinedLocation) {
-    return formatLocationName(reportData.determinedLocation);
-  }
-  if (reportData.location?.locationArea) {
-    return reportData.location.locationArea;
-  }
-  if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
-    return reportData.locationArea;
-  }
-  if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-    return reportData.mahallah;
-  }
-  return '';
-};
-
-// ============================================
-// REPORTER DETAILS FUNCTIONS
-// ============================================
-
-const getReporterDisplayName = (report) => {
-  if (report.studentName && report.studentName !== 'Unknown' && report.studentName !== 'No student linked') {
-    return report.studentName;
-  }
-  if (report.reporterName && report.reporterName !== 'Unknown' && report.reporterName !== 'No student linked') {
-    return report.reporterName;
-  }
-  return 'Unknown Reporter';
-};
-
-const getReporterDetails = (report) => {
-  return {
-    type: report.reporter_type_display || (report.reporter_type === 'registered' ? 'Registered Student' : report.reporter_type === 'unregistered' ? 'Unregistered Reporter' : 'Reporter'),
-    name: report.studentName || report.reporterName || 'Unknown',
-    email: report.studentEmail || report.reporterEmail,
-    phone: report.studentPhone || report.reporterContact,
-    matric: report.studentMatrix || report.reporterMatricNo,
-    showMatric: !!(report.studentMatrix || report.reporterMatricNo),
-    showEmail: !!(report.studentEmail || report.reporterEmail),
-    showPhone: !!(report.studentPhone || report.reporterContact)
+  const getStatusBadge = (status) => {
+    const styles = {
+      pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+      inProgress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+      resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+    };
+    return <Badge className={`${styles[status]} text-xs border`}>{statusLabels[status]}</Badge>;
   };
-};
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
+  const getUrgencyBadge = (urgency) => {
+    const styles = {
+      general: 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+      urgent: 'border-red-300 text-red-700 bg-red-50 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    };
+    return <Badge variant="outline" className={`${styles[urgency] || styles.general} text-xs`}>{urgencyLabels[urgency]}</Badge>;
+  };
 
-export const RecentReports = ({ reports, onViewReport, loading = false }) => {
-  const getStatusBadge = (status) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline" className={`${statusColors[status]} text-xs font-medium cursor-help`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-            {statusLabels[status]}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">
-            {status === 'pending' && 'Report awaiting review'}
-            {status === 'inProgress' && 'Officer is handling this case'}
-            {status === 'resolved' && 'Case has been resolved'}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return { date: '—', time: '—' };
+    const date = new Date(dateTime);
+    return {
+      date: date.toLocaleDateString('en-MY'),
+      time: date.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
+    };
+  };
 
-  const getUrgencyBadge = (urgency) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline" className={`${urgencyColors[urgency]} text-xs cursor-help`}>
-            {urgencyLabels[urgency]}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">
-            {urgency === 'general' && 'General priority - routine matter'}
-            {urgency === 'urgent' && 'Urgent - immediate response needed'}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  const getLocationAreaName = (mahallahKey) => {
+    if (!mahallahKey) return '—';
+    for (const group of Object.values(locationLabels)) {
+      if (group[mahallahKey]) {
+        return group[mahallahKey];
+      }
+    }
+    return mahallahKey;
+  };
 
-  // Show loading skeletons when loading is true
-  if (loading) {
-    return (
-      <Card className="bg-white dark:bg-slate-800 border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Recent Reports</h3>
-            <div className="h-5 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
-          </div>
+  // Helper function to extract specific place from address
+  const extractSpecificPlace = (address, locationArea) => {
+    if (!address) return null;
 
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 animate-pulse">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-20 bg-gray-200 dark:bg-slate-600 rounded" />
-                    <div className="h-5 w-16 bg-gray-200 dark:bg-slate-600 rounded" />
-                    <div className="h-5 w-16 bg-gray-200 dark:bg-slate-600 rounded" />
-                  </div>
-                  <div className="h-8 w-8 bg-gray-200 dark:bg-slate-600 rounded" />
-                </div>
-                <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-3/4 mb-2" />
-                <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-1/2 mb-2" />
-                <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-2/3" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    let result = address;
+
+    // Remove location area if present
+    if (locationArea) {
+      result = result.replace(new RegExp(locationArea, 'gi'), '');
+    }
+
+    // Remove known location names
+    const locationNames = [
+      'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+      'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
+      'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
+      'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
+      'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
+      'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
+    ];
+
+    for (const name of locationNames) {
+      result = result.replace(new RegExp(name, 'gi'), '');
+    }
+
+    result = result.replace(/Mahallah /gi, '');
+    result = result.replace(/Kulliyyah /gi, '');
+    result = result.trim();
+    result = result.replace(/\s+/g, ' ');
+    result = result.replace(/,$/, '');
+    result = result.replace(/^,/, '');
+
+    return result || null;
+  };
+
+  // Updated function to get incident location with proper extraction
+  const getIncidentLocation = (reportData) => {
+    if (!reportData) return 'No address specified';
+
+    console.log('Getting location for report:', reportData.reportId || reportData.id);
+
+    // Priority 1: Check if we have specificPlace directly
+    if (reportData.specificAddress && reportData.specificAddress !== 'Not specified') {
+      return reportData.specificAddress;
+    }
+
+    if (reportData.location?.specificPlace) {
+      return reportData.location.specificPlace;
+    }
+
+    // Priority 2: Check building
+    if (reportData.location?.building) {
+      return reportData.location.building;
+    }
+    if (reportData.building) {
+      return reportData.building;
+    }
+
+    // Priority 3: Extract from address
+    let address = null;
+    let locationArea = null;
+
+    // Get address from various sources
+    if (reportData.location?.address) {
+      address = reportData.location.address;
+    } else if (reportData.address) {
+      address = reportData.address;
+    } else if (reportData.locationRaw?.address) {
+      address = reportData.locationRaw.address;
+    }
+
+    // Get location area
+    if (reportData.location?.locationArea) {
+      locationArea = reportData.location.locationArea;
+    } else if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
+      locationArea = reportData.locationArea;
+    } else if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
+      locationArea = reportData.mahallah;
+    } else if (reportData.determinedLocation) {
+      locationArea = formatLocationName(reportData.determinedLocation);
+    }
+
+    if (address) {
+      const extracted = extractSpecificPlace(address, locationArea);
+      if (extracted) {
+        return extracted;
+      }
+      return address;
+    }
+
+    // Priority 4: Check incidentLocation from backend
+    if (reportData.incidentLocation && reportData.incidentLocation !== 'No address specified') {
+      return reportData.incidentLocation;
+    }
+
+    return 'No address specified';
+  };
+
+  const resolveUrl = (url) => {
+    if (!url) return '#';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+        return url;
+    }
+
+    const cleaned = url
+        .replace(/^\/+/, '')
+        .replace(/^storage\//, '')
+        .replace(/^public\//, '');
+    return `/storage/${cleaned}`;
+  };
+
+  const isImage = (url) => {
+    const resolved = resolveUrl(url);
+    return /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(resolved.split('?')[0]) ||
+           resolved.includes('cloudinary.com') && !resolved.includes('.pdf');
+  };
+
+  const getOptimizedImageUrl = (url) => {
+    if (!url) return '#';
+
+    if (url.includes('cloudinary.com')) {
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}w=400&h=400&c=fill&q=auto&f=auto`;
+    }
+
+    return resolveUrl(url);
+  };
+
+  const showToast = (message, type = 'success') => {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white text-sm animate-in slide-in-from-bottom-2 ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  };
+
+  const handleSaveChanges = (editedReport) => {
+    if (!localReport) return;
+    setIsEditingOpen(false);
+    showToast('Report updated successfully', 'success');
+    onClose();
+    router.reload({ only: ['reports'] });
+  };
+
+  const handleMarkResolved = () => {
+    if (!localReport) return;
+
+    setIsResolving(true);
+
+    const reportId = localReport.reportId || localReport.id;
+    const oldStatus = localReport.status;
+    const payload = { status: 'resolved' };
+
+    const updatedReport = {
+      ...localReport,
+      status: 'resolved',
+      oldStatus: oldStatus,
+      _raw: {
+        ...localReport._raw,
+        status: 'resolved'
+      }
+    };
+
+    router.put(`/reports/${reportId}`, payload, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        setLocalReport(updatedReport);
+        if (onReportUpdated) {
+          onReportUpdated(updatedReport);
+        }
+        showToast('Report marked as resolved', 'success');
+        onClose();
+        router.reload({ only: ['reports'] });
+      },
+      onError: (error) => {
+        console.error('Failed to mark as resolved:', error);
+        showToast('Failed to mark as resolved', 'error');
+      },
+      onFinish: () => {
+        setIsResolving(false);
+      }
+    });
+  };
+
+  if (!localReport) return null;
+
+  const rawReport = localReport._raw || localReport;
+  const { date, time } = formatDateTime(rawReport.incidentDateTime || localReport.incidentDateTime);
+
+  // Get the specific address (not the full location)
+  const specificAddress = getIncidentLocation(localReport);
+
+  // Get the location area separately for display
+  let locationAreaDisplay = '';
+  if (rawReport.determinedLocation) {
+    locationAreaDisplay = formatLocationName(rawReport.determinedLocation);
+  } else if (rawReport.location?.locationArea) {
+    locationAreaDisplay = rawReport.location.locationArea;
+  } else if (rawReport.locationArea && rawReport.locationArea !== 'Not specified') {
+    locationAreaDisplay = rawReport.locationArea;
+  } else if (rawReport.mahallah) {
+    locationAreaDisplay = rawReport.mahallah;
   }
 
-  // Show actual reports when not loading
+  // Get reporter's residence (mahallah) if available
+  const reporterResidence = localReport.mahallah || rawReport.mahallah || '';
+
+  const attachmentUrls = (() => {
+    const raw = rawReport.attachmentUrls || localReport.attachmentUrls;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.filter(Boolean);
+    try { return JSON.parse(raw).filter(Boolean); } catch { return []; }
+  })();
+
+  const lightbox = lightboxUrl
+    ? createPortal(
+        <div
+            className="fixed inset-0 bg-black/90 flex items-center justify-center p-4"
+            style={{ zIndex: 99999 }}
+            onClick={() => setLightboxUrl(null)}
+        >
+            <img
+            src={lightboxUrl.includes('cloudinary.com')
+                ? `${lightboxUrl.split('?')[0]}?w=1200&h=1200&c=limit&q=auto&f=auto`
+                : lightboxUrl}
+            alt="Attachment preview"
+            className="max-w-full max-h-[90vh] rounded-xl object-contain"
+            />
+            <button
+            className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors"
+            onClick={() => setLightboxUrl(null)}
+            >
+            <X className="w-6 h-6" />
+            </button>
+        </div>,
+        document.body
+        )
+  : null;
+
+  const handleDialogOpenChange = (open) => {
+    if (!open && lightboxUrl) {
+      setLightboxUrl(null);
+      return;
+    }
+    if (!open) onClose();
+  };
+
   return (
-    <Card className="bg-white dark:bg-slate-800 border-border">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Recent Reports</h3>
-          <Link href="/Reports" className="text-sm text-[#D4A853] hover:underline flex items-center gap-1">
-            View all reports
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
+    <>
+      <Dialog open={isOpen && !isEditingOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-slate-800 dark:border-slate-700">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
+                <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Report {rawReport.reportId || localReport.reportId || rawReport.id || localReport.id}
+              </DialogTitle>
+            </div>
+            <div className="flex gap-2 mt-3">
+              {getUrgencyBadge(rawReport.urgency || localReport.urgency)}
+              {getStatusBadge(rawReport.status || localReport.status)}
+            </div>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {reports.map((report) => {
-            const reporterDetails = getReporterDetails(report);
-            const displayName = getReporterDisplayName(report);
-
-            // Use the same location functions as ReportDetailsModal
-            const specificAddress = getIncidentLocation(report);
-            const locationAreaDisplay = getLocationAreaDisplay(report);
-
-            // Get full location details for tooltip
-            const locationDetails = {
-              locationArea: locationAreaDisplay,
-              building: report.location?.building || report.building || '',
-              address: report.location?.address || report.address || '',
-              mahallah: report.mahallah || ''
-            };
-
-            const hasDetailedLocation = locationDetails.locationArea || locationDetails.building || locationDetails.address;
-
-            // Format date/time
-            const formatDateTime = (dateTime) => {
-              if (!dateTime) return { date: '—', time: '—' };
-              const date = new Date(dateTime);
-              return {
-                date: date.toLocaleDateString('en-MY'),
-                time: date.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
-              };
-            };
-
-            const { date, time } = formatDateTime(report.incidentDateTime || report.reportedAt);
-
-            return (
-              <div
-                key={report.id || report.reportId}
-                className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
-                onClick={() => onViewReport(report)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-mono text-muted-foreground">{report.reportId || report.id}</span>
-                    {getUrgencyBadge(report.urgency)}
-                    {getStatusBadge(report.status)}
+          <div className="p-6 space-y-5">
+            {/* Reporter Information */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center dark:bg-amber-900/20">
+                    <User className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#D4A853] hover:text-[#C49A48] hover:bg-[#D4A853]/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Eye className="w-4 h-4" />
-                  </Button>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Reporter Information</span>
                 </div>
-
-                <h4 className="font-semibold mb-2 line-clamp-2">{report.description || report.issue}</h4>
-
-                {/* Location Section - Matches ReportDetailsModal */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
-                          <MapPin className="w-4 h-4" />
-                          <span className="line-clamp-1">
-                            {specificAddress && specificAddress !== 'No address specified'
-                              ? specificAddress
-                              : locationAreaDisplay || 'Location not specified'}
-                          </span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm">
-                        <div className="text-xs space-y-1.5 p-1">
-                          <p className="font-semibold text-[#D4A853] mb-1">📍 Location Details</p>
-                          {locationDetails.locationArea && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Area:</span>
-                              <span>{locationDetails.locationArea}</span>
-                            </p>
-                          )}
-                          {locationDetails.building && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Building:</span>
-                              <span className="break-words">{locationDetails.building}</span>
-                            </p>
-                          )}
-                          {locationDetails.address && locationDetails.address !== locationDetails.locationArea && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Address:</span>
-                              <span className="break-words">{locationDetails.address}</span>
-                            </p>
-                          )}
-                          {specificAddress && specificAddress !== 'No address specified' && specificAddress !== locationDetails.address && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Specific:</span>
-                              <span className="break-words">{specificAddress}</span>
-                            </p>
-                          )}
-                          {locationDetails.mahallah && !locationDetails.locationArea && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Mahallah:</span>
-                              <span>{locationDetails.mahallah}</span>
-                            </p>
-                          )}
-                          {!hasDetailedLocation && (
-                            <p className="text-muted-foreground italic">No detailed location information available</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-2">
+                    <User className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Full Name</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        {localReport.studentName || localReport.reporterName || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Email Address</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 break-all">
+                        {localReport.studentEmail || localReport.reporterEmail || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  {localReport.studentMatrix && (
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 text-gray-500 mt-0.5 flex items-center justify-center dark:text-gray-400">
+                        <span className="text-xs font-bold">#</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Matrix Number</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 font-mono">
+                          {localReport.studentMatrix}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {localReport.studentPhone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="w-4 h-4 text-gray-500 mt-0.5 dark:text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Phone Number</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {localReport.studentPhone}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Reporter and Date Info */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
-                          <User className="w-4 h-4" />
-                          <span className="line-clamp-1">{displayName}</span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <div className="text-xs space-y-1 p-1">
-                          <p className="font-semibold text-[#D4A853] mb-1">👤 Reporter Details</p>
-                          <p className="font-medium">{reporterDetails.type}</p>
-                          <p>Name: {reporterDetails.name}</p>
-                          {reporterDetails.showEmail && reporterDetails.email && (
-                            <p className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {reporterDetails.email}
+            {/* Incident Details */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Incident Details</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Category</p>
+                      <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
+                        {categoryLabels[rawReport.incidentCategory || localReport.incidentCategory] || rawReport.incidentCategory || localReport.incidentCategory || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> Date & Time
+                      </p>
+                      <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">{date} at {time}</p>
+                    </div>
+                  </div>
+
+                  {/* Location Area - NEW SECTION */}
+                  {locationAreaDisplay && locationAreaDisplay !== 'Not specified' && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Building2 className="w-3 h-3" /> Location Area
+                      </p>
+                      <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                          {locationAreaDisplay}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Specific Address - UPDATED */}
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Specific Address
+                    </p>
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                      {specificAddress && specificAddress !== 'No address specified' ? (
+                        <>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                            {specificAddress}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            ⚠️ No specific address provided
+                          </p>
+                          {reporterResidence && reporterResidence !== 'Unknown Location' && (
+                            <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                              Reported from: {getLocationAreaName(reporterResidence)} area
                             </p>
                           )}
-                          {reporterDetails.showPhone && reporterDetails.phone && (
-                            <p className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {reporterDetails.phone}
-                            </p>
-                          )}
-                          {reporterDetails.showMatric && reporterDetails.matric && (
-                            <p className="mt-1">Matric: {reporterDetails.matric}</p>
-                          )}
-                          {!reporterDetails.showEmail && !reporterDetails.showPhone && !reporterDetails.showMatric && (
-                            <p className="text-muted-foreground italic">No contact information available</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {date} {time !== '—' ? `at ${time}` : ''}
+                  {/* Description */}
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Description</p>
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {rawReport.description || localReport.description || '—'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Injuries & Damages */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Injuries & Damages</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Injuries</p>
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
+                      {rawReport.injuries || localReport.injuries || 'None reported'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Damages</p>
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
+                      {rawReport.damages || localReport.damages || 'None reported'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Suspect Information */}
+            {(rawReport.suspectDescription || localReport.suspectDescription) && (
+              <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suspect Information</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Suspect Description</p>
+                    <div className="mt-1 bg-white p-3 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {rawReport.suspectDescription || localReport.suspectDescription}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Attachments */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Image className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    ({attachmentUrls.length} files)
                   </span>
                 </div>
-              </div>
-            );
-          })}
+                {attachmentUrls.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {attachmentUrls.map((url, idx) => {
+                      const resolved = resolveUrl(url);
+                      const isImageFile = isImage(url);
 
-          {reports.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">
-              <MapPin className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No reports found</p>
-              <p className="text-sm mt-1">Create a new report to get started</p>
+                      return isImageFile ? (
+                        <button
+                          key={idx}
+                          onClick={() => setLightboxUrl(resolved)}
+                          className="rounded-xl overflow-hidden border border-gray-200 hover:border-amber-400 transition-colors aspect-square bg-gray-100 relative group dark:border-slate-700 dark:bg-slate-700"
+                        >
+                          <img
+                            src={getOptimizedImageUrl(resolved)}
+                            alt={`Attachment ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Image failed to load:', resolved);
+                              e.target.onerror = null;
+                              e.target.src = 'https://placehold.co/400x400?text=Image+Load+Failed';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                        </button>
+                      ) : (
+                        <a
+                          key={idx}
+                          href={resolved}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl border border-gray-200 hover:border-amber-400 transition-colors text-center bg-white dark:border-slate-700 dark:bg-slate-800 dark:hover:border-amber-600"
+                        >
+                          <FileText className="w-6 h-6 text-amber-500 dark:text-amber-400" />
+                          <span className="text-xs text-gray-500 truncate w-full dark:text-gray-400">
+                            {url.split('/').pop()?.slice(0, 20) || `File ${idx + 1}`}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-amber-50/30 dark:border-slate-700 dark:bg-slate-800/30">
+                    <Image className="w-8 h-8 text-gray-400 mx-auto mb-2 dark:text-gray-500" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No attachments</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Status & Assignment */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status & Assignment</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Assigned Officer</p>
+                    <p className="text-sm font-medium mt-1 flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                      <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      {localReport.officerName || rawReport.officerName || 'Not assigned'}
+                    </p>
+                  </div>
+                  {(rawReport.officerNotes || localReport.officerNotes) && (
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100 dark:bg-amber-950/20 dark:border-amber-800">
+                      <p className="text-xs text-amber-700 font-medium dark:text-amber-400">Officer Notes</p>
+                      <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap dark:text-gray-300">
+                        {rawReport.officerNotes || localReport.officerNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Report Metadata */}
+            <Card className="border-gray-200 bg-white dark:bg-slate-800/50 dark:border-slate-700">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Report Metadata</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Reported At</p>
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
+                      {rawReport.reportedAt || localReport.reportedAt
+                        ? new Date(rawReport.reportedAt || localReport.reportedAt).toLocaleString('en-MY')
+                        : '—'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Last Updated</p>
+                    <p className="text-sm font-medium mt-1 text-gray-800 dark:text-gray-200">
+                      {rawReport.updatedAt || localReport.updatedAt
+                        ? new Date(rawReport.updatedAt || localReport.updatedAt).toLocaleString('en-MY')
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="text-gray-700 border-gray-700 rounded-xl gap-2 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-700"
+                onClick={() => setIsEditingOpen(true)}
+              >
+                <Edit className="w-4 h-4" />
+                Edit
+              </Button>
+              <Button
+                className="bg-green-500 hover:bg-green-600 text-white rounded-xl gap-2"
+                onClick={handleMarkResolved}
+                disabled={rawReport.status === 'resolved' || localReport.status === 'resolved' || isResolving}
+              >
+                {isResolving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                ) : (
+                  <><CheckCircle className="w-4 h-4" /> Mark as Resolved</>
+                )}
+              </Button>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {lightbox}
+
+      <ReportsEditing
+        report={rawReport}
+        isOpen={isEditingOpen}
+        onClose={() => setIsEditingOpen(false)}
+        onSaveSuccess={handleSaveChanges}
+      />
+    </>
   );
 };
