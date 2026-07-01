@@ -30,48 +30,107 @@ const formatLocationName = (location) => {
 
 // ============================================
 // FIXED LOCATION FUNCTIONS - PRIORITIZE determinedLocation
+// (mirrors ReportDetailsModal exactly)
 // ============================================
 
+// Extracts a clean "specific place" string from a full address by stripping
+// out the matched location-area name (same logic as ReportDetailsModal)
+const extractSpecificPlace = (address, locationArea) => {
+  if (!address) return null;
+
+  let result = address;
+
+  if (locationArea) {
+    result = result.replace(new RegExp(locationArea, 'gi'), '');
+  }
+
+  const locationNames = [
+    'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
+    'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
+    'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
+    'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
+    'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
+    'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
+  ];
+
+  for (const name of locationNames) {
+    result = result.replace(new RegExp(name, 'gi'), '');
+  }
+
+  result = result.replace(/Mahallah /gi, '');
+  result = result.replace(/Kulliyyah /gi, '');
+  result = result.trim();
+  result = result.replace(/\s+/g, ' ');
+  result = result.replace(/,$/, '');
+  result = result.replace(/^,/, '');
+
+  return result || null;
+};
+
 /**
- * Get the location area - PRIORITIZES determinedLocation
+ * Get the location area - now matches ReportDetailsModal's priority exactly:
+ * 1. determinedLocation (raw, formatted)
+ * 2. raw location.locationArea
+ * 3. processed locationArea from Dashboard
+ * 4. mahallah
  */
 const getLocationAreaDisplay = (report) => {
   if (!report) return '';
+  const raw = report._raw || report;
 
-  // 🔥 PRIORITY 1: Use determinedLocation from backend (THIS IS WHAT YOU WANT!)
-  if (report.determinedLocation && report.determinedLocation !== 'Unknown') {
-    return formatLocationName(report.determinedLocation);
+  if (raw.determinedLocation) {
+    return formatLocationName(raw.determinedLocation);
   }
 
-  // PRIORITY 2: Check _raw for determinedLocation
-  if (report._raw?.determinedLocation && report._raw.determinedLocation !== 'Unknown') {
-    return formatLocationName(report._raw.determinedLocation);
+  if (raw.location?.locationArea) {
+    return raw.location.locationArea;
   }
 
-  // PRIORITY 3: Use locationArea from Dashboard
-  if (report.locationArea && report.locationArea !== 'Unknown') {
+  if (report.locationArea && report.locationArea !== 'Unknown' && report.locationArea !== 'Not specified') {
     return report.locationArea;
+  }
+
+  if (raw.mahallah) {
+    return raw.mahallah;
   }
 
   return '';
 };
 
 /**
- * Get the specific address
+ * Get the specific address - now matches ReportDetailsModal's priority:
+ * specificAddress -> location.specificPlace -> location.building/building
+ * -> extract from address -> fallback to raw address
  */
 const getSpecificAddress = (report) => {
   if (!report) return 'No address specified';
+  const raw = report._raw || report;
 
-  // Use specificAddress from backend
   if (report.specificAddress && report.specificAddress !== 'No address specified') {
     return report.specificAddress;
   }
-
-  if (report._raw?.specificAddress && report._raw.specificAddress !== 'Not specified') {
-    return report._raw.specificAddress;
+  if (raw.specificAddress && raw.specificAddress !== 'Not specified') {
+    return raw.specificAddress;
+  }
+  if (raw.location?.specificPlace) {
+    return raw.location.specificPlace;
+  }
+  if (raw.location?.building) {
+    return raw.location.building;
+  }
+  if (raw.building) {
+    return raw.building;
   }
 
-  // Fallback: use address
+  const address = raw.location?.address || raw.address || null;
+  const locationArea = getLocationAreaDisplay(report);
+
+  if (address) {
+    const extracted = extractSpecificPlace(address, locationArea);
+    if (extracted) return extracted;
+    return address;
+  }
+
   if (report.address && report.address !== 'No address specified') {
     return report.address;
   }
@@ -80,16 +139,14 @@ const getSpecificAddress = (report) => {
 };
 
 /**
- * Get full location display
+ * Get full location display - combines area + specific address
  */
 const getFullLocationDisplay = (report) => {
   if (!report) return 'Location not specified';
 
-  // Get location area from determinedLocation
   const locationArea = getLocationAreaDisplay(report);
   const specificAddress = getSpecificAddress(report);
 
-  // If we have both, combine them
   if (locationArea && specificAddress && specificAddress !== 'No address specified') {
     if (specificAddress.includes(locationArea)) {
       return specificAddress;
@@ -223,7 +280,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
               const reporterDetails = getReporterDetails(report);
               const displayName = getReporterDisplayName(report);
 
-              // ✅ Get location data - now prioritizes determinedLocation
+              // ✅ Get location data - now matches ReportDetailsModal exactly
               const locationArea = getLocationAreaDisplay(report);
               const specificAddress = getSpecificAddress(report);
               const fullLocation = getFullLocationDisplay(report);
@@ -268,7 +325,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
 
                   <h4 className="font-semibold mb-2 line-clamp-2">{report.issue || report.description}</h4>
 
-                  {/* Location Section - NOW SHOWS KICT (ICT) */}
+                  {/* Location Section */}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                     <TooltipProvider>
                       <Tooltip>
