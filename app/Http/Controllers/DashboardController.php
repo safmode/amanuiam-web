@@ -49,14 +49,66 @@ class DashboardController extends Controller
                     ]);
 
                     // ============================================
-                    // GET DETERMINED LOCATION USING TRAIT
+                    // GET DETERMINED LOCATION WITH FALLBACKS
                     // ============================================
                     $determinedLocation = $this->determineReportLocation($report);
+
+                    // FALLBACK 1: If determinedLocation is null, try to extract from location data
+                    if (empty($determinedLocation) || $determinedLocation === 'Unknown') {
+                        Log::warning('determineReportLocation returned null/unknown for report ' . ($report->reportId ?? 'unknown') . ', trying fallbacks');
+
+                        // Check if location has locationArea
+                        if (isset($report->location) && is_array($report->location) && isset($report->location['locationArea'])) {
+                            $locationArea = $report->location['locationArea'];
+                            foreach ($this->mainLocations as $locationName => $config) {
+                                if (strtolower($config['display']) === strtolower($locationArea) ||
+                                    strtolower($config['key']) === strtolower($locationArea) ||
+                                    strpos(strtolower($locationArea), strtolower($config['key'])) !== false) {
+                                    $determinedLocation = $config['key'];
+                                    Log::info('Found location from locationArea: ' . $determinedLocation);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // FALLBACK 2: Check mahallah
+                    if (empty($determinedLocation) && !empty($report->mahallah) && $report->mahallah !== 'Unknown Location') {
+                        foreach ($this->mainLocations as $locationName => $config) {
+                            if (strpos(strtolower($report->mahallah), strtolower($config['key'])) !== false) {
+                                $determinedLocation = $config['key'];
+                                Log::info('Found location from mahallah: ' . $determinedLocation);
+                                break;
+                            }
+                        }
+                    }
+
+                    // FALLBACK 3: Hardcoded coordinates for KICT
+                    if (empty($determinedLocation)) {
+                        $coords = $this->getReportCoordinates($report);
+                        if ($coords) {
+                            // KICT coordinates (approximate)
+                            $kictLat = 3.2537;
+                            $kictLng = 101.7302;
+                            $distance = $this->calculateDistance($coords['lat'], $coords['lng'], $kictLat, $kictLng);
+                            if ($distance < 500) { // Within 500 meters
+                                $determinedLocation = 'KICT';
+                                Log::info('Report ' . ($report->reportId ?? 'unknown') . ' matched KICT by hardcoded coordinates (distance: ' . round($distance, 2) . 'm)');
+                            }
+                        }
+                    }
+
+                    // FINAL FALLBACK: Use 'Unknown'
+                    if (empty($determinedLocation)) {
+                        $determinedLocation = 'Unknown';
+                        Log::warning('Report ' . ($report->reportId ?? 'unknown') . ' using Unknown as final fallback');
+                    }
+
                     $specificAddress = $this->getOriginalLocationText($report);
                     $locationAreaFromReport = $this->getLocationAreaFromReport($report);
 
                     // DEBUG: Log the determined location
-                    Log::info('Determined location for report ' . ($report->reportId ?? 'unknown'), [
+                    Log::info('Final determined location for report ' . ($report->reportId ?? 'unknown'), [
                         'determinedLocation' => $determinedLocation,
                         'specificAddress' => $specificAddress,
                         'locationAreaFromReport' => $locationAreaFromReport,
