@@ -725,19 +725,27 @@ class ReportController extends Controller
         return redirect()->back()->with('success', 'Report created successfully.');
     }
 
-    public function getRecent(Request $request)
+    public function getRecentData(Request $request)
     {
         $recentReports = Report::orderBy('reportedAt', 'desc')
             ->limit(10)
             ->get();
 
+        // Transform reports with location data
         $recentReports->transform(function ($report) {
-            // Initialize default values
-            $report->studentName = 'Unknown';
-            $report->studentEmail = null;
-            $report->studentPhone = null;
-            $report->studentMatrix = null;
+            // ============================================
+            // ADD DETERMINED LOCATION - CRITICAL FIX
+            // ============================================
+            $report->determinedLocation = $this->determineReportLocation($report);
 
+            // Get specific address
+            $report->specificAddress = $this->getOriginalLocationText($report);
+
+            // Get location area for display
+            $locationArea = $this->getLocationAreaFromReport($report);
+            $report->locationArea = $locationArea;
+
+            // Get reporter info
             if ($report->reporter_type === 'registered' && $report->reporter_id) {
                 $student = Student::find($report->reporter_id);
                 if ($student) {
@@ -754,41 +762,25 @@ class ReportController extends Controller
                     $report->studentPhone = $unregistered->phone;
                     $report->studentMatrix = $unregistered->matric_number;
                 }
-            } elseif ($report->studentId) {
-                // Fallback for legacy reports
-                $student = Student::find($report->studentId);
-                if ($student) {
-                    $report->studentName = $student->name;
-                    $report->studentEmail = $student->email;
-                    $report->studentPhone = $student->phone;
-                    $report->studentMatrix = $student->matrixNumber;
-                }
-            }
-
-            // Also try to find by matric number if studentId is a string
-            if ((!$report->studentName || $report->studentName === 'Unknown') && $report->studentId && !preg_match('/^[a-f0-9]{24}$/i', $report->studentId)) {
-                $student = Student::where('matrixNumber', $report->studentId)->first();
-                if ($student) {
-                    $report->studentName = $student->name;
-                    $report->studentEmail = $student->email;
-                    $report->studentPhone = $student->phone;
-                    $report->studentMatrix = $student->matrixNumber;
-                }
             }
 
             return $report;
         });
 
+        // Get stats
+        $stats = [
+            'totalReports' => Report::count(),
+            'pendingReports' => Report::where('status', 'pending')->count(),
+            'inProgressReports' => Report::where('status', 'inProgress')->count(),
+            'resolvedReports' => Report::where('status', 'resolved')->count(),
+            'nfaReports' => Report::where('status', 'nfa')->count(),
+            'emergencyAlerts' => Report::where('urgency', 'urgent')->where('status', '!=', 'resolved')->count(),
+        ];
+
         return response()->json([
+            'success' => true,
             'recentReports' => $recentReports,
-            'stats' => [
-                'totalReports' => Report::count(),
-                'pendingReports' => Report::where('status', 'pending')->count(),
-                'inProgressReports' => Report::where('status', 'inProgress')->count(),
-                'resolvedReports' => Report::where('status', 'resolved')->count(),
-                'nfaReports' => Report::where('status', 'nfa')->count(),
-                'emergencyAlerts' => Report::where('urgency', 'urgent')->where('status', '!=', 'resolved')->count(),
-            ],
+            'stats' => $stats,
             'lastUpdated' => now()->toDateTimeString(),
         ]);
     }

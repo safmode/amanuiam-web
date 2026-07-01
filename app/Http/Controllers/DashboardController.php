@@ -9,12 +9,21 @@ use App\Models\Officer;
 use App\Models\Admins;
 use App\Models\Emergencies;
 use App\Models\UnregisteredReporter;
+use App\Traits\LocationMatchingTrait; // ADD THIS
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    use LocationMatchingTrait; // ADD THIS
+
+    public function __construct()
+    {
+        // Initialize location matching trait
+        $this->initLocationMatching(); // ADD THIS
+    }
+
     public function getRecentReports(Request $request)
     {
         try {
@@ -28,11 +37,19 @@ class DashboardController extends Controller
 
             foreach ($recentReports as $report) {
                 try {
+                    // ============================================
+                    // FIX: ADD DETERMINED LOCATION USING TRAIT
+                    // ============================================
+                    $determinedLocation = $this->determineReportLocation($report);
+                    $specificAddress = $this->getOriginalLocationText($report);
+                    $locationAreaFromReport = $this->getLocationAreaFromReport($report);
+
                     // Get reporter info
                     $studentName = 'Unknown Reporter';
                     $studentEmail = null;
                     $studentPhone = null;
                     $studentMatrix = null;
+                    $reporterTypeDisplay = 'Reporter';
 
                     // Simple reporter lookup
                     if (isset($report->studentId) && $report->studentId) {
@@ -42,6 +59,19 @@ class DashboardController extends Controller
                             $studentEmail = $student->email ?? null;
                             $studentPhone = $student->phone ?? null;
                             $studentMatrix = $student->matrixNumber ?? null;
+                            $reporterTypeDisplay = 'Registered Student';
+                        }
+                    }
+
+                    // Also check for unregistered reporters
+                    if ($studentName === 'Unknown Reporter' && isset($report->reporter_id) && $report->reporter_type === 'unregistered') {
+                        $unregistered = UnregisteredReporter::find($report->reporter_id);
+                        if ($unregistered) {
+                            $studentName = $unregistered->name ?? 'Anonymous';
+                            $studentEmail = $unregistered->email ?? null;
+                            $studentPhone = $unregistered->phone ?? null;
+                            $studentMatrix = $unregistered->matric_number ?? null;
+                            $reporterTypeDisplay = 'Unregistered Reporter';
                         }
                     }
 
@@ -65,6 +95,15 @@ class DashboardController extends Controller
                         $locationArea = $report->mahallah;
                     }
 
+                    // Get officer name
+                    $officerName = 'Not Assigned';
+                    if (isset($report->assignedOfficer) && $report->assignedOfficer) {
+                        $officer = Officer::where('officerId', $report->assignedOfficer)->first();
+                        if ($officer) {
+                            $officerName = $officer->officerName ?? 'Not Assigned';
+                        }
+                    }
+
                     // Build the report object
                     $transformedReports[] = [
                         '_id' => (string)$report->_id,
@@ -76,22 +115,30 @@ class DashboardController extends Controller
                         'incidentDateTime' => $report->incidentDateTime,
                         'reportedAt' => $report->reportedAt,
                         'attachmentUrls' => $report->attachmentUrls ?? [],
+
                         // Reporter info
                         'studentName' => $studentName,
                         'studentEmail' => $studentEmail,
                         'studentPhone' => $studentPhone,
                         'studentMatrix' => $studentMatrix,
-                        'reporter_type_display' => 'Student Reporter',
-                        // Location info - THIS IS WHAT YOU NEED
-                        'locationArea' => $locationArea,
+                        'reporter_type_display' => $reporterTypeDisplay,
+                        'reporter_type' => $report->reporter_type ?? 'unregistered',
+
+                        // ============================================
+                        // LOCATION INFO - USING DETERMINED LOCATION
+                        // ============================================
+                        'determinedLocation' => $determinedLocation, // CRITICAL FIX
+                        'specificAddress' => $specificAddress, // CRITICAL FIX
+                        'locationArea' => $locationAreaFromReport ?: $locationArea,
                         'building' => $building,
                         'address' => $address,
                         'specificPlace' => $specificPlace,
                         'locationRaw' => $locationRaw,
                         'mahallah' => $report->mahallah ?? null,
+
                         // Officer info
                         'assignedOfficer' => $report->assignedOfficer ?? null,
-                        'officerName' => 'Not Assigned',
+                        'officerName' => $officerName,
                     ];
 
                 } catch (\Exception $e) {
@@ -120,6 +167,15 @@ class DashboardController extends Controller
                 'nfaReports' => $statusCounts['nfa'],
                 'emergencyAlerts' => $emergencyAlerts,
             ];
+
+            Log::info('Dashboard recent reports fetched', [
+                'count' => count($transformedReports),
+                'first_report' => count($transformedReports) > 0 ? [
+                    'reportId' => $transformedReports[0]['reportId'],
+                    'determinedLocation' => $transformedReports[0]['determinedLocation'] ?? 'missing',
+                    'specificAddress' => $transformedReports[0]['specificAddress'] ?? 'missing',
+                ] : null
+            ]);
 
             return response()->json([
                 'success' => true,
