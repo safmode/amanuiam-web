@@ -1,4 +1,4 @@
-import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail, Building2, LocateFixed } from 'lucide-react';
+import { MapPin, User, Calendar, Eye, ChevronRight, Phone, Mail, Building2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +17,6 @@ const urgencyColors = {
   urgent: 'bg-red-50 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
 };
 
-// ============================================
-// FORMAT FUNCTIONS (Simple formatting only)
-// ============================================
-
 // Format location name using locationLabels
 const formatLocationName = (location) => {
   if (!location) return '';
@@ -32,154 +28,79 @@ const formatLocationName = (location) => {
   return location;
 };
 
-// Extract specific place from address (simplified version)
-const extractSpecificPlace = (address, locationArea) => {
-  if (!address) return null;
-
-  let result = address;
-
-  // Remove location area if present
-  if (locationArea) {
-    result = result.replace(new RegExp(locationArea, 'gi'), '');
-  }
-
-  // Remove known location names
-  const locationNames = [
-    'Mahallah Asiah', 'Mahallah Aminah', 'Mahallah Safiyyah', 'Mahallah Maryam',
-    'Mahallah Ruqayyah', 'Mahallah Ali', 'Mahallah Faruq', 'Mahallah Bilal',
-    'Mahallah Asma', 'Mahallah Hafsah', 'Mahallah Halimah', 'Mahallah Siddiq',
-    'Mahallah Salahuddin', 'Mahallah Uthman', 'Mahallah Nusaibah', 'Mahallah Zubair',
-    'Mahallah Sumayyah', 'KIRKHS (AHAS KIRKHS)', 'KICT (ICT)', 'KOE (Engineering)',
-    'KAED (Architecture)', 'KENMS (Economics)', 'AIKOL (Law)', 'KOED (Education)'
-  ];
-
-  for (const name of locationNames) {
-    result = result.replace(new RegExp(name, 'gi'), '');
-  }
-
-  result = result.replace(/Mahallah /gi, '');
-  result = result.replace(/Kulliyyah /gi, '');
-  result = result.trim();
-  result = result.replace(/\s+/g, ' ');
-  result = result.replace(/,$/, '');
-  result = result.replace(/^,/, '');
-
-  return result || null;
-};
-
 // ============================================
-// LOCATION FUNCTIONS - USING BACKEND data
+// SIMPLIFIED LOCATION FUNCTIONS
 // ============================================
 
 /**
- * Get the location area - PRIORITIZES determinedLocation from backend
- * The backend LocationMatchingTrait already does the heavy lifting
+ * Get the location area - Uses pre-formatted data from Dashboard
  */
-const getLocationAreaDisplay = (reportData) => {
-  if (!reportData) return '';
+const getLocationAreaDisplay = (report) => {
+  if (!report) return '';
 
-  // PRIORITY 1: Use determinedLocation from backend (most accurate!)
-  if (reportData.determinedLocation) {
-    const formatted = formatLocationName(reportData.determinedLocation);
-    if (formatted) return formatted;
+  // ✅ Use the pre-formatted locationArea from Dashboard
+  if (report.locationArea && report.locationArea !== 'Unknown') {
+    return report.locationArea;
   }
 
-  // PRIORITY 2: Check location.locationArea
-  if (reportData.location?.locationArea) {
-    const formatted = formatLocationName(reportData.location.locationArea);
-    if (formatted) return formatted;
+  // Fallback: Check determinedLocation
+  if (report.determinedLocation) {
+    return formatLocationName(report.determinedLocation);
   }
 
-  // PRIORITY 3: Check locationArea root field
-  if (reportData.locationArea && reportData.locationArea !== 'Not specified') {
-    const formatted = formatLocationName(reportData.locationArea);
-    if (formatted) return formatted;
-  }
-
-  // PRIORITY 4: Check mahallah
-  if (reportData.mahallah && reportData.mahallah !== 'Unknown Location') {
-    const formatted = formatLocationName(reportData.mahallah);
-    if (formatted) return formatted;
+  // Fallback: Check raw data
+  if (report._raw?.determinedLocation) {
+    return formatLocationName(report._raw.determinedLocation);
   }
 
   return '';
 };
 
 /**
- * Get the specific address/place
- * Uses the backend's location data directly
+ * Get the specific address - Uses pre-formatted data from Dashboard
  */
-const getSpecificAddress = (reportData) => {
-  if (!reportData) return 'No address specified';
+const getSpecificAddress = (report) => {
+  if (!report) return 'No address specified';
 
-  // PRIORITY 1: Use specificAddress from backend (already processed)
-  if (reportData.specificAddress && reportData.specificAddress !== 'Not specified') {
-    return reportData.specificAddress;
+  // ✅ Use the pre-formatted specificAddress from Dashboard
+  if (report.specificAddress && report.specificAddress !== 'No address specified') {
+    return report.specificAddress;
   }
 
-  // PRIORITY 2: Use location.specificPlace
-  if (reportData.location?.specificPlace) {
-    return reportData.location.specificPlace;
-  }
-
-  // PRIORITY 3: Use building
-  if (reportData.location?.building) {
-    return reportData.location.building;
-  }
-  if (reportData.building) {
-    return reportData.building;
-  }
-
-  // PRIORITY 4: Try to extract from address
-  let address = null;
-  let locationArea = getLocationAreaDisplay(reportData);
-
-  if (reportData.location?.address) {
-    address = reportData.location.address;
-  } else if (reportData.address) {
-    address = reportData.address;
-  }
-
-  if (address) {
-    const extracted = extractSpecificPlace(address, locationArea);
-    if (extracted) {
-      return extracted;
-    }
-    return address;
-  }
-
-  // PRIORITY 5: Use incidentLocation from backend
-  if (reportData.incidentLocation && reportData.incidentLocation !== 'No address specified') {
-    return reportData.incidentLocation;
+  // Fallback: Check raw data
+  if (report._raw?.specificAddress && report._raw.specificAddress !== 'Not specified') {
+    return report._raw.specificAddress;
   }
 
   return 'No address specified';
 };
 
 /**
- * Get full location display (combines area + specific address)
+ * Get full location display - Uses pre-formatted data from Dashboard
  */
-const getFullLocationDisplay = (reportData) => {
-  if (!reportData) return 'Location not specified';
+const getFullLocationDisplay = (report) => {
+  if (!report) return 'Location not specified';
 
-  const locationArea = getLocationAreaDisplay(reportData);
-  const specificAddress = getSpecificAddress(reportData);
+  // ✅ Use the pre-formatted address from Dashboard
+  if (report.address && report.address !== 'No address specified' && report.address !== 'Unknown') {
+    return report.address;
+  }
 
-  // If we have both, combine them
+  // Build it from parts if needed
+  const locationArea = getLocationAreaDisplay(report);
+  const specificAddress = getSpecificAddress(report);
+
   if (locationArea && specificAddress && specificAddress !== 'No address specified') {
-    // Check if specific address already contains the location area
     if (specificAddress.includes(locationArea)) {
       return specificAddress;
     }
     return `${locationArea} - ${specificAddress}`;
   }
 
-  // If only location area exists
   if (locationArea) {
     return locationArea;
   }
 
-  // If only specific address exists
   if (specificAddress && specificAddress !== 'No address specified') {
     return specificAddress;
   }
@@ -190,7 +111,6 @@ const getFullLocationDisplay = (reportData) => {
 // ============================================
 // REPORTER DETAILS FUNCTIONS
 // ============================================
-
 const getReporterDisplayName = (report) => {
   if (report.studentName && report.studentName !== 'Unknown' && report.studentName !== 'No student linked') {
     return report.studentName;
@@ -217,7 +137,6 @@ const getReporterDetails = (report) => {
 // ============================================
 // MAIN COMPONENT
 // ============================================
-
 export const RecentReports = ({ reports, onViewReport, loading = false }) => {
   const getStatusBadge = (status) => (
     <TooltipProvider>
@@ -257,7 +176,6 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
     </TooltipProvider>
   );
 
-  // Show loading skeletons when loading is true
   if (loading) {
     return (
       <Card className="bg-white dark:bg-slate-800 border-border">
@@ -266,7 +184,6 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
             <h3 className="text-lg font-semibold">Recent Reports</h3>
             <div className="h-5 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
           </div>
-
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 animate-pulse">
@@ -289,7 +206,6 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
     );
   }
 
-  // Show actual reports when not loading
   return (
     <Card className="bg-white dark:bg-slate-800 border-border">
       <CardContent className="p-6">
@@ -302,181 +218,171 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
         </div>
 
         <div className="space-y-4">
-          {reports.map((report) => {
-            const reporterDetails = getReporterDetails(report);
-            const displayName = getReporterDisplayName(report);
+          {reports && reports.length > 0 ? (
+            reports.map((report) => {
+              const reporterDetails = getReporterDetails(report);
+              const displayName = getReporterDisplayName(report);
 
-            // Use the backend-determined location data
-            const locationArea = getLocationAreaDisplay(report);
-            const specificAddress = getSpecificAddress(report);
-            const fullLocation = getFullLocationDisplay(report);
+              // ✅ Get location data from pre-formatted fields
+              const locationArea = getLocationAreaDisplay(report);
+              const specificAddress = getSpecificAddress(report);
+              const fullLocation = getFullLocationDisplay(report);
 
-            // Get full location details for tooltip
-            const locationDetails = {
-              determinedLocation: report.determinedLocation || '',
-              locationArea: locationArea,
-              specificAddress: specificAddress,
-              building: report.location?.building || report.building || '',
-              address: report.location?.address || report.address || '',
-              mahallah: report.mahallah || ''
-            };
-
-            const hasDetailedLocation = locationDetails.locationArea ||
-                                       locationDetails.building ||
-                                       locationDetails.address;
-
-            // Format date/time
-            const formatDateTime = (dateTime) => {
-              if (!dateTime) return { date: '—', time: '—' };
-              const date = new Date(dateTime);
-              return {
-                date: date.toLocaleDateString('en-MY'),
-                time: date.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
+              // Get location details for tooltip
+              const locationDetails = {
+                determinedLocation: report.determinedLocation || report._raw?.determinedLocation || '',
+                locationArea: locationArea,
+                specificAddress: specificAddress,
+                building: report.building || report._raw?.building || '',
+                address: report.address || report._raw?.address || '',
+                mahallah: report.mahallah || report._raw?.mahallah || ''
               };
-            };
 
-            const { date, time } = formatDateTime(report.incidentDateTime || report.reportedAt);
+              const formatDateTime = (dateTime) => {
+                if (!dateTime) return { date: '—', time: '—' };
+                const date = new Date(dateTime);
+                return {
+                  date: date.toLocaleDateString('en-MY'),
+                  time: date.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
+                };
+              };
 
-            return (
-              <div
-                key={report.id || report.reportId}
-                className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
-                onClick={() => onViewReport(report)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-mono text-muted-foreground">{report.reportId || report.id}</span>
-                    {getUrgencyBadge(report.urgency)}
-                    {getStatusBadge(report.status)}
+              const { date, time } = formatDateTime(report.incidentDateTime || report.reportedAt);
+
+              return (
+                <div
+                  key={report.id || report.reportId}
+                  className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
+                  onClick={() => onViewReport(report)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-mono text-muted-foreground">{report.reportId || report.id}</span>
+                      {getUrgencyBadge(report.urgency)}
+                      {getStatusBadge(report.status)}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#D4A853] hover:text-[#C49A48] hover:bg-[#D4A853]/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Eye className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#D4A853] hover:text-[#C49A48] hover:bg-[#D4A853]/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
 
-                <h4 className="font-semibold mb-2 line-clamp-2">{report.description || report.issue}</h4>
+                  <h4 className="font-semibold mb-2 line-clamp-2">{report.issue || report.description}</h4>
 
-                {/* Location Section - Uses backend determinedLocation */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
-                          <MapPin className="w-4 h-4" />
-                          <span className="line-clamp-1">
-                            {fullLocation}
+                  {/* Location Section */}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
+                            <MapPin className="w-4 h-4" />
+                            <span className="line-clamp-1">
+                              {fullLocation}
+                            </span>
                           </span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm">
-                        <div className="text-xs space-y-1.5 p-1">
-                          <p className="font-semibold text-[#D4A853] mb-1">📍 Location Details</p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-sm">
+                          <div className="text-xs space-y-1.5 p-1">
+                            <p className="font-semibold text-[#D4A853] mb-1">📍 Location Details</p>
 
-                          {/* Show determinedLocation from backend prominently */}
-                          {locationDetails.determinedLocation && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Detected Area:</span>
-                              <span className="font-semibold">{formatLocationName(locationDetails.determinedLocation)}</span>
-                            </p>
-                          )}
+                            {locationDetails.determinedLocation && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Detected Area:</span>
+                                <span className="font-semibold">{formatLocationName(locationDetails.determinedLocation)}</span>
+                              </p>
+                            )}
 
-                          {locationDetails.locationArea && !locationDetails.determinedLocation && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Area:</span>
-                              <span>{locationDetails.locationArea}</span>
-                            </p>
-                          )}
+                            {locationDetails.locationArea && !locationDetails.determinedLocation && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Area:</span>
+                                <span>{locationDetails.locationArea}</span>
+                              </p>
+                            )}
 
-                          {locationDetails.specificAddress &&
-                           locationDetails.specificAddress !== 'No address specified' && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Specific:</span>
-                              <span className="break-words">{locationDetails.specificAddress}</span>
-                            </p>
-                          )}
+                            {locationDetails.specificAddress &&
+                             locationDetails.specificAddress !== 'No address specified' && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Specific:</span>
+                                <span className="break-words">{locationDetails.specificAddress}</span>
+                              </p>
+                            )}
 
-                          {locationDetails.building && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Building:</span>
-                              <span className="break-words">{locationDetails.building}</span>
-                            </p>
-                          )}
+                            {locationDetails.building && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Building:</span>
+                                <span className="break-words">{locationDetails.building}</span>
+                              </p>
+                            )}
 
-                          {locationDetails.address &&
-                           locationDetails.address !== locationDetails.locationArea &&
-                           locationDetails.address !== locationDetails.specificAddress && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Address:</span>
-                              <span className="break-words">{locationDetails.address}</span>
-                            </p>
-                          )}
+                            {locationDetails.address &&
+                             locationDetails.address !== locationDetails.locationArea &&
+                             locationDetails.address !== locationDetails.specificAddress && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Address:</span>
+                                <span className="break-words">{locationDetails.address}</span>
+                              </p>
+                            )}
 
-                          {locationDetails.mahallah &&
-                           !locationDetails.locationArea &&
-                           !locationDetails.determinedLocation && (
-                            <p className="flex items-start gap-1">
-                              <span className="font-medium min-w-[70px]">Mahallah:</span>
-                              <span>{locationDetails.mahallah}</span>
-                            </p>
-                          )}
+                            {locationDetails.mahallah &&
+                             !locationDetails.locationArea &&
+                             !locationDetails.determinedLocation && (
+                              <p className="flex items-start gap-1">
+                                <span className="font-medium min-w-[70px]">Mahallah:</span>
+                                <span>{locationDetails.mahallah}</span>
+                              </p>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
 
-                          {!hasDetailedLocation && (
-                            <p className="text-muted-foreground italic">No detailed location information available</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  {/* Reporter and Date Info */}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
+                            <User className="w-4 h-4" />
+                            <span className="line-clamp-1">{displayName}</span>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <div className="text-xs space-y-1 p-1">
+                            <p className="font-semibold text-[#D4A853] mb-1">👤 Reporter Details</p>
+                            <p className="font-medium">{reporterDetails.type}</p>
+                            <p>Name: {reporterDetails.name}</p>
+                            {reporterDetails.showEmail && reporterDetails.email && (
+                              <p className="flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                {reporterDetails.email}
+                              </p>
+                            )}
+                            {reporterDetails.showPhone && reporterDetails.phone && (
+                              <p className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {reporterDetails.phone}
+                              </p>
+                            )}
+                            {reporterDetails.showMatric && reporterDetails.matric && (
+                              <p className="mt-1">Matric: {reporterDetails.matric}</p>
+                            )}
+                            {!reporterDetails.showEmail && !reporterDetails.showPhone && !reporterDetails.showMatric && (
+                              <p className="text-muted-foreground italic">No contact information available</p>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {date} {time !== '—' ? `at ${time}` : ''}
+                    </span>
+                  </div>
                 </div>
-
-                {/* Reporter and Date Info */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex items-center gap-1 cursor-help hover:text-[#D4A853] transition-colors">
-                          <User className="w-4 h-4" />
-                          <span className="line-clamp-1">{displayName}</span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <div className="text-xs space-y-1 p-1">
-                          <p className="font-semibold text-[#D4A853] mb-1">👤 Reporter Details</p>
-                          <p className="font-medium">{reporterDetails.type}</p>
-                          <p>Name: {reporterDetails.name}</p>
-                          {reporterDetails.showEmail && reporterDetails.email && (
-                            <p className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {reporterDetails.email}
-                            </p>
-                          )}
-                          {reporterDetails.showPhone && reporterDetails.phone && (
-                            <p className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {reporterDetails.phone}
-                            </p>
-                          )}
-                          {reporterDetails.showMatric && reporterDetails.matric && (
-                            <p className="mt-1">Matric: {reporterDetails.matric}</p>
-                          )}
-                          {!reporterDetails.showEmail && !reporterDetails.showPhone && !reporterDetails.showMatric && (
-                            <p className="text-muted-foreground italic">No contact information available</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {date} {time !== '—' ? `at ${time}` : ''}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-
-          {reports.length === 0 && (
+              );
+            })
+          ) : (
             <div className="p-8 text-center text-muted-foreground">
               <MapPin className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No reports found</p>
