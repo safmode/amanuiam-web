@@ -504,4 +504,58 @@ trait LocationMatchingTrait
         }
         return null;
     }
+
+    protected function getReportCoordinates($report)
+    {
+        if (!isset($report->location)) {
+            return null;
+        }
+
+        $location = $report->location;
+
+        // 🔥 FIX: If it's a string, decode it
+        if (is_string($location)) {
+            $location = json_decode($location, true);
+            if (!is_array($location)) {
+                return null;
+            }
+        }
+
+        // 🔥 FIX: If it's an object with locationArea, check if it has coords
+        if (is_object($location)) {
+            $location = (array)$location;
+        }
+
+        if (!is_array($location)) {
+            return null;
+        }
+
+        // Check for latitude/longitude
+        if (isset($location['latitude']) && isset($location['longitude'])
+            && is_numeric($location['latitude']) && is_numeric($location['longitude'])
+            && $location['latitude'] != 0 && $location['longitude'] != 0) {
+            return ['lat' => (float)$location['latitude'], 'lng' => (float)$location['longitude']];
+        }
+
+        // Check for lat/lng
+        if (isset($location['lat']) && isset($location['lng'])
+            && is_numeric($location['lat']) && is_numeric($location['lng'])
+            && $location['lat'] != 0 && $location['lng'] != 0) {
+            return ['lat' => (float)$location['lat'], 'lng' => (float)$location['lng']];
+        }
+
+        // 🔥 FIX: Check if coordinates are nested in a 'coords' field
+        if (isset($location['coords']) && is_array($location['coords'])) {
+            $coords = $location['coords'];
+            if (isset($coords['lat']) && isset($coords['lng'])) {
+                return ['lat' => (float)$coords['lat'], 'lng' => (float)$coords['lng']];
+            }
+            if (isset($coords['latitude']) && isset($coords['longitude'])) {
+                return ['lat' => (float)$coords['latitude'], 'lng' => (float)$coords['longitude']];
+            }
+        }
+
+        return null;
+    }
 }
+
