@@ -20,16 +20,6 @@ const urgencyColors = {
 // Format location name using locationLabels
 const formatLocationName = (location) => {
   if (!location) return '';
-
-  // DIRECT MAPPING - THIS IS THE FIX
-  if (location === 'KICT') return 'KICT (ICT)';
-  if (location === 'KIRKHS') return 'KIRKHS (AHAS KIRKHS)';
-  if (location === 'KOE') return 'KOE (Engineering)';
-  if (location === 'KAED') return 'KAED (Architecture)';
-  if (location === 'KENMS') return 'KENMS (Economics)';
-  if (location === 'AIKOL') return 'AIKOL (Law)';
-  if (location === 'KOED') return 'KOED (Education)';
-
   for (const group of Object.values(locationLabels)) {
     for (const [key, label] of Object.entries(group)) {
       if (key === location || label === location) return label;
@@ -39,23 +29,26 @@ const formatLocationName = (location) => {
 };
 
 // ============================================
-// LOCATION FUNCTIONS
+// FIXED LOCATION FUNCTIONS - PRIORITIZE determinedLocation
 // ============================================
 
+/**
+ * Get the location area - PRIORITIZES determinedLocation
+ */
 const getLocationAreaDisplay = (report) => {
   if (!report) return '';
 
-  // PRIORITY 1: Use determinedLocation
+  // 🔥 PRIORITY 1: Use determinedLocation from backend (THIS IS WHAT YOU WANT!)
   if (report.determinedLocation && report.determinedLocation !== 'Unknown') {
     return formatLocationName(report.determinedLocation);
   }
 
-  // PRIORITY 2: Check _raw
+  // PRIORITY 2: Check _raw for determinedLocation
   if (report._raw?.determinedLocation && report._raw.determinedLocation !== 'Unknown') {
     return formatLocationName(report._raw.determinedLocation);
   }
 
-  // PRIORITY 3: Use locationArea
+  // PRIORITY 3: Use locationArea from Dashboard
   if (report.locationArea && report.locationArea !== 'Unknown') {
     return report.locationArea;
   }
@@ -63,9 +56,13 @@ const getLocationAreaDisplay = (report) => {
   return '';
 };
 
+/**
+ * Get the specific address
+ */
 const getSpecificAddress = (report) => {
   if (!report) return 'No address specified';
 
+  // Use specificAddress from backend
   if (report.specificAddress && report.specificAddress !== 'No address specified') {
     return report.specificAddress;
   }
@@ -74,6 +71,7 @@ const getSpecificAddress = (report) => {
     return report._raw.specificAddress;
   }
 
+  // Fallback: use address
   if (report.address && report.address !== 'No address specified') {
     return report.address;
   }
@@ -81,12 +79,17 @@ const getSpecificAddress = (report) => {
   return 'No address specified';
 };
 
+/**
+ * Get full location display
+ */
 const getFullLocationDisplay = (report) => {
   if (!report) return 'Location not specified';
 
+  // Get location area from determinedLocation
   const locationArea = getLocationAreaDisplay(report);
   const specificAddress = getSpecificAddress(report);
 
+  // If we have both, combine them
   if (locationArea && specificAddress && specificAddress !== 'No address specified') {
     if (specificAddress.includes(locationArea)) {
       return specificAddress;
@@ -220,10 +223,12 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
               const reporterDetails = getReporterDetails(report);
               const displayName = getReporterDisplayName(report);
 
+              // ✅ Get location data - now prioritizes determinedLocation
               const locationArea = getLocationAreaDisplay(report);
               const specificAddress = getSpecificAddress(report);
               const fullLocation = getFullLocationDisplay(report);
 
+              // Get location details for tooltip
               const locationDetails = {
                 determinedLocation: report.determinedLocation || report._raw?.determinedLocation || '',
                 locationArea: locationArea,
@@ -263,7 +268,7 @@ export const RecentReports = ({ reports, onViewReport, loading = false }) => {
 
                   <h4 className="font-semibold mb-2 line-clamp-2">{report.issue || report.description}</h4>
 
-                  {/* Location Section */}
+                  {/* Location Section - NOW SHOWS KICT (ICT) */}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                     <TooltipProvider>
                       <Tooltip>

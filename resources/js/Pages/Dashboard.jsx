@@ -48,16 +48,6 @@ const Dashboard = () => {
   // Helper function to format location name
   const formatLocationName = (location) => {
     if (!location) return '';
-
-    // DIRECT MAPPING - THIS IS THE FIX
-    if (location === 'KICT') return 'KICT (ICT)';
-    if (location === 'KIRKHS') return 'KIRKHS (AHAS KIRKHS)';
-    if (location === 'KOE') return 'KOE (Engineering)';
-    if (location === 'KAED') return 'KAED (Architecture)';
-    if (location === 'KENMS') return 'KENMS (Economics)';
-    if (location === 'AIKOL') return 'AIKOL (Law)';
-    if (location === 'KOED') return 'KOED (Education)';
-
     // Try to match with locationLabels
     for (const group of Object.values(locationLabels || {})) {
       for (const [key, label] of Object.entries(group)) {
@@ -73,7 +63,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/dashboard/recent-data');
+      const response = await fetch('/reports/recent');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -198,12 +188,12 @@ const Dashboard = () => {
   };
 
   // ============================================
-  // Transform report data - USE determinedLocation
+  // FIXED: Transform report data - USE determinedLocation
   // ============================================
   const formattedReports = recentReports.map(report => {
     const raw = report._raw || report;
 
-    // USE determinedLocation as the PRIMARY source
+    // 🔥 FIX: Use determinedLocation as the PRIMARY source
     let locationArea = 'Unknown';
     if (raw.determinedLocation) {
       locationArea = formatLocationName(raw.determinedLocation);
@@ -215,7 +205,7 @@ const Dashboard = () => {
       locationArea = formatLocationName(raw.locationArea);
     }
 
-    // Use specificAddress from backend
+    // 🔥 FIX: Use specificAddress from backend
     let specificAddress = 'No address specified';
     if (raw.specificAddress && raw.specificAddress !== 'Not specified') {
       specificAddress = raw.specificAddress;
@@ -267,10 +257,10 @@ const Dashboard = () => {
       incidentDateTime: raw.incidentDateTime,
       reportedAt: raw.reportedAt,
 
-      // LOCATION FIELDS - USING determinedLocation
-      locationArea: locationArea,
-      specificAddress: specificAddress,
-      address: fullAddress,
+      // 🔥🔥🔥 LOCATION FIELDS - USING determinedLocation 🔥🔥🔥
+      locationArea: locationArea,                    // This will be "KICT (ICT)"
+      specificAddress: specificAddress,              // This will be "LR 13"
+      address: fullAddress,                         // This will be "KICT (ICT) - LR 13"
       building: raw.location?.building || raw.building || null,
       mahallah: raw.mahallah || null,
       locationRaw: raw.location || null,
