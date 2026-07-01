@@ -815,7 +815,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/recent-data', [DashboardController::class, 'getRecentReports'])->name('dashboard.recent');
 
     Route::get('/Reports',    [ReportController::class, 'index'])->name('reports');
-    Route::get('/Reports/recent', [ReportController::class, 'getRecent'])->name('reports.recent');
+    Route::get('/Reports/recent', [ReportController::class, 'getRecentData'])->name('reports.recent');
     Route::post('/Reports',   [ReportController::class, 'store'])->name('reports.store');
     Route::put('/Reports/{reportId}', [ReportController::class, 'update'])->name('reports.update');
     Route::delete('/Reports/{reportId}', [ReportController::class, 'destroy'])->name('reports.destroy');
