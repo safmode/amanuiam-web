@@ -188,24 +188,24 @@ const Dashboard = () => {
   };
 
   // ============================================
-  // FIXED: Transform report data with ALL fields
+  // FIXED: Transform report data - USE determinedLocation
   // ============================================
   const formattedReports = recentReports.map(report => {
     const raw = report._raw || report;
 
-    // ✅ PRIORITIZE determinedLocation from backend
+    // 🔥 FIX: Use determinedLocation as the PRIMARY source
     let locationArea = 'Unknown';
     if (raw.determinedLocation) {
-        locationArea = formatLocationName(raw.determinedLocation);
+      locationArea = formatLocationName(raw.determinedLocation);
     } else if (raw.location?.locationArea) {
-        locationArea = formatLocationName(raw.location.locationArea);
+      locationArea = formatLocationName(raw.location.locationArea);
     } else if (raw.mahallah && raw.mahallah !== 'Unknown Location') {
-        locationArea = formatLocationName(raw.mahallah);
+      locationArea = formatLocationName(raw.mahallah);
     } else if (raw.locationArea && raw.locationArea !== 'Not specified') {
-        locationArea = formatLocationName(raw.locationArea);
+      locationArea = formatLocationName(raw.locationArea);
     }
 
-    // Determine specific address
+    // 🔥 FIX: Use specificAddress from backend
     let specificAddress = 'No address specified';
     if (raw.specificAddress && raw.specificAddress !== 'Not specified') {
       specificAddress = raw.specificAddress;
@@ -225,7 +225,6 @@ const Dashboard = () => {
     let fullAddress = specificAddress;
     if (locationArea && locationArea !== 'Unknown' &&
         specificAddress && specificAddress !== 'No address specified') {
-      // Check if specific address already contains the location area
       if (!specificAddress.includes(locationArea)) {
         fullAddress = `${locationArea} - ${specificAddress}`;
       }
@@ -258,17 +257,15 @@ const Dashboard = () => {
       incidentDateTime: raw.incidentDateTime,
       reportedAt: raw.reportedAt,
 
-      // ============================================
-      // LOCATION FIELDS - USING BACKEND DATA
-      // ============================================
-      locationArea: locationArea,                    // "KICT (ICT)"
-      specificAddress: specificAddress,              // "LR 13"
-      address: fullAddress,                         // "KICT (ICT) - LR 13"
+      // 🔥🔥🔥 LOCATION FIELDS - USING determinedLocation 🔥🔥🔥
+      locationArea: locationArea,                    // This will be "KICT (ICT)"
+      specificAddress: specificAddress,              // This will be "LR 13"
+      address: fullAddress,                         // This will be "KICT (ICT) - LR 13"
       building: raw.location?.building || raw.building || null,
       mahallah: raw.mahallah || null,
       locationRaw: raw.location || null,
 
-      // ✅ IMPORTANT: Pass through determinedLocation from backend
+      // Pass through determinedLocation
       determinedLocation: raw.determinedLocation || null,
 
       // ============================================
@@ -313,7 +310,6 @@ const Dashboard = () => {
       specificAddress: formattedReports[0].specificAddress,
       address: formattedReports[0].address,
       determinedLocation: formattedReports[0].determinedLocation,
-      locationRaw: formattedReports[0].locationRaw
     });
   }
 
