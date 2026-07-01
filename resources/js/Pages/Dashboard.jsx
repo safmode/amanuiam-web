@@ -18,6 +18,9 @@ import {
 import { router } from '@inertiajs/react';
 import SafetyTips from '@/components/dashboard/SafetyTips';
 
+// Import locationLabels if needed for formatting
+import { locationLabels } from '@/Pages/Reports';
+
 const Dashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +43,20 @@ const Dashboard = () => {
   // Helper function to get CSRF token if needed
   const getCsrfToken = () => {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  };
+
+  // Helper function to format location name
+  const formatLocationName = (location) => {
+    if (!location) return '';
+    // Try to match with locationLabels
+    for (const group of Object.values(locationLabels || {})) {
+      for (const [key, label] of Object.entries(group)) {
+        if (key === location || label === location) {
+          return label;
+        }
+      }
+    }
+    return location;
   };
 
   // Fetch dashboard data (reports and stats)
@@ -100,9 +117,12 @@ const Dashboard = () => {
     const locationMap = new Map();
 
     reports.forEach(report => {
-      // Use locationArea if available, otherwise mahallah
-      let locationName = report.locationArea || report.mahallah;
+      // Use determinedLocation or locationArea
+      let locationName = report.determinedLocation || report.locationArea || report.mahallah;
       if (!locationName) return;
+
+      // Format the location name
+      locationName = formatLocationName(locationName);
 
       if (!locationMap.has(locationName)) {
         locationMap.set(locationName, {
@@ -167,49 +187,133 @@ const Dashboard = () => {
     fetchHotspotData();
   };
 
-  // Transform report data to match your component's expected format
-  const formattedReports = recentReports.map(report => ({
-    id: report.reportId,
-    reportId: report.reportId,
-    issue: report.description?.substring(0, 100) + (report.description?.length > 100 ? '...' : ''),
-    description: report.description,
-    location: report.mahallah,
-    locationArea: report.locationArea,
-    building: report.building,
-    address: report.address,
-    specificPlace: report.specificPlace,
-    locationRaw: report.locationRaw,
-    mahallah: report.mahallah,
-    status: report.status,
-    urgency: report.urgency,
-    date: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleDateString() : 'Unknown',
-    time: report.incidentDateTime ? new Date(report.incidentDateTime).toLocaleTimeString() : 'Unknown',
-    incidentDateTime: report.incidentDateTime,
-    reportedAt: report.reportedAt,
-    reporterName: report.studentName || 'Unknown Reporter',
-    reporterContact: report.studentPhone || 'Not provided',
-    reporterEmail: report.studentEmail,
-    reporterMatricNo: report.studentMatrix,
-    reporter_type_display: report.reporter_type_display,
-    reporter_type: report.reporter_type,
-    studentName: report.studentName,
-    studentEmail: report.studentEmail,
-    studentPhone: report.studentPhone,
-    studentMatrix: report.studentMatrix,
-    incidentCategory: report.incidentCategory,
-    injuries: report.injuries,
-    officerNotes: report.officerNotes,
-    assignedOfficer: report.assignedOfficer,
-    officerName: report.officerName,
-    attachmentUrls: report.attachmentUrls
-  }));
+  // ============================================
+  // FIXED: Transform report data with ALL fields
+  // ============================================
+  const formattedReports = recentReports.map(report => {
+    // Get the raw report data (in case it's wrapped)
+    const raw = report._raw || report;
+
+    // Determine location area - PRIORITIZE determinedLocation from backend
+    let locationArea = 'Unknown';
+    if (raw.determinedLocation) {
+      locationArea = formatLocationName(raw.determinedLocation);
+    } else if (raw.location?.locationArea) {
+      locationArea = formatLocationName(raw.location.locationArea);
+    } else if (raw.mahallah && raw.mahallah !== 'Unknown Location') {
+      locationArea = formatLocationName(raw.mahallah);
+    } else if (raw.locationArea && raw.locationArea !== 'Not specified') {
+      locationArea = formatLocationName(raw.locationArea);
+    }
+
+    // Determine specific address
+    let specificAddress = 'No address specified';
+    if (raw.specificAddress && raw.specificAddress !== 'Not specified') {
+      specificAddress = raw.specificAddress;
+    } else if (raw.location?.specificPlace) {
+      specificAddress = raw.location.specificPlace;
+    } else if (raw.location?.building) {
+      specificAddress = raw.location.building;
+    } else if (raw.building) {
+      specificAddress = raw.building;
+    } else if (raw.location?.address) {
+      specificAddress = raw.location.address;
+    } else if (raw.address) {
+      specificAddress = raw.address;
+    }
+
+    // Build full address for display
+    let fullAddress = specificAddress;
+    if (locationArea && locationArea !== 'Unknown' &&
+        specificAddress && specificAddress !== 'No address specified') {
+      // Check if specific address already contains the location area
+      if (!specificAddress.includes(locationArea)) {
+        fullAddress = `${locationArea} - ${specificAddress}`;
+      }
+    } else if (locationArea && locationArea !== 'Unknown') {
+      fullAddress = locationArea;
+    }
+
+    // Get reporter name
+    const reporterName = raw.studentName || raw.reporterName || 'Unknown Reporter';
+
+    // Format date/time
+    const incidentDate = raw.incidentDateTime || raw.reportedAt;
+    const date = incidentDate ? new Date(incidentDate).toLocaleDateString('en-MY') : 'Unknown';
+    const time = incidentDate ? new Date(incidentDate).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }) : 'Unknown';
+
+    return {
+      // Basic fields
+      id: raw.reportId || raw.id,
+      reportId: raw.reportId || raw.id,
+      issue: raw.description?.substring(0, 100) + (raw.description?.length > 100 ? '...' : '') || 'No description',
+      description: raw.description || 'No description',
+
+      // Status & Urgency
+      status: raw.status || 'pending',
+      urgency: raw.urgency || 'general',
+
+      // Date/Time
+      date: date,
+      time: time,
+      incidentDateTime: raw.incidentDateTime,
+      reportedAt: raw.reportedAt,
+
+      // ============================================
+      // LOCATION FIELDS - USING BACKEND DATA
+      // ============================================
+      locationArea: locationArea,                    // "KICT (ICT)"
+      specificAddress: specificAddress,              // "LR 13"
+      address: fullAddress,                         // "KICT (ICT) - LR 13"
+      building: raw.location?.building || raw.building || null,
+      mahallah: raw.mahallah || null,
+      locationRaw: raw.location || null,
+
+      // ✅ IMPORTANT: Pass through determinedLocation from backend
+      determinedLocation: raw.determinedLocation || null,
+
+      // ============================================
+      // REPORTER FIELDS
+      // ============================================
+      reporterName: reporterName,
+      reporterContact: raw.studentPhone || raw.reporterContact || 'Not provided',
+      reporterEmail: raw.studentEmail || raw.reporterEmail || null,
+      reporterMatricNo: raw.studentMatrix || raw.reporterMatricNo || null,
+      reporter_type_display: raw.reporter_type_display ||
+                            (raw.reporter_type === 'registered' ? 'Registered Student' :
+                             raw.reporter_type === 'unregistered' ? 'Unregistered Reporter' : 'Reporter'),
+      reporter_type: raw.reporter_type || 'unregistered',
+
+      studentName: raw.studentName || raw.reporterName || 'Unknown',
+      studentEmail: raw.studentEmail || raw.reporterEmail || null,
+      studentPhone: raw.studentPhone || raw.reporterContact || null,
+      studentMatrix: raw.studentMatrix || raw.reporterMatricNo || null,
+
+      // ============================================
+      // OTHER FIELDS
+      // ============================================
+      incidentCategory: raw.incidentCategory || raw.category || 'other',
+      injuries: raw.injuries || null,
+      damages: raw.damages || null,
+      suspectDescription: raw.suspectDescription || null,
+      officerNotes: raw.officerNotes || null,
+      assignedOfficer: raw.assignedOfficer || null,
+      officerName: raw.officerName || 'Not assigned',
+      attachmentUrls: raw.attachmentUrls || [],
+      attachmentPublicIds: raw.attachmentPublicIds || [],
+
+      // Keep raw data for reference
+      _raw: raw
+    };
+  });
 
   console.log('Formatted reports:', formattedReports);
   if (formattedReports.length > 0) {
     console.log('First formatted report location:', {
       locationArea: formattedReports[0].locationArea,
+      specificAddress: formattedReports[0].specificAddress,
       address: formattedReports[0].address,
-      building: formattedReports[0].building,
+      determinedLocation: formattedReports[0].determinedLocation,
       locationRaw: formattedReports[0].locationRaw
     });
   }
