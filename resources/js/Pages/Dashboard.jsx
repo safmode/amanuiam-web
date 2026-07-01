@@ -72,7 +72,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/reports/recent');
+      const response = await fetch('/Reports/recent');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
