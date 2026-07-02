@@ -527,116 +527,118 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
     setErrors({});
 
     try {
-      let incidentDateTime = null;
-      if (editedReport.incidentDate && editedReport.incidentTime) {
-        incidentDateTime = new Date(`${editedReport.incidentDate}T${editedReport.incidentTime}:00`).toISOString();
-      } else if (report?.incidentDateTime) {
-        incidentDateTime = report.incidentDateTime;
-      }
+        let incidentDateTime = null;
+        if (editedReport.incidentDate && editedReport.incidentTime) {
+            incidentDateTime = new Date(`${editedReport.incidentDate}T${editedReport.incidentTime}:00`).toISOString();
+        } else if (report?.incidentDateTime) {
+            incidentDateTime = report.incidentDateTime;
+        }
 
-      let finalAttachmentUrls = [];
-      let finalAttachmentPublicIds = [];
+        let finalAttachmentUrls = [];
+        let finalAttachmentPublicIds = [];
 
-      if (pendingFiles.length > 0) {
-        const uploaded = await uploadPendingFiles();
-        finalAttachmentUrls = uploaded.urls;
-        finalAttachmentPublicIds = uploaded.publicIds;
-      }
+        if (pendingFiles.length > 0) {
+            const uploaded = await uploadPendingFiles();
+            finalAttachmentUrls = uploaded.urls;
+            finalAttachmentPublicIds = uploaded.publicIds;
+        }
 
-      if (pendingDeletions.length > 0) {
-        await processPendingDeletions();
-      }
+        if (pendingDeletions.length > 0) {
+            await processPendingDeletions();
+        }
 
-      const existingUrls = (editedReport.attachmentUrls || []).filter(url =>
-        url && url.startsWith('http') && !url.startsWith('blob:') && url.includes('cloudinary.com') &&
-        !pendingDeletions.some(d => d.url === url)
-      );
-      const existingPublicIds = (editedReport.attachmentPublicIds || []).filter((id, index) =>
-        id !== null && !pendingDeletions.some(d => d.publicId === id)
-      );
+        const existingUrls = (editedReport.attachmentUrls || []).filter(url =>
+            url && url.startsWith('http') && !url.startsWith('blob:') && url.includes('cloudinary.com') &&
+            !pendingDeletions.some(d => d.url === url)
+        );
+        const existingPublicIds = (editedReport.attachmentPublicIds || []).filter((id, index) =>
+            id !== null && !pendingDeletions.some(d => d.publicId === id)
+        );
 
-      const allUrls = [...existingUrls, ...finalAttachmentUrls];
-      const allPublicIds = [...existingPublicIds, ...finalAttachmentPublicIds];
+        const allUrls = [...existingUrls, ...finalAttachmentUrls];
+        const allPublicIds = [...existingPublicIds, ...finalAttachmentPublicIds];
 
-      // Build location object - prioritize specificPlace over building
-      const addressParts = [];
-      if (editedReport.locationArea && editedReport.locationArea.trim() !== '') {
-        addressParts.push(editedReport.locationArea);
-      }
-      if (editedReport.specificPlace && editedReport.specificPlace.trim() !== '') {
-        addressParts.push(editedReport.specificPlace);
-      } else if (editedReport.building && editedReport.building.trim() !== '') {
-        addressParts.push(editedReport.building);
-      }
-      const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
+        // Build location object - prioritize specificPlace over building
+        const addressParts = [];
+        if (editedReport.locationArea && editedReport.locationArea.trim() !== '') {
+            addressParts.push(editedReport.locationArea);
+        }
+        if (editedReport.specificPlace && editedReport.specificPlace.trim() !== '') {
+            addressParts.push(editedReport.specificPlace);
+        } else if (editedReport.building && editedReport.building.trim() !== '') {
+            addressParts.push(editedReport.building);
+        }
+        const combinedAddress = addressParts.length > 0 ? addressParts.join(', ') : '';
 
-      const locationObj = {
-        locationArea: editedReport.locationArea || '',
-        building: editedReport.building || '',
-        specificPlace: editedReport.specificPlace || '',
-        address: combinedAddress,
-        timestamp: new Date().toISOString()
-      };
+        const locationObj = {
+            locationArea: editedReport.locationArea || '',
+            building: editedReport.building || '',
+            specificPlace: editedReport.specificPlace || '',
+            address: combinedAddress,
+            timestamp: new Date().toISOString()
+        };
 
-      const payload = {
-        status: editedReport.status,
-        urgency: editedReport.urgency,
-        incidentCategory: editedReport.category,
-        description: editedReport.description,
-        incidentDateTime: incidentDateTime,
-        injuries: editedReport.injuries || null,
-        damages: editedReport.damages || null,
-        suspectDescription: editedReport.suspectDescription || null,
-        assignedOfficer: editedReport.assignedOfficer || null,
-        officerNotes: editedReport.officerNotes || null,
-        studentName: editedReport.reporterName || null,
-        studentEmail: editedReport.reporterEmail || null,
-        studentPhone: editedReport.reporterPhone || null,
-        studentMatrix: editedReport.reporterMatricNo || null,
-        attachmentUrls: allUrls,
-        attachmentPublicIds: allPublicIds,
-        location: locationObj,
-        mahallah: editedReport.locationArea || '',
-        building: editedReport.building || '',
-        specificPlace: editedReport.specificPlace || '',
-        address: combinedAddress,
-      };
+        const payload = {
+            status: editedReport.status,
+            urgency: editedReport.urgency,
+            incidentCategory: editedReport.category,
+            description: editedReport.description,
+            incidentDateTime: incidentDateTime,
+            injuries: editedReport.injuries || null,
+            damages: editedReport.damages || null,
+            suspectDescription: editedReport.suspectDescription || null,
+            assignedOfficer: editedReport.assignedOfficer || null,
+            officerNotes: editedReport.officerNotes || null,
+            studentName: editedReport.reporterName || null,
+            studentEmail: editedReport.reporterEmail || null,
+            studentPhone: editedReport.reporterPhone || null,
+            studentMatrix: editedReport.reporterMatricNo || null,
+            attachmentUrls: allUrls,
+            attachmentPublicIds: allPublicIds,
+            location: locationObj,
+            mahallah: editedReport.locationArea || '',
+            building: editedReport.building || '',
+            specificPlace: editedReport.specificPlace || '',
+            address: combinedAddress,
+        };
 
-      const reportId = editedReport.reportId;
+        const reportId = editedReport.reportId;
 
-      // 🔥 FIX: Use axios instead of Inertia router to avoid CSRF issues
-      const response = await api.put(`/Reports/${reportId}`, payload);
+        // ✅ USE ROUTER.PUT - THIS WORKS
+        router.put(`/Reports/${reportId}`, payload, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setIsSaving(false);
+                showToast('Report updated successfully', 'success');
 
-      setIsSaving(false);
-      showToast('Report updated successfully', 'success');
+                const updatedReportData = {
+                    ...editedReport,
+                    attachmentUrls: allUrls,
+                    attachmentPublicIds: allPublicIds,
+                };
 
-      const updatedReportData = {
-        ...editedReport,
-        attachmentUrls: allUrls,
-        attachmentPublicIds: allPublicIds,
-      };
-
-      if (onSaveSuccess) {
-        onSaveSuccess(updatedReportData);
-      }
-      onClose();
-      resetModalState();
-      router.reload({ only: ['reports'] });
-
+                if (onSaveSuccess) {
+                    onSaveSuccess(updatedReportData);
+                }
+                onClose();
+                resetModalState();
+                router.reload({ only: ['reports'] });
+            },
+            onError: (serverErrors) => {
+                setIsSaving(false);
+                setErrors(serverErrors);
+                const errorMessage = Object.values(serverErrors).flat().join(', ');
+                showToast('Failed to update report: ' + errorMessage, 'error');
+                console.error('Save failed:', serverErrors);
+            },
+        });
     } catch (error) {
-      console.error('Save error:', error);
-      setIsSaving(false);
-
-      // Handle CSRF error specifically
-      if (error.response?.status === 419) {
-        showToast('Session expired. Please refresh the page and try again.', 'error');
-        setTimeout(() => router.reload(), 1500);
-      } else {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to update report';
-        showToast('Failed to update report: ' + errorMessage, 'error');
-      }
+        console.error('Upload error:', error);
+        showToast('Failed to upload files: ' + error.message, 'error');
+        setIsSaving(false);
     }
-  };
+};
 
   const handleDeleteAttachment = (url, publicId, index) => {
     if (!editedReport) return;
