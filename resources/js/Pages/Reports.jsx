@@ -752,28 +752,63 @@ const Reports = () => {
 
   const handleCellUpdate = (reportId, field, newValue, oldValue) => {
     setLocalReports(prevReports =>
-      prevReports.map(report => {
+        prevReports.map(report => {
         if (report.reportId === reportId) {
-          const updated = { ...report };
-          if (field === 'status') {
+            const updated = { ...report };
+
+            if (field === 'status') {
             updated.status = newValue;
             setLocalStatusCounts(prev => {
-              const newCounts = { ...prev };
-              if (oldValue && newCounts[oldValue] > 0) newCounts[oldValue]--;
-              newCounts[newValue]++;
-              return newCounts;
+                const newCounts = { ...prev };
+                if (oldValue && newCounts[oldValue] > 0) newCounts[oldValue]--;
+                newCounts[newValue]++;
+                return newCounts;
             });
-          } else if (field === 'urgency') {
+            } else if (field === 'urgency') {
             updated.urgency = newValue;
-          } else if (field === 'incidentCategory') {
+            } else if (field === 'incidentCategory') {
             updated.incidentCategory = newValue;
-          }
-          return updated;
+            } else if (field === 'assignedOfficer') {
+            updated.assignedOfficer = newValue === 'Not Assigned' ? null : newValue;
+            const officer = officersList.find(o => o.officerId === newValue);
+            updated.officerName = officer?.officerName || 'Not Assigned';
+            }
+
+            return updated;
         }
         return report;
-      })
+        })
     );
-  };
+
+    // 🔥 FIX: Send the update with the report's current location data
+    const report = localReports.find(r => r.reportId === reportId);
+    if (report) {
+        const updateData = {
+        [field]: field === 'assignedOfficer' ? (newValue === 'Not Assigned' ? null : newValue) : newValue
+        };
+
+        // 🔥 Preserve location data if it exists
+        if (report.location) {
+        updateData.location = report.location;
+        }
+        if (report.mahallah) {
+        updateData.mahallah = report.mahallah;
+        }
+        if (report.specificAddress) {
+        updateData.specificAddress = report.specificAddress;
+        }
+
+        router.put(`/Reports/${reportId}`, updateData, {
+        preserveScroll: true,
+        preserveState: true,
+        onError: (errors) => {
+            // Revert changes on error
+            handleCellUpdate(reportId, field, oldValue, newValue);
+            showToast('Failed to update: ' + JSON.stringify(errors), 'error');
+        }
+        });
+    }
+    };
 
   const handleOfficerUpdate = (reportId, field, newValue, oldValue) => {
     let officerName = 'Not Assigned';

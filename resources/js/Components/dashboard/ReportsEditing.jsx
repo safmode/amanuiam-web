@@ -12,6 +12,7 @@ import { FileText, User, AlertCircle, Image, MessageSquare, Upload, Loader2, Eye
 import { categoryLabels, statusLabels, urgencyLabels, locationLabels } from '@/Pages/Reports';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/axios';
+import axios from 'axios';
 
 // ============================================
 // FALLBACK FUNCTIONS
@@ -603,38 +604,37 @@ export const ReportsEditing = ({ report, isOpen, onClose, onSaveSuccess }) => {
 
       const reportId = editedReport.reportId;
 
-      router.put(`/Reports/${reportId}`, payload, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-          setIsSaving(false);
-          showToast('Report updated successfully', 'success');
+      // 🔥 FIX: Use axios instead of Inertia router to avoid CSRF issues
+      const response = await api.put(`/Reports/${reportId}`, payload);
 
-          const updatedReportData = {
-            ...editedReport,
-            attachmentUrls: allUrls,
-            attachmentPublicIds: allPublicIds,
-          };
-
-          if (onSaveSuccess) {
-            onSaveSuccess(updatedReportData);
-          }
-          onClose();
-          resetModalState();
-          router.reload({ only: ['reports'] });
-        },
-        onError: (serverErrors) => {
-          setIsSaving(false);
-          setErrors(serverErrors);
-          const errorMessage = Object.values(serverErrors).flat().join(', ');
-          showToast('Failed to update report: ' + errorMessage, 'error');
-          console.error('Save failed:', serverErrors);
-        },
-      });
-    } catch (error) {
-      console.error('Upload error:', error);
-      showToast('Failed to upload files: ' + error.message, 'error');
       setIsSaving(false);
+      showToast('Report updated successfully', 'success');
+
+      const updatedReportData = {
+        ...editedReport,
+        attachmentUrls: allUrls,
+        attachmentPublicIds: allPublicIds,
+      };
+
+      if (onSaveSuccess) {
+        onSaveSuccess(updatedReportData);
+      }
+      onClose();
+      resetModalState();
+      router.reload({ only: ['reports'] });
+
+    } catch (error) {
+      console.error('Save error:', error);
+      setIsSaving(false);
+
+      // Handle CSRF error specifically
+      if (error.response?.status === 419) {
+        showToast('Session expired. Please refresh the page and try again.', 'error');
+        setTimeout(() => router.reload(), 1500);
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to update report';
+        showToast('Failed to update report: ' + errorMessage, 'error');
+      }
     }
   };
 
